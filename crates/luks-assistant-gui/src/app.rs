@@ -1048,10 +1048,6 @@ fn wire(ui: &MainWindow) {
         move || {
             let ui = w.unwrap();
             ui.set_recovery_key("".into());
-            if HELPER.lock().unwrap().is_none() {
-                ui.set_modal(0);
-                return connect(&ui);
-            }
             ui.set_modal(0);
         }
     });
