@@ -1,10 +1,10 @@
 //! Versions of the external tools we drive and the features they support.
 
 use crate::cmd;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct Version {
     pub major: u32,
     pub minor: u32,
@@ -50,7 +50,7 @@ impl fmt::Display for Version {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tools {
     pub cryptsetup: Option<Version>,
     /// Version reported by `systemd-cryptenroll --version`.
@@ -86,7 +86,7 @@ impl Tools {
 
 /// Feature switches derived from tool versions. Features are gated on
 /// versions rather than distribution names.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Caps {
     /// `cryptsetup luksDump --dump-json-metadata` (cryptsetup 2.4+).
     pub json_dump: bool,

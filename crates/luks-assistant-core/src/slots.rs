@@ -8,10 +8,10 @@ use crate::header::{self, Header, Keyslot, Token};
 use crate::notes::{self, KeyKind, Notes, SlotNote};
 use crate::pcr::{self, Snapshots, Tpm2Token, TpmStatus};
 use luks_assistant_sysinfo::tpm::PcrValues;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SlotKind {
     Empty,
     /// Plain key slot known (from a luks-assistant note) to hold a typed passphrase.
@@ -83,7 +83,7 @@ impl SlotKind {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fido2Token {
     pub rp: Option<String>,
     pub client_pin: Option<bool>,
@@ -127,7 +127,7 @@ impl Fido2Token {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Slot {
     pub id: u32,
     pub kind: SlotKind,
@@ -166,7 +166,7 @@ impl Slot {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Overview {
     pub device: LuksDevice,
     pub header: Header,

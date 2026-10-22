@@ -1,11 +1,11 @@
 //! UEFI and Secure Boot state.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 const EFI_GLOBAL_GUID: &str = "8be4df61-93ca-11d2-aa0d-00e098032b8c";
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Firmware {
     pub uefi: bool,
     /// `None` when the variable cannot be read (BIOS boot, efivarfs not mounted).

@@ -20,6 +20,7 @@ pub mod health;
 pub mod notes;
 pub mod ops;
 pub mod pcr;
+pub mod proto;
 pub mod secret;
 pub mod slots;
 pub mod util;

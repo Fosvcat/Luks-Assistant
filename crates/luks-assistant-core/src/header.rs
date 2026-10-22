@@ -3,12 +3,12 @@
 use crate::ctx::Ctx;
 use crate::error::{Error, Result};
 use crate::exec::Cmd;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Priority {
     /// Never used unless explicitly selected (`--key-slot`).
     Ignore,
@@ -43,7 +43,7 @@ impl Priority {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Kdf {
     pub kind: String,
     pub hash: Option<String>,
@@ -73,7 +73,7 @@ impl Kdf {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Keyslot {
     pub id: u32,
     /// `luks2` for normal slots, `reencrypt` during online reencryption.
@@ -84,7 +84,7 @@ pub struct Keyslot {
     pub area_encryption: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Token {
     pub id: u32,
     pub kind: String,
@@ -93,7 +93,7 @@ pub struct Token {
     pub raw: Value,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Segment {
     pub id: u32,
     pub kind: String,
@@ -103,7 +103,7 @@ pub struct Segment {
     pub size: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Digest {
     pub id: u32,
     pub kind: String,
@@ -111,7 +111,7 @@ pub struct Digest {
     pub segments: Vec<u32>,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Config {
     pub json_size: u64,
     pub keyslots_size: u64,
@@ -120,7 +120,7 @@ pub struct Config {
     pub requirements: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Header {
     pub version: u32,
     pub uuid: String,

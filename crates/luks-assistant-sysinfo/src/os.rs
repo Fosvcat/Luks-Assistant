@@ -1,10 +1,10 @@
 //! Distribution and kernel information.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Distribution families that differ in how they build the initramfs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Family {
     Arch,
     Fedora,
@@ -25,7 +25,7 @@ impl Family {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OsInfo {
     pub pretty_name: String,
     pub id: String,

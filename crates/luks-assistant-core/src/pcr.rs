@@ -186,7 +186,7 @@ pub fn format_list(pcrs: &[u8]) -> String {
 }
 
 /// Parsed `systemd-tpm2` token.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Tpm2Token {
     pub pcrs: Vec<u8>,
     pub bank: String,
@@ -318,7 +318,7 @@ pub fn policy_hash(bank: &str, pcrs: &[u8], values: &PcrValues, pin: bool) -> Re
     Ok(policy)
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TpmStatus {
     /// The current PCR values satisfy the policy.
     Match,

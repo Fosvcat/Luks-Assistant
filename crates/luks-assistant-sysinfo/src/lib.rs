@@ -12,10 +12,10 @@ pub mod os;
 pub mod tools;
 pub mod tpm;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// A snapshot of everything we know about the running system.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SystemInfo {
     pub os: os::OsInfo,
     pub tools: tools::Tools,

@@ -3,12 +3,12 @@
 ## 分层
 
 ```
-┌──────────────┐   ┌───────────────────────────────┐
-│ luks-assistant-tui  │   │ 未来: luks-assistant-gui (Qt/KDE 风格) │  普通用户运行
-└──────┬───────┘   └──────────────┬────────────────┘
-       │ 直接调用（sudo 运行）       │ D-Bus（system bus）
+┌──────────────┐   ┌──────────────────────────────┐
+│ luks-assistant-tui  │   │ luks-assistant-gui（Slint，普通用户）  │
+└──────┬───────┘   └──────────────┬───────────────┘
+       │ 直接调用（sudo 运行）       │ pkexec + stdin/stdout 逐行 JSON
        │                    ┌─────▼──────────────────┐
-       │                    │ 未来: luks-assistant-helper     │  root，按方法做 polkit 授权
+       │                    │ luks-assistant-helper（root）   │
        │                    └─────┬──────────────────┘
 ┌──────▼──────────────────────────▼──────────────────┐
 │ luks-assistant-core                                         │
@@ -42,8 +42,11 @@ luks-assistant 用当前 PCR 值（`/sys/class/tpm/tpm0/pcr-<bank>/N`）重新�
 
 策略匹配时，luks-assistant 把这些 PCR 的值按策略哈希保存为快照（`/var/lib/luks-assistant/pcr-snapshots/<UUID>.json`）。之后再失配时，与快照对比即可指出是哪个 PCR 变了。
 
-## 未来的 GUI 与 helper
+## 图形界面与 helper
 
-- `luks-assistant-helper`：system bus 上的 D-Bus 服务（`zbus`），每个方法对应一个 polkit action（如 `org.luks-assistant.read`、`org.luks-assistant.modify-keys`、`org.luks-assistant.restore-header`），由 D-Bus 激活，空闲时退出。
-- `luks-assistant-gui`：普通用户运行。候选方案为 CXX-Qt（QML/Kirigami，最接近 KDE 原生）或 Slint。
-- FIDO2 的触摸/PIN 提示需要 helper 把 systemd-cryptenroll 的输出流式转发给 GUI，PIN 通过 `PIN` 环境变量传入。
+- `luks-assistant`（图形界面）以普通用户运行。启动时用 `pkexec /usr/libexec/luks-assistant-helper` 拉起后端，polkit 弹出管理员认证（策略 `io.github.fosvcat.luks-assistant.helper`，`auth_admin_keep`）。本身已是 root 时直接启动 helper。
+- 协议见 `luks_assistant_core::proto`：每行一个 JSON 请求，返回同 id 的 `ok` / `err`，执行过程中插入 `event`（步骤进度、命令输出）。
+- **计划留在 helper 里**：GUI 只拿到不含秘密的 `PlanView`，按 id 执行；需要确认词的计划在 helper 中再校验一次。护栏全部在 helper 侧的 `ops::plan` 中执行，GUI 无法绕过。
+- FIDO2 / PKCS#11 / TPM2+PIN 需要终端交互。helper 在伪终端里运行这些命令，自动回答 PIN 提示（输出中的 PIN 会被打码），把“请触摸安全密钥”等输出实时转发给 GUI；出现无法回答的密码提示时立即报错，不会卡住。
+- 表单定义（`luks_assistant_core::forms`）由 TUI 与 GUI 共用，两者行为一致。
+- 默认使用 Slint 的 winit 后端与 Fluent 样式（只依赖 fontconfig，OpenGL 不可用时自动用软件渲染）；`--features qt` 改用 Qt 后端与原生 Qt 样式。

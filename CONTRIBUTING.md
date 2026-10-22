@@ -44,6 +44,19 @@ sudo env LUKS_ASSISTANT_FAST_KDF=1 \
 | `LUKS_ASSISTANT_STATE_DIR` | 头部备份、PCR 快照、日志、锁文件目录（默认 `/var/lib/luks-assistant`） |
 | `LUKS_ASSISTANT_FAST_KDF=1` | 新槽位使用极弱的 PBKDF2，**仅用于测试** |
 
+## 图形界面
+
+```sh
+sudo apt install libfontconfig1-dev libxkbcommon-dev
+cargo build -p luks-assistant-gui -p luks-assistant-helper
+# 以 root 运行时 GUI 直接启动 helper，不经过 pkexec；开发用环境变量会转成 helper 参数
+sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/luks-assistant-helper LUKS_ASSISTANT_FAST_KDF=1 \
+  LUKS_ASSISTANT_ETC_DIR=/tmp/luks-assistant/etc LUKS_ASSISTANT_STATE_DIR=/tmp/luks-assistant/state \
+  ./target/debug/luks-assistant --gui /tmp/demo.img
+```
+
+无显示器的环境可以用 `Xvfb :99` + `DISPLAY=:99`，再用 `xdotool` 点击、`import -window root` 截图。
+
 ## 约定
 
 - 写操作一律经过 `luks_assistant_core::ops::plan` → `execute`，前端不自己拼命令。

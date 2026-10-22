@@ -1,0 +1,18 @@
+[package]
+name = "luks-assistant-helper"
+description = "Privileged backend of the luks-assistant GUI, started through pkexec"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+luks-assistant-core.workspace = true
+luks-assistant-sysinfo.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

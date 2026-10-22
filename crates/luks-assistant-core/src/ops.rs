@@ -509,9 +509,9 @@ pub struct TokenTest {
 
 /// Tests for every token of `kind`, in token order. Nothing is activated.
 ///
-/// With `pin` the PIN is answered through stdin (no terminal needed);
-/// without it, tokens that may prompt (FIDO2, PKCS#11, TPM2+PIN) are marked
-/// interactive so a terminal frontend can hand over the terminal.
+/// Tokens that may prompt (FIDO2, PKCS#11, TPM2+PIN) are interactive: a
+/// terminal frontend hands over its terminal, the helper answers `pin`
+/// on a pseudo-terminal.
 pub fn token_tests(ov: &Overview, kind: TokenKind, pin: Option<&Secret>) -> Vec<TokenTest> {
     ov.header
         .tokens
@@ -532,14 +532,11 @@ pub fn token_tests(ov: &Overview, kind: TokenKind, pin: Option<&Secret>) -> Vec<
                 TokenKind::Tpm2 => Tpm2Token::from_token(t).is_some_and(|x| x.pin),
                 _ => true,
             };
-            match pin {
-                Some(p) => {
-                    let mut line = p.expose().to_vec();
-                    line.push(b'\n');
-                    cmd = cmd.secret_stdin(Secret::new(line));
+            if may_prompt {
+                cmd = cmd.interactive();
+                if let Some(p) = pin {
+                    cmd = cmd.answer("pin", p.clone());
                 }
-                None if may_prompt => cmd = cmd.interactive(),
-                None => {}
             }
             TokenTest {
                 token: t.id,
@@ -1277,7 +1274,7 @@ pub trait Hooks {
 pub struct NoHooks;
 impl Hooks for NoHooks {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StepReport {
     pub desc: String,
     pub command: Option<String>,

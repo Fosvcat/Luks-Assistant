@@ -103,7 +103,7 @@ pub fn fingerprint(ks: &Keyslot) -> String {
 }
 
 /// Notes of one device from both stores.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Notes {
     pub header: NoteSet,
     pub header_token: Option<u32>,
@@ -111,7 +111,7 @@ pub struct Notes {
 }
 
 /// A note resolved for a slot.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SlotNote {
     pub note: Note,
     pub location: Location,

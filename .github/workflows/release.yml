@@ -77,8 +77,42 @@ jobs:
           name: static-${{ matrix.arch }}
           path: dist/*.tar.gz
 
+  build-gui:
+    needs: check-version
+    strategy:
+      matrix:
+        include:
+          - { arch: x86_64, runner: ubuntu-22.04 }
+          - { arch: aarch64, runner: ubuntu-22.04-arm }
+    # Ubuntu 22.04 keeps the glibc requirement low (2.35).
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+      - run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev
+      - name: Build
+        run: cargo build --release --locked -p luks-assistant-gui -p luks-assistant-helper -p luks-assistant-tui
+      - name: Package
+        run: |
+          name=luks-assistant-$TAG-${{ matrix.arch }}-linux
+          mkdir -p dist/$name
+          cp target/release/luks-assistant target/release/luks-assistant-helper target/release/luks-assistant-tui dist/$name/
+          cp packaging/install.sh packaging/luks-assistant.desktop packaging/io.github.fosvcat.luks-assistant.policy.in dist/$name/
+          cp LICENSE README.md dist/$name/
+          tar -C dist -czf dist/$name.tar.gz $name
+      - uses: actions/attest-build-provenance@v2
+        if: ${{ !github.event.repository.private }}
+        with:
+          subject-path: dist/*.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.arch }}
+          path: dist/*.tar.gz
+
   release:
-    needs: build-static
+    needs: [build-static, build-gui]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4

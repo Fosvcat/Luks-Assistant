@@ -1,13 +1,13 @@
 //! TPM2 device detection and PCR reading.
 
 use crate::cmd;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 const SYSFS_TPM: &str = "/sys/class/tpm/tpm0";
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TpmInfo {
     pub present: bool,
     /// Major TPM version reported by the kernel (2 for TPM 2.0).

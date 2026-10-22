@@ -4,9 +4,9 @@ use crate::notes::{self, Location};
 use crate::ops::Request;
 use crate::pcr::TpmStatus;
 use crate::slots::{Overview, SlotKind};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Severity {
     Critical,
     Warning,
@@ -23,7 +23,7 @@ impl Severity {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Issue {
     pub severity: Severity,
     pub title: String,

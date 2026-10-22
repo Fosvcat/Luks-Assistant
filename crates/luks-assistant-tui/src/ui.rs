@@ -231,6 +231,7 @@ fn draw_device_bar(f: &mut Frame, app: &mut App, area: Rect) {
         None,
     );
     push(&mut spans, button("验证"), Some(&mut app.rects.verify));
+    let unlocked = app.ov.as_ref().is_some_and(|o| o.device.mapping.is_some());
     if let Some((flag, dev)) = app.trim_state() {
         let d = match dev {
             Some(true) => "支持",
@@ -242,7 +243,9 @@ fn draw_device_bar(f: &mut Frame, app: &mut App, area: Rect) {
             format!("   TRIM 头部:{} 设备:{d} ", if flag { "开" } else { "关" }).into(),
             None,
         );
-        push(&mut spans, button("TRIM"), Some(&mut app.rects.trim));
+        if unlocked {
+            push(&mut spans, button("TRIM"), Some(&mut app.rects.trim));
+        }
     }
     f.render_widget(Paragraph::new(Line::from(spans)), area);
 }

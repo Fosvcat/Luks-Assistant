@@ -35,8 +35,6 @@ pub struct Cmd {
     pub env: Vec<(String, Secret)>,
     /// Non-secret data piped to stdin (e.g. token JSON).
     pub stdin: Option<Vec<u8>>,
-    /// Secret piped to stdin (a PIN answering a prompt).
-    pub secret_stdin: Option<Secret>,
     /// Answers for prompts of an interactive command run without a user
     /// terminal: (lower-case text the prompt contains, answer).
     pub answers: Vec<(String, Secret)>,
@@ -54,7 +52,6 @@ impl Cmd {
             args: Vec::new(),
             env: Vec::new(),
             stdin: None,
-            secret_stdin: None,
             answers: Vec::new(),
             interactive: false,
             secret_stdout: false,
@@ -94,11 +91,6 @@ impl Cmd {
         self
     }
 
-    pub fn secret_stdin(mut self, value: Secret) -> Self {
-        self.secret_stdin = Some(value);
-        self
-    }
-
     /// Answer a prompt containing `prompt` (case-insensitive) with `value`.
     pub fn answer(mut self, prompt: &str, value: Secret) -> Self {
         self.answers.push((prompt.to_lowercase(), value));
@@ -128,9 +120,6 @@ impl Cmd {
                 "echo {} | ",
                 shell_quote(&format!("{short}{ellipsis}"))
             ));
-        }
-        if self.secret_stdin.is_some() {
-            out.push_str("echo <已隐藏> | ");
         }
         for (name, _) in &self.env {
             out.push_str(&format!("{name}=<已隐藏> "));
@@ -236,44 +225,53 @@ fn secret_pipe(data: &[u8]) -> Result<PipeFd> {
     Ok(read)
 }
 
+/// Build the process for `cmd`. The returned pipes must stay alive until
+/// the child has been spawned.
+fn prepare(cmd: &Cmd) -> Result<(Command, Vec<PipeFd>)> {
+    use std::os::unix::ffi::OsStrExt;
+    let mut pipes = Vec::new();
+    let mut command = Command::new(&cmd.program);
+    for a in &cmd.args {
+        match a {
+            Arg::Plain(s) => {
+                command.arg(s);
+            }
+            Arg::Secret { value, .. } => {
+                let fd = secret_pipe(value.expose())?;
+                command.arg(format!("/dev/fd/{}", fd.0));
+                pipes.push(fd);
+            }
+        }
+    }
+    for (name, value) in &cmd.env {
+        command.env(name, std::ffi::OsStr::from_bytes(value.expose()));
+    }
+    command.env("SYSTEMD_COLORS", "0").env("SYSTEMD_PAGER", "");
+    if !cmd.interactive {
+        command.env("LC_ALL", "C");
+    }
+    Ok((command, pipes))
+}
+
+fn spawn_error(cmd: &Cmd) -> impl Fn(std::io::Error) -> Error + '_ {
+    move |e| Error::Spawn {
+        program: cmd.program.clone(),
+        source: e,
+    }
+}
+
 impl Runner for SystemRunner {
     fn run(&self, cmd: &Cmd) -> Result<CmdOutput> {
         use std::io::Write;
-        use std::os::unix::ffi::OsStrExt;
-
-        let mut pipes = Vec::new();
-        let mut command = Command::new(&cmd.program);
-        for a in &cmd.args {
-            match a {
-                Arg::Plain(s) => {
-                    command.arg(s);
-                }
-                Arg::Secret { value, .. } => {
-                    let fd = secret_pipe(value.expose())?;
-                    command.arg(format!("/dev/fd/{}", fd.0));
-                    pipes.push(fd);
-                }
-            }
-        }
-        for (name, value) in &cmd.env {
-            command.env(name, std::ffi::OsStr::from_bytes(value.expose()));
-        }
-        command.env("SYSTEMD_COLORS", "0").env("SYSTEMD_PAGER", "");
-        if !cmd.interactive {
-            command.env("LC_ALL", "C");
-        }
-
-        let spawn_err = |e| Error::Spawn {
-            program: cmd.program.clone(),
-            source: e,
-        };
+        let (mut command, pipes) = prepare(cmd)?;
 
         if cmd.interactive {
+            // The user answers prompts on the real terminal.
             command
                 .stdin(Stdio::inherit())
                 .stdout(Stdio::inherit())
                 .stderr(Stdio::inherit());
-            let status = command.status().map_err(spawn_err)?;
+            let status = command.status().map_err(spawn_error(cmd))?;
             drop(pipes);
             return Ok(CmdOutput {
                 code: status.code().unwrap_or(-1),
@@ -283,22 +281,18 @@ impl Runner for SystemRunner {
         }
 
         command
-            .stdin(if cmd.stdin.is_some() || cmd.secret_stdin.is_some() {
+            .stdin(if cmd.stdin.is_some() {
                 Stdio::piped()
             } else {
                 Stdio::null()
             })
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
-        let mut child = command.spawn().map_err(spawn_err)?;
+        let mut child = command.spawn().map_err(spawn_error(cmd))?;
         drop(pipes);
-        let data = cmd
-            .stdin
-            .as_deref()
-            .or(cmd.secret_stdin.as_ref().map(Secret::expose));
-        if let (Some(data), Some(mut stdin)) = (data, child.stdin.take()) {
-            // A child that exits early (wrong PIN) closes the pipe; that is
-            // reported through its exit status, not as a write error.
+        if let (Some(data), Some(mut stdin)) = (&cmd.stdin, child.stdin.take()) {
+            // A child that exits early closes the pipe; that is reported
+            // through its exit status, not as a write error.
             let _ = stdin.write_all(data);
         }
         let out = child.wait_with_output()?;
@@ -308,6 +302,148 @@ impl Runner for SystemRunner {
             stderr: String::from_utf8_lossy(&out.stderr).into_owned(),
         })
     }
+}
+
+/// Run an interactive command on a fresh pseudo-terminal, without a human
+/// at a terminal: prompts listed in `cmd.answers` are answered
+/// automatically, everything the command prints is passed to `on_output`
+/// (with answers masked), and a prompt nobody can answer ends the command
+/// with an error instead of hanging.
+///
+/// stdout and stderr are merged; the combined text is returned as `stderr`.
+pub fn run_in_pty(
+    cmd: &Cmd,
+    on_output: &mut dyn FnMut(&str),
+    timeout: std::time::Duration,
+) -> Result<CmdOutput> {
+    use std::os::fd::{FromRawFd, OwnedFd};
+    use std::os::unix::process::CommandExt;
+
+    let (mut command, pipes) = prepare(cmd)?;
+    let (mut master, mut slave) = (0 as RawFd, 0 as RawFd);
+    // SAFETY: valid out-pointers; no name/termios/winsize requested.
+    if unsafe {
+        libc::openpty(
+            &mut master,
+            &mut slave,
+            std::ptr::null_mut(),
+            std::ptr::null(),
+            std::ptr::null(),
+        )
+    } != 0
+    {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    let master = PipeFd(master);
+    // SAFETY: the descriptors are freshly opened and owned by us.
+    unsafe {
+        libc::fcntl(master.0, libc::F_SETFD, libc::FD_CLOEXEC);
+        libc::fcntl(slave, libc::F_SETFD, libc::FD_CLOEXEC);
+    }
+    let slave_fd = unsafe { OwnedFd::from_raw_fd(slave) };
+    command
+        .stdin(Stdio::from(slave_fd.try_clone()?))
+        .stdout(Stdio::from(slave_fd.try_clone()?))
+        .stderr(Stdio::from(slave_fd.try_clone()?));
+    // SAFETY: setsid/ioctl are async-signal-safe; this makes the pty the
+    // controlling terminal so /dev/tty prompts land on it.
+    unsafe {
+        command.pre_exec(|| {
+            if libc::setsid() < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            if libc::ioctl(0, libc::TIOCSCTTY as _, 0) < 0 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+    let mut child = command.spawn().map_err(spawn_error(cmd))?;
+    // The parent must not keep the slave side open, or reads on the master
+    // never see the end of output.
+    drop(command);
+    drop(slave_fd);
+    drop(pipes);
+
+    let started = std::time::Instant::now();
+    let mut all = String::new();
+    let mut since_answer = String::new();
+    let mut unanswerable = None;
+    let mask = |text: &str| {
+        let mut t = text.to_owned();
+        for (_, v) in &cmd.answers {
+            let v = String::from_utf8_lossy(v.expose()).into_owned();
+            if !v.is_empty() {
+                t = t.replace(&v, "***");
+            }
+        }
+        t
+    };
+    let mut buf = [0u8; 4096];
+    loop {
+        let mut pfd = libc::pollfd {
+            fd: master.0,
+            events: libc::POLLIN,
+            revents: 0,
+        };
+        // SAFETY: one valid pollfd.
+        let r = unsafe { libc::poll(&mut pfd, 1, 200) };
+        if r > 0 {
+            // SAFETY: buf is valid for buf.len() bytes.
+            let n = unsafe { libc::read(master.0, buf.as_mut_ptr().cast(), buf.len()) };
+            if n <= 0 {
+                break; // EIO: the child closed the terminal
+            }
+            let text = String::from_utf8_lossy(&buf[..n as usize]).into_owned();
+            let shown = mask(&text);
+            on_output(&shown);
+            all.push_str(&shown);
+            since_answer.push_str(&text.to_lowercase());
+            let tail = since_answer.trim_end();
+            if tail.ends_with(':') || tail.ends_with('?') {
+                let answer = cmd.answers.iter().find(|(p, _)| tail.contains(p.as_str()));
+                match answer {
+                    Some((_, v)) => {
+                        let mut line = v.expose().to_vec();
+                        line.push(b'\n');
+                        // SAFETY: valid buffer.
+                        unsafe { libc::write(master.0, line.as_ptr().cast(), line.len()) };
+                        since_answer.clear();
+                    }
+                    None if ["pin", "password", "passphrase", "密码"]
+                        .iter()
+                        .any(|w| tail.contains(w)) =>
+                    {
+                        unanswerable = Some(tail.lines().last().unwrap_or(tail).trim().to_owned());
+                        let _ = child.kill();
+                    }
+                    None => {}
+                }
+            }
+        } else if r < 0 {
+            let e = std::io::Error::last_os_error();
+            if e.kind() != std::io::ErrorKind::Interrupted {
+                return Err(e.into());
+            }
+        }
+        if r == 0 && matches!(child.try_wait(), Ok(Some(_))) {
+            break; // exited and nothing left to read
+        }
+        if started.elapsed() > timeout {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(Error::Invalid(format!("{} 超时", cmd.program)));
+        }
+    }
+    let status = child.wait()?;
+    if let Some(p) = unanswerable {
+        return Err(Error::Invalid(format!("需要输入：{p}")));
+    }
+    Ok(CmdOutput {
+        code: status.code().unwrap_or(-1),
+        stdout: Zeroizing::new(Vec::new()),
+        stderr: all,
+    })
 }
 
 #[cfg(test)]
@@ -352,6 +488,35 @@ mod tests {
 
         let c = Cmd::new("cat").stdin(b"{\"a\":1}".to_vec());
         assert_eq!(&SystemRunner.run(&c).unwrap().stdout[..], b"{\"a\":1}");
+    }
+
+    #[test]
+    fn pty_answers_prompts_and_masks_them() {
+        let script = "printf 'Please enter security token PIN: '; read -r p; echo \"got [$p]\"; [ -t 0 ] && echo tty";
+        let c = Cmd::new("sh")
+            .args(["-c", script])
+            .interactive()
+            .answer("PIN", Secret::from_text("123456"));
+        let mut seen = String::new();
+        let out = run_in_pty(
+            &c,
+            &mut |t| seen.push_str(t),
+            std::time::Duration::from_secs(10),
+        )
+        .unwrap();
+        assert!(out.success(), "{}", out.stderr);
+        assert!(seen.contains("got [***]"), "{seen}");
+        assert!(seen.contains("tty"));
+        assert!(!seen.contains("123456"));
+    }
+
+    #[test]
+    fn pty_refuses_unanswerable_prompt() {
+        let c = Cmd::new("sh")
+            .args(["-c", "printf 'Enter passphrase: '; read -r p"])
+            .interactive();
+        let err = run_in_pty(&c, &mut |_| {}, std::time::Duration::from_secs(10)).unwrap_err();
+        assert!(err.to_string().contains("enter passphrase"), "{err}");
     }
 
     #[test]

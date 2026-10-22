@@ -5,7 +5,7 @@ use luks_assistant_sysinfo::tools::{Caps, Tools};
 use std::path::{Path, PathBuf};
 
 /// Where luks-assistant keeps its own files.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Paths {
     /// Configuration and local slot notes (default `/etc/luks-assistant`).
     pub etc_dir: PathBuf,

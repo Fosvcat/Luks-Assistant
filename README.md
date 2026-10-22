@@ -6,7 +6,10 @@
 
 > *luks-assistant manages LUKS2 key slots (passphrases, key files, recovery keys, TPM2 with PCR selection, FIDO2, PKCS#11) on top of cryptsetup and systemd-cryptenroll. The current frontend is a developer-oriented TUI; a KDE/Qt-style GUI with a polkit-authorized backend is planned.*
 
-当前状态：**开发者向 TUI**（`luks-assistant-tui`）。正式的图形界面（KDE/Qt 原生风格 + polkit/pkexec 后端）在规划中，见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+- **图形界面** `luks-assistant`：普通用户运行，通过 `pkexec` 启动 root 后端 `luks-assistant-helper`
+- **终端界面** `luks-assistant-tui`：`sudo` 运行，适合服务器和 SSH
+
+`luks-assistant` 在桌面中启动时打开图形界面；在终端中或没有图形环境时自动进入终端界面（`--gui` / `--tui` 可强制）。
 
 ## 功能
 
@@ -34,30 +37,44 @@
 - 新密码含非 ASCII 字符时警告（initramfs 中通常只有美式键盘、没有输入法）。
 - 操作记录（已脱敏）写入 `/var/lib/luks-assistant/history.log`。
 
-## 构建与运行
+## 安装
 
-需要 Rust ≥ 1.85。
+从 [Releases](https://github.com/Fosvcat/LUKS_ASSISTANT/releases) 下载：
+
+- `luks-assistant-<版本>-<架构>-linux.tar.gz`：图形界面 + 终端界面 + 后端（glibc ≥ 2.35）
+- `luks-assistant-tui-<版本>-<架构>-linux-static.tar.gz`：只有终端界面，静态链接，任何发行版可用
+
+```sh
+tar xf luks-assistant-v0.x.y-x86_64-linux.tar.gz && cd luks-assistant-v0.x.y-x86_64-linux
+sudo ./install.sh                # 安装到 /usr/local，含 polkit 策略和桌面启动项
+sudo ./install.sh --uninstall
+```
+
+运行时依赖：`cryptsetup` ≥ 2.4；TPM2/FIDO2/PKCS#11/恢复密钥需要 `systemd-cryptenroll`（systemd ≥ 248，TPM2+PIN 需要 ≥ 251）；图形界面需要 polkit（`pkexec`）和 fontconfig。功能按工具版本自动启用。
+
+## 从源码构建
+
+需要 Rust ≥ 1.85；图形界面另需 `libfontconfig1-dev`、`libxkbcommon-dev`（或对应发行版的包）。
 
 ```sh
 cargo build --release
-sudo ./target/release/luks-assistant-tui                # 列出所有 LUKS 设备
-sudo ./target/release/luks-assistant-tui /dev/nvme0n1p2 # 指定设备
+sudo packaging/install.sh                        # 安装 target/release 中的二进制
+sudo ./target/release/luks-assistant-tui /dev/nvme0n1p2 # 直接运行终端界面
 ./target/release/luks-assistant-tui --dump disk.img     # 以 JSON 输出槽位模型
-./target/release/luks-assistant-tui --boot-check        # 输出开机检查结果
 ```
 
-不加 sudo 也能启动（只读）。运行时依赖：`cryptsetup` ≥ 2.4；TPM2/FIDO2/PKCS#11/恢复密钥功能需要 `systemd-cryptenroll`（systemd ≥ 248，TPM2+PIN 需要 ≥ 251）。功能按工具版本自动启用。
+`cargo build --release -p luks-assistant-gui --features qt` 使用 Qt 后端和原生 Qt 样式（KDE 外观，需要 Qt 6 开发包）。
 
-### 页面与按键
+### 页面（终端界面按键）
 
 | 页面 | 内容 | 按键 |
 |---|---|---|
-| 1 槽位 | 磁盘下拉框（lsblk 树，只能选 LUKS 卷）、LUKS 卷数/本地卷数、验证、TRIM、32 槽位 | ←↑↓→ 选择，Enter/双击 菜单，`a` 添加，`e` 修改/重新录入，`d` 删除，`n` 备注，`v` 验证，`D` 磁盘，`T` TRIM |
-| 2 系统信息 | 系统/TPM/FIDO2/PKCS#11 · 磁盘与 TRIM · PCR | |
-| 3 体检 | 元数据问题，部分可一键修复 | Enter 修复 |
-| 4 开机检查 | TPM2/FIDO2 开机解锁是否可用 | |
-| 5 备份 | 备份位置、所有 LUKS 卷的最后备份 | 空格 勾选，`a` 全选，Enter 备份所选，`r` 恢复，`c` 备份位置 |
-| 6 日志 | 本次会话的操作 | |
+| 槽位 | 磁盘下拉框（lsblk 树，只能选 LUKS 卷）、LUKS 卷数/本地卷数、验证、TRIM、32 槽位 | ←↑↓→ 选择，Enter/双击 菜单，`a` 添加，`e` 修改/重新录入，`d` 删除，`n` 备注，`v` 验证，`D` 磁盘，`T` TRIM |
+| 系统信息 | 系统/TPM/FIDO2/PKCS#11 · 磁盘与 TRIM · PCR | |
+| 体检 | 元数据问题，部分可一键修复 | Enter 修复 |
+| 开机检查 | TPM2/FIDO2 开机解锁是否可用 | |
+| 备份 | 备份位置、所有 LUKS 卷的最后备份 | 空格 勾选，`a` 全选，Enter 备份所选，`r` 恢复，`c` 备份位置 |
+| 日志 | 本次会话的操作 | |
 
 `Tab` / `1`–`6` 切换页面，`F5` 刷新，`q` 退出。
 
@@ -73,9 +90,12 @@ LUKS2 头部无法区分“键盘输入的密码”和“密钥文件”，两�
 
 ```
 crates/
-├── luks-assistant-sysinfo  只读的系统探测：发行版、工具版本与功能、UEFI/安全启动、TPM、PCR、FIDO2、开机检查
-├── luks-assistant-core     头部解析、32 槽位模型、备注、PCR 策略计算、安全护栏、操作计划与执行
-└── luks-assistant-tui      ratatui 终端界面
+├── luks-assistant-sysinfo  只读的系统探测：发行版、工具版本与功能、UEFI/安全启动、TPM、PCR、FIDO2/PKCS#11、开机检查
+├── luks-assistant-core     头部解析、32 槽位模型、备注、PCR 策略计算、安全护栏、表单、操作计划与执行、通信协议
+├── luks-assistant-tui      ratatui 终端界面（库 + luks-assistant-tui 二进制）
+├── luks-assistant-helper   root 后端，由图形界面通过 pkexec 启动
+└── luks-assistant-gui      Slint 图形界面（luks-assistant 二进制，终端中自动转为 TUI）
+packaging/           polkit 策略、桌面启动项、安装脚本
 ```
 
 开发与测试（包括用 swtpm 虚拟 TPM 跑端到端测试）见 [CONTRIBUTING.md](CONTRIBUTING.md)。

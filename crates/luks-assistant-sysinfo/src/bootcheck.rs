@@ -6,10 +6,10 @@
 //! changes anything.
 
 use crate::cmd;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Status {
     Ok,
     Info,
@@ -30,7 +30,7 @@ impl Status {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Item {
     pub title: String,
     pub status: Status,

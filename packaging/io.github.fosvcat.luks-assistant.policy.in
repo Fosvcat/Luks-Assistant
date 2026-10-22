@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE policyconfig PUBLIC
+ "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
+<policyconfig>
+  <vendor>luks-assistant</vendor>
+  <vendor_url>https://github.com/Fosvcat/LUKS_ASSISTANT</vendor_url>
+  <action id="io.github.fosvcat.luks-assistant.helper">
+    <description>Manage LUKS2 key slots</description>
+    <description xml:lang="zh_CN">管理 LUKS2 密钥槽</description>
+    <message>Authentication is required to manage LUKS encrypted volumes</message>
+    <message xml:lang="zh_CN">管理 LUKS 加密卷需要管理员认证</message>
+    <icon_name>drive-harddisk-encrypted</icon_name>
+    <defaults>
+      <allow_any>auth_admin</allow_any>
+      <allow_inactive>auth_admin</allow_inactive>
+      <allow_active>auth_admin_keep</allow_active>
+    </defaults>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/luks-assistant-helper</annotate>
+  </action>
+</policyconfig>
