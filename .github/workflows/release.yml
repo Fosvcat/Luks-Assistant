@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Existing tag to (re)build, e.g. v0.1.0"
+        description: "Tag to release, e.g. v0.1.0 (created on the selected branch if missing)"
         required: true
 
 permissions:
@@ -23,9 +23,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.TAG }}
+          fetch-depth: 0
+      - name: Create the tag when started by hand
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "tag $TAG exists"
+          else
+            git tag "$TAG"
+            git push origin "refs/tags/$TAG"
+          fi
       - name: Tag matches Cargo.toml version
         run: |
+          git checkout -q "$TAG"
           version=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
           if [ "v$version" != "$TAG" ]; then
             echo "::error::tag $TAG does not match workspace version $version"
