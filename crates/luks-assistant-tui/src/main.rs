@@ -46,11 +46,12 @@ fn main() {
     }
 
     let ctx = Ctx::system();
-    let mut devices: Vec<LuksDevice> = Vec::new();
+    let extra: Vec<LuksDevice> = args
+        .iter()
+        .map(|a| LuksDevice::from_path(&PathBuf::from(a)))
+        .collect();
     let mut status = String::from("就绪");
-    for a in &args {
-        devices.push(LuksDevice::from_path(&PathBuf::from(a)));
-    }
+    let mut devices = extra.clone();
     match device::discover(&ctx) {
         Ok(found) => {
             for d in found {
@@ -59,7 +60,7 @@ fn main() {
                 }
             }
         }
-        Err(e) => status = format!("lsblk 失败: {e}"),
+        Err(e) => status = format!("lsblk: {e}"),
     }
 
     if dump {
@@ -99,9 +100,9 @@ fn main() {
 
     let sys = luks_assistant_sysinfo::SystemInfo::probe();
     if !sys.is_root {
-        status = "非 root：只能查看，写操作需要 sudo".into();
+        status = "只读（写操作需要 sudo）".into();
     }
-    let mut app = app::App::new(ctx, sys, devices, status);
+    let mut app = app::App::new(ctx, sys, extra, status);
     let mut terminal = term::enter();
     let result = run(&mut terminal, &mut app);
     term::leave();

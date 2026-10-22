@@ -8,7 +8,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::Path;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, serde::Deserialize)]
 pub enum Priority {
     /// Never used unless explicitly selected (`--key-slot`).
     Ignore,

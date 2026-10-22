@@ -133,21 +133,21 @@ pub const PCRS: [PcrInfo; 24] = [
 pub fn selection_warnings(pcrs: &[u8], secure_boot: Option<bool>) -> Vec<String> {
     let mut w = Vec::new();
     if pcrs.is_empty() {
-        w.push("未选择任何 PCR：任何能访问这颗 TPM 的系统都能自动解锁，几乎不提供保护".into());
+        w.push("未选择 PCR：任何能访问这颗 TPM 的系统都能解锁".into());
         return w;
     }
     for &i in pcrs {
         let msg = match i {
-            0 => "PCR 0：BIOS/微码更新后会失效，需要重新录入",
-            2 | 3 => "PCR 2/3：更换或更新显卡、网卡等设备固件后会失效",
-            4 => "PCR 4：每次更新引导程序/UKI 都会改变，滚动发行版上几乎每次更新都要重新录入",
-            8 | 9 => "PCR 8/9：GRUB 配置、内核或 initramfs 更新后都会改变，滚动发行版上频繁失效",
-            10 => "PCR 10 (IMA) 在运行期间不断变化，不适合用于开机解锁",
-            11 => "PCR 11：UKI 每次更新都会改变，建议改用签名 PCR 策略",
-            12 => "PCR 12：修改内核参数后会失效",
-            15 => "PCR 15：systemd 可能在解锁后向其扩展，需谨慎",
-            16 | 23 => "PCR 16/23 可被用户态随意扩展或重置，不提供安全性",
-            17..=22 => "PCR 17-22 属于 DRTM，未启用 DRTM 时可能无意义",
+            0 => "PCR 0：BIOS/微码更新后失效",
+            2 | 3 => "PCR 2/3：外部设备固件变化后失效",
+            4 => "PCR 4：引导程序/UKI 更新后失效",
+            8 | 9 => "PCR 8/9：GRUB 配置、内核或 initramfs 更新后失效",
+            10 => "PCR 10 (IMA) 运行期间持续变化，不可用",
+            11 => "PCR 11：UKI 更新后失效",
+            12 => "PCR 12：内核参数变化后失效",
+            15 => "PCR 15：systemd 可能在解锁后扩展它",
+            16 | 23 => "PCR 16/23 可被用户态改写，无安全性",
+            17..=22 => "PCR 17-22 仅用于 DRTM",
             _ => continue,
         };
         let msg = msg.to_owned();
@@ -156,10 +156,10 @@ pub fn selection_warnings(pcrs: &[u8], secure_boot: Option<bool>) -> Vec<String>
         }
     }
     if pcrs.contains(&7) && secure_boot == Some(false) {
-        w.push("安全启动未开启：PCR 7 只能证明“安全启动是关闭的”".into());
+        w.push("安全启动未开启，PCR 7 保护有限".into());
     }
     if !pcrs.contains(&7) {
-        w.push("建议包含 PCR 7（安全启动状态），它在内核更新时保持不变".into());
+        w.push("建议包含 PCR 7".into());
     }
     w
 }
@@ -332,11 +332,11 @@ pub enum TpmStatus {
 impl TpmStatus {
     pub fn label(&self) -> String {
         match self {
-            TpmStatus::Match => "当前 PCR 匹配，可自动解锁".into(),
+            TpmStatus::Match => "PCR 匹配".into(),
             TpmStatus::Mismatch { changed: Some(c) } if !c.is_empty() => {
-                format!("PCR 已变化（{}），需要重新录入", format_list(c))
+                format!("PCR {} 已变化", format_list(c))
             }
-            TpmStatus::Mismatch { .. } => "PCR 已变化，需要重新录入".into(),
+            TpmStatus::Mismatch { .. } => "PCR 已变化".into(),
             TpmStatus::Unknown(why) => format!("无法判断: {why}"),
         }
     }

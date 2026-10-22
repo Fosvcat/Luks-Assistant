@@ -307,14 +307,11 @@ impl Overview {
 
     pub fn read_only_reason(&self) -> Option<String> {
         if !self.header.is_luks2() {
-            return Some(
-                "LUKS1 设备只支持查看（可用 cryptsetup convert --type luks2 转换，属高危操作）"
-                    .into(),
-            );
+            return Some("LUKS1 设备只读".into());
         }
         if !self.header.config.requirements.is_empty() {
             return Some(format!(
-                "头部带有强制要求 {:?}（例如正在重加密），暂不支持修改",
+                "头部有强制要求 {:?}，只读",
                 self.header.config.requirements
             ));
         }

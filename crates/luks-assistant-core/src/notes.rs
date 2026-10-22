@@ -211,7 +211,7 @@ pub fn check_header_space(header: &Header, current: &NoteSet, new: &NoteSet) -> 
     let limit = header.config.json_size as usize;
     if limit > 0 && projected + JSON_HEADROOM > limit {
         return Err(Error::Blocked(format!(
-            "LUKS2 头部的 JSON 区空间不足（已用约 {} / {} 字节），请缩短备注或改为存在本机",
+            "头部 JSON 区空间不足（约 {} / {} 字节）",
             projected, limit
         )));
     }

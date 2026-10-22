@@ -31,13 +31,13 @@ pub fn free_slot(ov: &Overview, wanted: Option<u32>) -> Result<u32> {
         Some(n) if n >= crate::MAX_SLOTS => {
             blocked(format!("槽位编号必须在 0-{} 之间", crate::MAX_SLOTS - 1))
         }
-        Some(n) if ov.slot(n).is_some_and(|s| !s.is_empty()) => blocked(format!(
-            "槽位 {n} 已被占用；如需替换请先确认后删除，或使用“修改”"
-        )),
+        Some(n) if ov.slot(n).is_some_and(|s| !s.is_empty()) => {
+            blocked(format!("槽位 {n} 已被占用"))
+        }
         Some(n) => Ok(n),
         None => match ov.header.free_slots().next() {
             Some(n) => Ok(n),
-            None => blocked("32 个槽位已全部占用"),
+            None => blocked("32 个槽位已满"),
         },
     }
 }
@@ -59,17 +59,17 @@ pub fn check_new_passphrase(p: &Secret) -> Result<Vec<String>> {
         return blocked("密码必须是有效的 UTF-8 文本");
     };
     if text.chars().any(char::is_control) {
-        return blocked("密码不能包含换行或控制字符——开机输入时无法键入它们");
+        return blocked("密码不能包含换行或控制字符");
     }
     let mut warnings = Vec::new();
     if text.chars().count() < 8 {
-        warnings.push("密码少于 8 个字符，强度较低".into());
+        warnings.push("密码少于 8 个字符".into());
     }
     if !text.is_ascii() {
-        warnings.push("密码包含非 ASCII 字符：开机时的 initramfs 通常只有美式键盘布局、没有输入法，可能无法输入！".into());
+        warnings.push("密码含非 ASCII 字符，开机时可能无法输入".into());
     }
     if text.starts_with(' ') || text.ends_with(' ') {
-        warnings.push("密码首尾有空格，请确认这是有意的".into());
+        warnings.push("密码首尾有空格".into());
     }
     Ok(warnings)
 }
@@ -81,10 +81,10 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
         return blocked(format!("槽位 {slot} 是空的"));
     };
     if s.kind == SlotKind::Reencrypt {
-        return blocked("该槽位正被在线重加密使用，不能删除");
+        return blocked("该槽位正用于重加密");
     }
     if ov.used().count() <= 1 {
-        return blocked("这是最后一个槽位。删除后数据将永远无法解密");
+        return blocked("这是最后一个槽位，不能删除");
     }
     if s.kind.is_knowledge() {
         let remaining = ov
@@ -93,19 +93,15 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
             .filter(|&k| k != slot)
             .count();
         if remaining == 0 {
-            return blocked(
-                "这是最后一个密码/密钥文件/恢复密钥槽位。TPM2/FIDO2 等令牌不能作为唯一的解锁方式，请先添加新的密码或恢复密钥",
-            );
+            return blocked("这是最后一个密码/密钥文件/恢复密钥槽位，不能删除");
         }
     }
     if auth_slot == Some(slot) {
-        return blocked("用于验证的凭据正是要删除的这个槽位，请输入另一个保留槽位的密码或密钥文件");
+        return blocked("验证用的凭据就是要删除的槽位，请用其它槽位的凭据");
     }
     let mut w = Vec::new();
     if let SlotKind::OtherToken(t) = &s.kind {
-        w.push(format!(
-            "该槽位由其他工具管理（令牌类型 {t}），删除后该工具的自动解锁将失效"
-        ));
+        w.push(format!("该槽位由其它工具管理（{t}）"));
     }
     let shared: Vec<u32> = ov
         .header
@@ -114,12 +110,10 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
         .map(|t| t.id)
         .collect();
     if !shared.is_empty() {
-        w.push(format!(
-            "令牌 {shared:?} 同时关联多个槽位；将只删除槽位 {slot}，不使用 systemd-cryptenroll"
-        ));
+        w.push(format!("令牌 {shared:?} 关联多个槽位，只删除槽位 {slot}"));
     }
     if ov.device.holds_root() {
-        w.push("这是系统根分区所在设备，请确认下次开机仍有可用的解锁方式".into());
+        w.push("这是根分区所在设备".into());
     }
     let remaining_knowledge = ov
         .knowledge_slots()
@@ -127,7 +121,7 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
         .filter(|&k| k != slot)
         .count();
     if s.kind.is_knowledge() && remaining_knowledge == 1 {
-        w.push("删除后只剩一个密码/恢复密钥槽位，建议额外生成一个恢复密钥并妥善保存".into());
+        w.push("删除后只剩一个密码/恢复密钥槽位".into());
     }
     Ok(w)
 }
@@ -136,9 +130,9 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
 pub fn check_replace(ov: &Overview, replace: u32, kind: &SlotKind) -> Result<()> {
     match ov.slot(replace) {
         Some(s) if s.kind == *kind => Ok(()),
-        Some(s) if s.is_empty() => blocked(format!("槽位 {replace} 是空的，无需替换")),
+        Some(s) if s.is_empty() => blocked(format!("槽位 {replace} 是空的")),
         Some(s) => blocked(format!(
-            "槽位 {replace} 是“{}”，只能替换同类型（{}）的槽位",
+            "槽位 {replace} 是“{}”，只能替换{}槽位",
             s.kind.label(),
             kind.label()
         )),
@@ -161,13 +155,9 @@ pub fn check_priority(ov: &Overview, slot: u32, prio: Priority) -> Result<Vec<St
             })
             .count();
         if others == 0 {
-            return blocked(
-                "“忽略”的槽位在开机输入密码时不会被尝试；这是最后一个未被忽略的密码槽位",
-            );
+            return blocked("这是最后一个未被忽略的密码槽位，开机时将无法用密码解锁");
         }
-        return Ok(vec![
-            "设为“忽略”后，开机时输入该密码将无法解锁（除非显式指定槽位）".into(),
-        ]);
+        return Ok(vec!["开机时将不再尝试该槽位".into()]);
     }
     Ok(Vec::new())
 }
@@ -176,7 +166,7 @@ pub fn check_priority(ov: &Overview, slot: u32, prio: Priority) -> Result<Vec<St
 pub fn token_only_warning(ov: &Overview) -> Option<String> {
     ov.knowledge_slots()
         .is_empty()
-        .then(|| "当前没有任何密码/恢复密钥槽位！强烈建议先添加一个作为备用解锁方式".into())
+        .then(|| "当前没有任何密码/恢复密钥槽位".into())
 }
 
 #[cfg(test)]

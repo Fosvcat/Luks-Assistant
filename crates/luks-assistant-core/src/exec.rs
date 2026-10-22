@@ -35,6 +35,11 @@ pub struct Cmd {
     pub env: Vec<(String, Secret)>,
     /// Non-secret data piped to stdin (e.g. token JSON).
     pub stdin: Option<Vec<u8>>,
+    /// Secret piped to stdin (a PIN answering a prompt).
+    pub secret_stdin: Option<Secret>,
+    /// Answers for prompts of an interactive command run without a user
+    /// terminal: (lower-case text the prompt contains, answer).
+    pub answers: Vec<(String, Secret)>,
     /// The command talks to the user directly (touch a security key, type a
     /// PIN): run it on the real terminal instead of capturing output.
     pub interactive: bool,
@@ -49,6 +54,8 @@ impl Cmd {
             args: Vec::new(),
             env: Vec::new(),
             stdin: None,
+            secret_stdin: None,
+            answers: Vec::new(),
             interactive: false,
             secret_stdout: false,
         }
@@ -87,6 +94,17 @@ impl Cmd {
         self
     }
 
+    pub fn secret_stdin(mut self, value: Secret) -> Self {
+        self.secret_stdin = Some(value);
+        self
+    }
+
+    /// Answer a prompt containing `prompt` (case-insensitive) with `value`.
+    pub fn answer(mut self, prompt: &str, value: Secret) -> Self {
+        self.answers.push((prompt.to_lowercase(), value));
+        self
+    }
+
     pub fn interactive(mut self) -> Self {
         self.interactive = true;
         self
@@ -110,6 +128,9 @@ impl Cmd {
                 "echo {} | ",
                 shell_quote(&format!("{short}{ellipsis}"))
             ));
+        }
+        if self.secret_stdin.is_some() {
+            out.push_str("echo <已隐藏> | ");
         }
         for (name, _) in &self.env {
             out.push_str(&format!("{name}=<已隐藏> "));
@@ -262,7 +283,7 @@ impl Runner for SystemRunner {
         }
 
         command
-            .stdin(if cmd.stdin.is_some() {
+            .stdin(if cmd.stdin.is_some() || cmd.secret_stdin.is_some() {
                 Stdio::piped()
             } else {
                 Stdio::null()
@@ -271,10 +292,14 @@ impl Runner for SystemRunner {
             .stderr(Stdio::piped());
         let mut child = command.spawn().map_err(spawn_err)?;
         drop(pipes);
-        if let Some(data) = &cmd.stdin {
-            if let Some(mut stdin) = child.stdin.take() {
-                stdin.write_all(data)?;
-            }
+        let data = cmd
+            .stdin
+            .as_deref()
+            .or(cmd.secret_stdin.as_ref().map(Secret::expose));
+        if let (Some(data), Some(mut stdin)) = (data, child.stdin.take()) {
+            // A child that exits early (wrong PIN) closes the pipe; that is
+            // reported through its exit status, not as a write error.
+            let _ = stdin.write_all(data);
         }
         let out = child.wait_with_output()?;
         Ok(CmdOutput {

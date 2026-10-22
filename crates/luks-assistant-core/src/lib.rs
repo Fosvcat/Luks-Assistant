@@ -7,10 +7,13 @@
 //! The plan/execute split is what a future privileged D-Bus helper will
 //! expose, so frontends never build command lines themselves.
 
+pub mod backup;
+pub mod config;
 pub mod ctx;
 pub mod device;
 pub mod error;
 pub mod exec;
+pub mod forms;
 pub mod guard;
 pub mod header;
 pub mod health;

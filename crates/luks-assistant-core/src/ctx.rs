@@ -9,29 +9,43 @@ use std::path::{Path, PathBuf};
 pub struct Paths {
     /// Configuration and local slot notes (default `/etc/luks-assistant`).
     pub etc_dir: PathBuf,
-    /// Header backups, PCR snapshots and the operation log (default `/var/lib/luks-assistant`).
+    /// PCR snapshots, the operation log and the lock file (default `/var/lib/luks-assistant`).
     pub state_dir: PathBuf,
+    /// Header backups go to `<backup_root>/<UUID>/` (default
+    /// `<state_dir>/backups`, configurable in `<etc_dir>/config.json`).
+    pub backup_root: PathBuf,
 }
 
 impl Paths {
     /// Defaults, overridable with `LUKS_ASSISTANT_ETC_DIR` / `LUKS_ASSISTANT_STATE_DIR`
     /// (used by tests and for development without root).
     pub fn from_env() -> Self {
-        Paths {
-            etc_dir: std::env::var_os("LUKS_ASSISTANT_ETC_DIR")
-                .map(PathBuf::from)
-                .unwrap_or_else(|| "/etc/luks-assistant".into()),
-            state_dir: std::env::var_os("LUKS_ASSISTANT_STATE_DIR")
-                .map(PathBuf::from)
-                .unwrap_or_else(|| "/var/lib/luks-assistant".into()),
-        }
+        let etc_dir: PathBuf = std::env::var_os("LUKS_ASSISTANT_ETC_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| "/etc/luks-assistant".into());
+        let state_dir: PathBuf = std::env::var_os("LUKS_ASSISTANT_STATE_DIR")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| "/var/lib/luks-assistant".into());
+        Self::with_config(etc_dir, state_dir)
     }
 
     pub fn under(root: &Path) -> Self {
+        Self::with_config(root.join("etc"), root.join("state"))
+    }
+
+    fn with_config(etc_dir: PathBuf, state_dir: PathBuf) -> Self {
+        let config = crate::config::Config::load(&etc_dir);
         Paths {
-            etc_dir: root.join("etc"),
-            state_dir: root.join("state"),
+            backup_root: config
+                .backup_dir
+                .unwrap_or_else(|| state_dir.join("backups")),
+            etc_dir,
+            state_dir,
         }
+    }
+
+    pub fn default_backup_root(&self) -> PathBuf {
+        self.state_dir.join("backups")
     }
 
     pub fn local_notes(&self, uuid: &str) -> PathBuf {
@@ -39,7 +53,7 @@ impl Paths {
     }
 
     pub fn backups_dir(&self, uuid: &str) -> PathBuf {
-        self.state_dir.join("backups").join(uuid)
+        self.backup_root.join(uuid)
     }
 
     pub fn pcr_snapshots(&self, uuid: &str) -> PathBuf {

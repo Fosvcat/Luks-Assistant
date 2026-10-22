@@ -40,3 +40,18 @@ impl From<String> for Secret {
         Secret::new(s.into_bytes())
     }
 }
+
+// Secrets cross the GUI → helper pipe as plain strings. Never serialize a
+// Secret anywhere else.
+impl serde::Serialize for Secret {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&String::from_utf8_lossy(&self.0))
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Secret {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(d)?;
+        Ok(Secret::from(s))
+    }
+}

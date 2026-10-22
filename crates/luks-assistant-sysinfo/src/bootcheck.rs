@@ -78,30 +78,18 @@ pub fn check(target: &Target) -> Vec<Item> {
             ),
         )
     } else if tpm.present {
-        item("TPM 2.0 设备", Status::Fail, "检测到 TPM，但不是 2.0 版本")
+        item("TPM 2.0 设备", Status::Fail, "不是 TPM 2.0")
     } else {
-        item(
-            "TPM 2.0 设备",
-            Status::Warn,
-            "未检测到 TPM（如只用 FIDO2 可忽略）",
-        )
+        item("TPM 2.0 设备", Status::Warn, "未检测到 TPM")
     });
 
     items.push(check_plugins());
 
     let fw = crate::firmware::Firmware::detect();
     items.push(match fw.secure_boot {
-        _ if !fw.uefi => item(
-            "安全启动",
-            Status::Warn,
-            "传统 BIOS 启动，没有安全启动；PCR 7 无实际意义",
-        ),
-        Some(true) => item("安全启动", Status::Ok, "已开启，绑定 PCR 7 有意义"),
-        Some(false) => item(
-            "安全启动",
-            Status::Warn,
-            "未开启：PCR 7 只能证明“安全启动是关闭的”，TPM 自动解锁的保护力有限",
-        ),
+        _ if !fw.uefi => item("安全启动", Status::Warn, "传统 BIOS"),
+        Some(true) => item("安全启动", Status::Ok, "已开启"),
+        Some(false) => item("安全启动", Status::Warn, "未开启"),
         None => item("安全启动", Status::Unknown, "无法读取 SecureBoot 变量"),
     });
 
@@ -122,7 +110,7 @@ pub fn check(target: &Target) -> Vec<Item> {
         items.push(item(
             "initramfs-tools",
             Status::Warn,
-            "Debian/Ubuntu 的 initramfs-tools (cryptsetup-initramfs) 一般不支持 systemd-cryptenroll 令牌，开机时通常仍会要求输入密码。可考虑改用 dracut 或 clevis（以实测为准）。",
+            "一般不支持 systemd-cryptenroll 令牌，开机时仍需输入密码",
         ));
     }
     if Path::new("/etc/booster.yaml").exists() {
@@ -130,15 +118,11 @@ pub fn check(target: &Target) -> Vec<Item> {
         items.push(item(
             "booster",
             Status::Info,
-            "booster 支持 systemd-tpm2 / systemd-fido2 令牌，请确认已启用相应模块。",
+            "支持 systemd-tpm2 / systemd-fido2 令牌",
         ));
     }
     if !found_generator {
-        items.push(item(
-            "initramfs 生成器",
-            Status::Unknown,
-            "没有识别出 mkinitcpio / dracut / initramfs-tools / booster",
-        ));
+        items.push(item("initramfs 生成器", Status::Unknown, "未识别"));
     }
 
     let crypttab = std::fs::read_to_string("/etc/crypttab").unwrap_or_default();
@@ -148,6 +132,21 @@ pub fn check(target: &Target) -> Vec<Item> {
     items.push(analyze_cmdline(&cmdline, target));
 
     items
+}
+
+/// `GRUB_ENABLE_CRYPTODISK=y` in /etc/default/grub: GRUB itself unlocks a
+/// LUKS volume (usually /boot) and needs PBKDF2 key slots.
+pub fn grub_cryptodisk() -> bool {
+    std::fs::read_to_string("/etc/default/grub")
+        .map(|t| grub_cryptodisk_in(&t))
+        .unwrap_or(false)
+}
+
+pub fn grub_cryptodisk_in(text: &str) -> bool {
+    text.lines().any(|l| {
+        let l = l.trim();
+        !l.starts_with('#') && l.replace(['"', '\''], "") == "GRUB_ENABLE_CRYPTODISK=y"
+    })
 }
 
 fn check_plugins() -> Item {
@@ -164,7 +163,7 @@ fn check_plugins() -> Item {
         item(
             "cryptsetup 令牌插件",
             Status::Warn,
-            "未找到 libcryptsetup-token-systemd-*.so：`cryptsetup open` 无法直接使用 TPM2/FIDO2 令牌（systemd-cryptsetup 不受影响）",
+            "未找到 libcryptsetup-token-systemd-*.so",
         )
     } else {
         item(
@@ -229,30 +228,26 @@ pub fn analyze_mkinitcpio(conf: &str) -> Item {
             item(
                 "mkinitcpio",
                 Status::Ok,
-                format!("使用 systemd + sd-encrypt 钩子，支持 TPM2/FIDO2 令牌。HOOKS=({list})"),
+                format!("systemd + sd-encrypt。HOOKS=({list})"),
             )
         } else {
             item(
                 "mkinitcpio",
                 Status::Warn,
-                format!(
-                    "有 sd-encrypt 但缺少 systemd 钩子，sd-encrypt 需要基于 systemd 的 initramfs。HOOKS=({list})"
-                ),
+                format!("有 sd-encrypt 但缺少 systemd 钩子。HOOKS=({list})"),
             )
         }
     } else if has("encrypt") {
         item(
             "mkinitcpio",
             Status::Fail,
-            format!(
-                "使用 busybox 的 encrypt 钩子（cryptdevice=），它不读取 LUKS2 令牌，开机时不会用 TPM2/FIDO2 解锁。需改用 systemd + sd-encrypt 钩子。HOOKS=({list})"
-            ),
+            format!("encrypt 钩子不支持令牌，需改用 systemd + sd-encrypt。HOOKS=({list})"),
         )
     } else {
         item(
             "mkinitcpio",
             Status::Info,
-            format!("HOOKS 中没有加密钩子，适用于非根分区的数据盘。HOOKS=({list})"),
+            format!("没有加密钩子。HOOKS=({list})"),
         )
     }
 }
@@ -303,9 +298,9 @@ pub fn analyze_dracut(conf: &str) -> Item {
                 Status::Fail
             },
             if available {
-                "配置中未显式添加 tpm2-tss / fido2 模块。hostonly 模式可能会自动包含；如开机不能自动解锁，可在 /etc/dracut.conf.d/ 中写入 add_dracutmodules+=\" tpm2-tss \" 后执行 dracut -f"
+                "未显式添加 tpm2-tss / fido2 模块（hostonly 可能自动包含）"
             } else {
-                "未找到 dracut 的 tpm2-tss 模块，可能需要安装 tpm2-tss 相关软件包"
+                "未找到 tpm2-tss 模块"
             },
         ),
     }
@@ -346,7 +341,7 @@ pub fn analyze_crypttab(text: &str, target: &Target) -> Item {
                 "/etc/crypttab",
                 Status::Info,
                 format!(
-                    "条目 {} 没有 tpm2-device= / fido2-device= 选项；systemd-cryptsetup 通常会通过令牌插件自动尝试头部中的令牌，若不生效可显式添加",
+                    "条目 {} 未指定 tpm2-device= / fido2-device=（通常会自动尝试令牌）",
                     fields[0]
                 ),
             )
@@ -358,11 +353,7 @@ pub fn analyze_crypttab(text: &str, target: &Target) -> Item {
             )
         };
     }
-    item(
-        "/etc/crypttab",
-        Status::Info,
-        "没有该设备的条目（根分区通常由内核参数/initramfs 处理）",
-    )
+    item("/etc/crypttab", Status::Info, "没有该设备的条目")
 }
 
 pub fn analyze_cmdline(cmdline: &str, target: &Target) -> Item {
@@ -372,16 +363,12 @@ pub fn analyze_cmdline(cmdline: &str, target: &Target) -> Item {
         return item(
             "内核参数",
             Status::Fail,
-            format!("发现 {a}：这是 busybox encrypt 钩子的写法，不支持 TPM2/FIDO2 令牌"),
+            format!("{a}：encrypt 钩子写法，不支持令牌"),
         );
     }
     let luks: Vec<&&str> = args.iter().filter(|a| a.starts_with("rd.luks.")).collect();
     if luks.is_empty() {
-        return item(
-            "内核参数",
-            Status::Info,
-            "没有 rd.luks.* 参数（数据盘或由 crypttab 处理时属正常）",
-        );
+        return item("内核参数", Status::Info, "没有 rd.luks.* 参数");
     }
     let opts = luks
         .iter()
@@ -401,18 +388,12 @@ pub fn analyze_cmdline(cmdline: &str, target: &Target) -> Item {
     if token_opt {
         item("内核参数", Status::Ok, summary)
     } else if mentions_target {
-        item(
-            "内核参数",
-            Status::Info,
-            format!(
-                "{summary}\n（未显式指定 tpm2-device=/fido2-device=，sd-encrypt 通常会自动尝试令牌）"
-            ),
-        )
+        item("内核参数", Status::Info, summary)
     } else {
         item(
             "内核参数",
             Status::Info,
-            format!("{summary}\n（参数中未出现该设备的 UUID）"),
+            format!("{summary}（未包含该设备 UUID）"),
         )
     }
 }
@@ -444,6 +425,15 @@ mod tests {
     }
 
     #[test]
+    fn grub_cryptodisk_detection() {
+        assert!(grub_cryptodisk_in(
+            "GRUB_TIMEOUT=5\nGRUB_ENABLE_CRYPTODISK=y\n"
+        ));
+        assert!(grub_cryptodisk_in("GRUB_ENABLE_CRYPTODISK=\"y\""));
+        assert!(!grub_cryptodisk_in("#GRUB_ENABLE_CRYPTODISK=y"));
+    }
+
+    #[test]
     fn dracut_modules() {
         assert_eq!(
             analyze_dracut("add_dracutmodules+=\" tpm2-tss \"").status,
@@ -462,7 +452,7 @@ mod tests {
         assert!(
             analyze_crypttab(t, &target())
                 .detail
-                .contains("没有 tpm2-device")
+                .contains("未指定 tpm2-device")
         );
     }
 

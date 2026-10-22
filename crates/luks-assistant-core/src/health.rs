@@ -57,17 +57,14 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         out.push(issue(
             Severity::Critical,
             "没有任何密码/恢复密钥槽位",
-            "只剩硬件令牌可以解锁。一旦 TPM 状态变化或安全密钥丢失，数据将无法恢复。请立即添加密码或生成恢复密钥。",
+            "只剩硬件令牌可以解锁，请添加密码或恢复密钥。",
             None,
         ));
     } else if knowledge.len() == 1 {
         out.push(issue(
             Severity::Warning,
             "只有一个密码/恢复密钥槽位",
-            format!(
-                "槽位 {} 是唯一的备用解锁方式，建议再生成一个恢复密钥并离线保存。",
-                knowledge[0]
-            ),
+            format!("槽位 {} 是唯一的备用解锁方式。", knowledge[0]),
             None,
         ));
     }
@@ -77,7 +74,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             out.push(issue(
                 Severity::Warning,
                 format!("孤立令牌 {}（{}）", t.id, t.kind),
-                "令牌没有关联任何槽位，通常是用 cryptsetup luksKillSlot 删除令牌槽位后遗留的元数据。",
+                "未关联任何槽位（通常是 luksKillSlot 的遗留）。",
                 Some(Request::RemoveOrphanToken { token: t.id }),
             ));
         }
@@ -85,7 +82,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             out.push(issue(
                 Severity::Info,
                 format!("令牌 {} 关联了多个槽位 {:?}", t.id, t.keyslots),
-                "systemd-cryptenroll --wipe-slot 擦除其中一个槽位时会连带擦除其它槽位，luks-assistant 删除时会改用 cryptsetup。",
+                "systemd-cryptenroll --wipe-slot 会连带擦除其它槽位。",
                 None,
             ));
         }
@@ -95,7 +92,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             out.push(issue(
                 Severity::Info,
                 format!("槽位 {} 关联了多个令牌 {:?}", s.id, s.tokens),
-                "通常由其它工具创建，luks-assistant 按 systemd 令牌类型显示。",
+                "通常由其它工具创建。",
                 None,
             ));
         }
@@ -106,10 +103,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             Some(TpmStatus::Mismatch { .. }) => out.push(issue(
                 Severity::Warning,
                 format!("槽位 {} 的 TPM2 策略与当前 PCR 不匹配", s.id),
-                format!(
-                    "{}。开机时将无法自动解锁，可在该槽位选择“重新录入”。",
-                    s.tpm2_status.as_ref().unwrap().label()
-                ),
+                format!("{}。", s.tpm2_status.as_ref().unwrap().label()),
                 None,
             )),
             Some(TpmStatus::Unknown(why)) => out.push(issue(
@@ -126,7 +120,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
                     out.push(issue(
                         Severity::Info,
                         format!("槽位 {} 使用 PBKDF2", s.id),
-                        "PBKDF2 抗暴力破解能力弱于 Argon2id；若引导程序（如 GRUB 解锁 /boot）不需要，可考虑重新添加该密码。",
+                        "可在槽位菜单中转换为 Argon2id。",
                         None,
                     ));
                 }
@@ -136,7 +130,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             out.push(issue(
                 Severity::Info,
                 format!("槽位 {} 由其它工具管理（{t}）", s.id),
-                "luks-assistant 只显示该槽位，不修改其令牌。",
+                "luks-assistant 不修改其令牌。",
                 None,
             ));
         }
@@ -161,7 +155,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         out.push(issue(
             Severity::Info,
             "存在过期备注",
-            format!("槽位 {list} 的备注对应的密钥已被删除或被其它工具改写。"),
+            format!("槽位 {list} 已被删除或改写。"),
             Some(Request::PruneNotes),
         ));
     }
@@ -170,7 +164,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         out.push(issue(
             Severity::Info,
             "槽位即将用尽",
-            "32 个槽位几乎全部占用。",
+            "32 个槽位快满了。",
             None,
         ));
     }

@@ -15,7 +15,7 @@ pub enum Error {
     },
     #[error("解析失败: {0}")]
     Parse(String),
-    #[error("被安全规则阻止: {0}")]
+    #[error("已阻止：{0}")]
     Blocked(String),
     #[error("不支持: {0}")]
     Unsupported(String),

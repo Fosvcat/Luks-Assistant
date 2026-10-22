@@ -14,10 +14,11 @@ use crate::pcr::{self, Snapshots, Tpm2Token};
 use crate::secret::Secret;
 use crate::slots::{Overview, SlotKind};
 use crate::util;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// Proof of an existing key, needed by most operations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Credential {
     Passphrase(Secret),
     Keyfile(PathBuf),
@@ -40,7 +41,7 @@ impl Credential {
                 Ok(cmd.arg(format!("--unlock-key-file={}", p.to_string_lossy())))
             }
             Credential::Keyfile(_) => Err(Error::Unsupported(
-                "当前 systemd 版本 (< 252) 不支持用密钥文件验证，请改用密码".into(),
+                "systemd < 252 不支持用密钥文件验证，请用密码".into(),
             )),
         }
     }
@@ -58,14 +59,14 @@ impl Credential {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoteInput {
     pub text: String,
     pub location: Location,
 }
 
 /// PBKDF for new passphrase / key file slots.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub enum KdfChoice {
     /// cryptsetup default (argon2id).
     #[default]
@@ -74,7 +75,7 @@ pub enum KdfChoice {
     Pbkdf2,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
     AddPassphrase {
         auth: Credential,
@@ -125,6 +126,9 @@ pub enum Request {
     },
     EnrollFido2 {
         auth: Credential,
+        /// Token PIN, answered automatically when no terminal is available.
+        #[serde(default)]
+        pin: Option<Secret>,
         client_pin: bool,
         user_presence: bool,
         user_verification: bool,
@@ -133,6 +137,8 @@ pub enum Request {
     },
     EnrollPkcs11 {
         auth: Credential,
+        #[serde(default)]
+        pin: Option<Secret>,
         uri: String,
         replace: Option<u32>,
         note: Option<NoteInput>,
@@ -149,9 +155,20 @@ pub enum Request {
     RestoreHeader {
         file: PathBuf,
     },
+    /// Persistently allow or forbid TRIM pass-through (header flag
+    /// `allow-discards`). Needs the volume to be unlocked.
+    SetDiscards {
+        enable: bool,
+        auth: Credential,
+    },
+    /// Re-encrypt a PBKDF2 key slot with Argon2id.
+    ConvertKdf {
+        slot: u32,
+        auth: Credential,
+    },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Danger {
     Normal,
     High,
@@ -195,6 +212,7 @@ pub enum Action {
         slot: u32,
     },
     PruneStaleNotes,
+    ExpectDiscards(bool),
     SavePcrSnapshot {
         slot: SlotRef,
     },
@@ -455,21 +473,81 @@ fn parse_unlocked_slot(text: &str) -> Option<u32> {
     })
 }
 
-/// Command that tests a token (TPM2/FIDO2/...) without activating the
-/// device. Needs the token plugins; FIDO2 and PIN-protected tokens are
-/// interactive.
-pub fn test_token_cmd(ov: &Overview, token: u32, interactive: bool) -> Cmd {
-    let cmd = Cmd::new("cryptsetup")
-        .args([
-            "open",
-            "--test-passphrase",
-            "--token-only",
-            "-v",
-            "--token-id",
-        ])
-        .arg(token.to_string())
-        .arg(ov.device.path.to_string_lossy());
-    if interactive { cmd.interactive() } else { cmd }
+/// Hardware/token unlock methods that can be verified.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum TokenKind {
+    Tpm2,
+    Fido2,
+    Pkcs11,
+}
+
+impl TokenKind {
+    pub fn token_type(self) -> &'static str {
+        match self {
+            TokenKind::Tpm2 => "systemd-tpm2",
+            TokenKind::Fido2 => "systemd-fido2",
+            TokenKind::Pkcs11 => "systemd-pkcs11",
+        }
+    }
+
+    pub fn label(self) -> &'static str {
+        match self {
+            TokenKind::Tpm2 => "TPM2",
+            TokenKind::Fido2 => "FIDO2",
+            TokenKind::Pkcs11 => "PKCS#11",
+        }
+    }
+}
+
+/// One token unlock test (`cryptsetup open --test-passphrase --token-only`).
+#[derive(Debug, Clone)]
+pub struct TokenTest {
+    pub token: u32,
+    pub slots: Vec<u32>,
+    pub cmd: Cmd,
+}
+
+/// Tests for every token of `kind`, in token order. Nothing is activated.
+///
+/// With `pin` the PIN is answered through stdin (no terminal needed);
+/// without it, tokens that may prompt (FIDO2, PKCS#11, TPM2+PIN) are marked
+/// interactive so a terminal frontend can hand over the terminal.
+pub fn token_tests(ov: &Overview, kind: TokenKind, pin: Option<&Secret>) -> Vec<TokenTest> {
+    ov.header
+        .tokens
+        .values()
+        .filter(|t| t.kind == kind.token_type() && !t.keyslots.is_empty())
+        .map(|t| {
+            let mut cmd = Cmd::new("cryptsetup")
+                .args([
+                    "open",
+                    "--test-passphrase",
+                    "--token-only",
+                    "-v",
+                    "--token-id",
+                ])
+                .arg(t.id.to_string())
+                .arg(ov.device.path.to_string_lossy());
+            let may_prompt = match kind {
+                TokenKind::Tpm2 => Tpm2Token::from_token(t).is_some_and(|x| x.pin),
+                _ => true,
+            };
+            match pin {
+                Some(p) => {
+                    let mut line = p.expose().to_vec();
+                    line.push(b'\n');
+                    cmd = cmd.secret_stdin(Secret::new(line));
+                }
+                None if may_prompt => cmd = cmd.interactive(),
+                None => {}
+            }
+            TokenTest {
+                token: t.id,
+                slots: t.keyslots.clone(),
+                cmd,
+            }
+        })
+        .collect()
 }
 
 fn check_tpm(ctx: &Ctx) -> Result<()> {
@@ -505,7 +583,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 }
                 None => b.backup("manual"),
             }
-            b.warn(["备份文件包含所有密钥槽，拥有它和任一旧密码即可解密数据，请妥善保管并拷贝到其它设备".to_owned()]);
+            b.warn(["备份文件加上任一旧密码即可解密数据，请妥善保管".to_owned()]);
             return Ok(b.finish());
         }
         RestoreHeader { file } => return plan_restore(ctx, ov, file),
@@ -526,10 +604,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             let mut b = Builder::new(ctx, ov, format!("在槽位 {n} 添加密码"));
             b.warn(guard::check_new_passphrase(new)?);
             if *kdf == KdfChoice::Pbkdf2 {
-                b.warn([
-                    "PBKDF2 比 Argon2id 更容易被暴力破解，仅在引导程序（如 GRUB）需要时使用"
-                        .to_owned(),
-                ]);
+                b.warn(["PBKDF2 抗暴力破解能力弱于 Argon2id".to_owned()]);
             }
             b.backup("add-passphrase");
             let cmd = b.add_key(n);
@@ -556,10 +631,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             match generate {
                 Some(bytes) => {
                     if path.exists() {
-                        return Err(Error::Invalid(format!(
-                            "{} 已存在，不会覆盖",
-                            path.display()
-                        )));
+                        return Err(Error::Invalid(format!("{} 已存在", path.display())));
                     }
                     if !(16..=8 * 1024 * 1024).contains(bytes) {
                         return Err(Error::Invalid(
@@ -662,7 +734,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                     "生成恢复密钥"
                 },
             );
-            b.warn(["恢复密钥只会显示一次，请立即抄写或打印并离线保存".to_owned()]);
+            b.warn(["恢复密钥只显示一次".to_owned()]);
             b.backup("recovery-key");
             let mut cmd = auth.cryptenroll(ctx, b.cryptenroll()?.arg("--recovery-key"))?;
             if let Some(r) = replace {
@@ -767,7 +839,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 b.backup("note");
             }
             if *location == Location::Header && !text.is_empty() {
-                b.warn(["头部未加密：拿到硬盘的人都能读到备注，请勿写入密码提示".to_owned()]);
+                b.warn(["头部未加密，备注对任何人可见".to_owned()]);
             }
             let desc = if text.is_empty() {
                 "删除备注".to_owned()
@@ -860,6 +932,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         }
         EnrollFido2 {
             auth,
+            pin,
             client_pin,
             user_presence,
             user_verification,
@@ -882,7 +955,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 },
             );
             b.warn(guard::token_only_warning(ov));
-            b.warn(["请插入安全密钥；执行时会切换到终端，按提示输入 PIN 并触摸密钥".to_owned()]);
+            b.warn(["执行时请触摸安全密钥".to_owned()]);
             b.backup("fido2");
             let mut cmd = auth
                 .cryptenroll(ctx, b.cryptenroll()?)?
@@ -901,6 +974,9 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 cmd = cmd.arg(format!("--wipe-slot={r}"));
                 b.plan.danger = Danger::High;
             }
+            if let Some(p) = pin {
+                cmd = cmd.answer("pin", p.clone());
+            }
             b.step(Step::run_new("录入 FIDO2 令牌", cmd.interactive()));
             b.expect(SlotRef::New, true);
             if let Some(r) = replace {
@@ -916,6 +992,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         }
         EnrollPkcs11 {
             auth,
+            pin,
             uri,
             replace,
             note,
@@ -941,6 +1018,9 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 cmd = cmd.arg(format!("--wipe-slot={r}"));
                 b.plan.danger = Danger::High;
             }
+            if let Some(p) = pin {
+                cmd = cmd.answer("pin", p.clone());
+            }
             b.step(Step::run_new("录入 PKCS#11 令牌", cmd.interactive()));
             b.expect(SlotRef::New, true);
             if let Some(r) = replace {
@@ -962,14 +1042,12 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 .ok_or_else(|| Error::Invalid(format!("令牌 {token} 不存在")))?;
             if !t.keyslots.is_empty() {
                 return Err(Error::Blocked(format!(
-                    "令牌 {token} 仍关联槽位 {:?}，请通过删除槽位处理",
+                    "令牌 {token} 仍关联槽位 {:?}",
                     t.keyslots
                 )));
             }
             if t.kind == notes::TOKEN_TYPE {
-                return Err(Error::Blocked(
-                    "这是 luks-assistant 的备注令牌，请通过编辑备注管理".into(),
-                ));
+                return Err(Error::Blocked("这是 luks-assistant 的备注令牌".into()));
             }
             let mut b = Builder::new(ctx, ov, format!("删除孤立令牌 {token}（{}）", t.kind));
             b.backup(&format!("remove-token{token}"));
@@ -999,6 +1077,92 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             b.step(Step::internal(
                 format!("删除 {list} 的备注"),
                 Action::PruneStaleNotes,
+            ));
+            Ok(b.finish())
+        }
+        SetDiscards { enable, auth } => {
+            auth.check()?;
+            let Some(mapping) = ov.device.mapping.clone() else {
+                return Err(Error::Blocked("卷未解锁，无法写入 TRIM 标志".into()));
+            };
+            if ov.header.allows_discards() == *enable {
+                return Err(Error::Invalid(format!(
+                    "TRIM 穿透已经是{}状态",
+                    if *enable { "开启" } else { "关闭" }
+                )));
+            }
+            let mut b = Builder::new(
+                ctx,
+                ov,
+                if *enable {
+                    "开启 TRIM 穿透（写入头部）"
+                } else {
+                    "关闭 TRIM 穿透（写入头部）"
+                },
+            );
+            if *enable {
+                b.warn(["TRIM 会暴露已用空间和文件系统类型".to_owned()]);
+                b.warn([
+                    "mkinitcpio encrypt 钩子不读取此标志，仍需启动参数 :allow-discards".to_owned(),
+                ]);
+            }
+            b.backup("discards");
+            let mut cmd = Cmd::new("cryptsetup").arg("refresh").arg(&mapping);
+            if *enable {
+                cmd = cmd.arg("--allow-discards");
+            }
+            let cmd = auth.cryptsetup(cmd.arg("--persistent"), "现有密码");
+            b.step(Step::run("刷新映射并写入持久标志", cmd));
+            b.step(Step::internal(
+                "验证头部标志",
+                Action::ExpectDiscards(*enable),
+            ));
+            Ok(b.finish())
+        }
+        ConvertKdf { slot, auth } => {
+            auth.check()?;
+            let s = ov
+                .slot(*slot)
+                .filter(|s| !s.is_empty())
+                .ok_or_else(|| Error::Invalid(format!("槽位 {slot} 是空的")))?;
+            if !s.kind.is_plain() {
+                return Err(Error::Blocked(format!(
+                    "槽位 {slot} 是“{}”，令牌槽位不需要转换",
+                    s.kind.label()
+                )));
+            }
+            let kdf = &s.keyslot.as_ref().expect("used slot").kdf;
+            if kdf.kind != "pbkdf2" {
+                return Err(Error::Invalid(format!("槽位 {slot} 已经是 {}", kdf.kind)));
+            }
+            let mut b = Builder::new(ctx, ov, format!("把槽位 {slot} 转换为 Argon2id"));
+            if luks_assistant_sysinfo::bootcheck::grub_cryptodisk() {
+                b.warn(["检测到 GRUB_ENABLE_CRYPTODISK=y：GRUB 2.12 之前不支持 Argon2，若 GRUB 用此槽位解锁将无法启动".to_owned()]);
+                b.plan.danger = Danger::High;
+            }
+            b.backup(&format!("convert-slot{slot}"));
+            let mut cmd = b
+                .cryptsetup("luksConvertKey")
+                .arg("--key-slot")
+                .arg(slot.to_string())
+                .args(["--pbkdf", "argon2id"]);
+            if ctx
+                .extra_kdf_args
+                .iter()
+                .any(|a| a == "--pbkdf-force-iterations")
+            {
+                cmd = cmd.args(["--pbkdf-force-iterations", "4", "--pbkdf-memory", "32"]);
+            }
+            let cmd = auth.cryptsetup(cmd, "该槽位的密码");
+            b.step(Step::run(format!("转换槽位 {slot}"), cmd));
+            b.expect(SlotRef::Fixed(*slot), true);
+            b.step(Step::internal(
+                "更新备注指纹",
+                Action::RebindNote {
+                    from: *slot,
+                    to: SlotRef::Fixed(*slot),
+                    kind: None,
+                },
             ));
             Ok(b.finish())
         }
@@ -1053,10 +1217,7 @@ fn check_keyfile(path: &Path) -> Result<Vec<String>> {
     }
     let mut w = Vec::new();
     if meta.permissions().mode() & 0o077 != 0 {
-        w.push(format!(
-            "{} 对其他用户可读，建议 chmod 0400",
-            path.display()
-        ));
+        w.push(format!("{} 对其他用户可读", path.display()));
     }
     Ok(w)
 }
@@ -1079,7 +1240,7 @@ fn plan_restore(ctx: &Ctx, ov: &Overview, file: &Path) -> Result<Plan> {
     let uuid = out.stdout_lossy().trim().to_owned();
     if uuid != ov.header.uuid {
         return Err(Error::Blocked(format!(
-            "备份的 UUID ({uuid}) 与设备 ({}) 不一致，拒绝恢复",
+            "备份 UUID ({uuid}) 与设备 ({}) 不一致",
             ov.header.uuid
         )));
     }
@@ -1087,8 +1248,8 @@ fn plan_restore(ctx: &Ctx, ov: &Overview, file: &Path) -> Result<Plan> {
     b.plan.danger = Danger::Critical;
     b.plan.confirm_word = Some("RESTORE".into());
     b.warn([
-        "恢复后，备份之后新增的所有密钥将失效，之后删除的密钥会重新生效".to_owned(),
-        "恢复前会先备份当前头部".to_owned(),
+        "备份之后新增的密钥将失效，之后删除的密钥会恢复".to_owned(),
+        "会先备份当前头部".to_owned(),
     ]);
     b.backup("before-restore");
     b.step(Step::run(
@@ -1418,6 +1579,14 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
             }
             Ok(())
         }),
+        Action::ExpectDiscards(enable) => {
+            let h = header::read(ctx, &plan.device)?;
+            if h.allows_discards() == *enable {
+                Ok(format!("allow-discards = {enable}"))
+            } else {
+                Err(Error::Invalid("头部 TRIM 标志与预期不符".into()))
+            }
+        }
         Action::SavePcrSnapshot { slot } => {
             let n = state.resolve(*slot)?;
             let h = header::read(ctx, &plan.device)?;

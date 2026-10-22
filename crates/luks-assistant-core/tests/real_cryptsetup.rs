@@ -165,6 +165,56 @@ fn passphrase_keyfile_notes_and_removal() {
     assert_eq!(env.unlocks("third-pass!"), Some(changed.id));
     assert_eq!(env.unlocks("second-pass"), None);
 
+    // PBKDF2 → Argon2id keeps the slot, the password and the kind marker
+    env.run(Request::AddPassphrase {
+        auth: pw("first-pass"),
+        new: Secret::from_text("pbkdf-pass"),
+        slot: Some(7),
+        kdf: KdfChoice::Pbkdf2,
+        note: note("旧 KDF", Location::Header),
+    });
+    assert_eq!(
+        env.ov().slots[7].keyslot.as_ref().unwrap().kdf.kind,
+        "pbkdf2"
+    );
+    env.run(Request::ConvertKdf {
+        slot: 7,
+        auth: pw("pbkdf-pass"),
+    });
+    let ov = env.ov();
+    assert_eq!(ov.slots[7].keyslot.as_ref().unwrap().kdf.kind, "argon2id");
+    assert_eq!(ov.slots[7].note.as_ref().unwrap().note.text, "旧 KDF");
+    assert_eq!(ov.slots[7].kind, SlotKind::Passphrase);
+    assert_eq!(env.unlocks("pbkdf-pass"), Some(7));
+    // converting again is refused
+    assert!(
+        ops::plan(
+            &env.ctx,
+            &ov,
+            &Request::ConvertKdf {
+                slot: 7,
+                auth: pw("pbkdf-pass")
+            }
+        )
+        .is_err()
+    );
+    // TRIM flag needs an unlocked volume
+    assert!(matches!(
+        ops::plan(
+            &env.ctx,
+            &ov,
+            &Request::SetDiscards {
+                enable: true,
+                auth: pw("first-pass")
+            }
+        ),
+        Err(Error::Blocked(_))
+    ));
+    env.run(Request::RemoveSlot {
+        slot: 7,
+        auth: pw("first-pass"),
+    });
+
     // local note on slot 0
     env.run(Request::SetNote {
         slot: 0,
