@@ -21,7 +21,7 @@ jobs:
   check-version:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Create the tag when started by hand
@@ -51,7 +51,7 @@ jobs:
           - { arch: aarch64, target: aarch64-unknown-linux-musl, runner: ubuntu-24.04-arm }
     runs-on: ${{ matrix.runner }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ env.TAG }}
       - uses: dtolnay/rust-toolchain@stable
@@ -67,7 +67,9 @@ jobs:
           cp target/${{ matrix.target }}/release/luks-assistant-tui dist/$name/
           cp LICENSE README.md dist/$name/
           tar -C dist -czf dist/$name.tar.gz $name
+      # Attestations are unavailable for user-owned private repositories.
       - uses: actions/attest-build-provenance@v2
+        if: ${{ !github.event.repository.private }}
         with:
           subject-path: dist/*.tar.gz
       - uses: actions/upload-artifact@v4
