@@ -1,0 +1,46 @@
+//! System probing for luks-assistant: distribution, tool versions and capabilities,
+//! firmware / Secure Boot state, TPM2 and FIDO2 devices, PCR values and a
+//! simple boot-chain check.
+//!
+//! Everything in this crate is read-only.
+
+pub mod bootcheck;
+pub mod cmd;
+pub mod fido2;
+pub mod firmware;
+pub mod os;
+pub mod tools;
+pub mod tpm;
+
+use serde::Serialize;
+
+/// A snapshot of everything we know about the running system.
+#[derive(Debug, Clone, Serialize)]
+pub struct SystemInfo {
+    pub os: os::OsInfo,
+    pub tools: tools::Tools,
+    pub caps: tools::Caps,
+    pub firmware: firmware::Firmware,
+    pub tpm: tpm::TpmInfo,
+    pub is_root: bool,
+}
+
+impl SystemInfo {
+    pub fn probe() -> Self {
+        let tools = tools::Tools::detect();
+        let caps = tools::Caps::from_tools(&tools);
+        SystemInfo {
+            os: os::OsInfo::detect(),
+            caps,
+            tools,
+            firmware: firmware::Firmware::detect(),
+            tpm: tpm::TpmInfo::detect(),
+            is_root: is_root(),
+        }
+    }
+}
+
+pub fn is_root() -> bool {
+    // SAFETY: geteuid has no preconditions and cannot fail.
+    unsafe { libc::geteuid() == 0 }
+}

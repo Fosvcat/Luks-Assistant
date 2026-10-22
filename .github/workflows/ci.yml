@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cryptsetup and swtpm
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cryptsetup-bin swtpm swtpm-tools tpm2-tools libtss2-tcti-swtpm0t64
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo build --workspace --all-targets
+      - name: Start software TPM
+        run: |
+          mkdir -p /tmp/swtpm
+          swtpm socket --tpmstate dir=/tmp/swtpm --tpm2 \
+            --server type=tcp,port=2321 --ctrl type=tcp,port=2322 \
+            --flags not-need-init,startup-clear --daemon
+      - name: Test (as root, real cryptsetup + swtpm)
+        run: |
+          sudo env "PATH=$PATH" "HOME=$HOME" "CARGO_HOME=${CARGO_HOME:-$HOME/.cargo}" "RUSTUP_HOME=${RUSTUP_HOME:-$HOME/.rustup}" \
+            LUKS_ASSISTANT_TEST_SWTPM=swtpm:host=127.0.0.1,port=2321 \
+            cargo test --workspace

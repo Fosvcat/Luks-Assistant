@@ -1,0 +1,20 @@
+[package]
+name = "luks-assistant-tui"
+description = "Developer-oriented terminal UI for managing LUKS2 key slots"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "luks-assistant-tui"
+path = "src/main.rs"
+
+[dependencies]
+luks-assistant-core.workspace = true
+luks-assistant-sysinfo.workspace = true
+ratatui.workspace = true
+serde_json.workspace = true
+unicode-width = "0.2"
