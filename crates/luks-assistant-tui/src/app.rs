@@ -4,10 +4,11 @@ use crate::form::{FormEvent, FormState};
 use luks_assistant_core::device::{self, BlockTree, LuksDevice};
 use luks_assistant_core::forms::{self, Env, FormKind, Submit, VerifyMethod};
 use luks_assistant_core::health::{self, Issue};
+use luks_assistant_core::i18n::Text;
 use luks_assistant_core::ops::{self, Hooks, Plan, Request, TokenKind, TokenTest};
 use luks_assistant_core::slots::{Overview, Slot};
 use luks_assistant_core::{Ctx, config};
-use luks_assistant_core::{n, t};
+use luks_assistant_core::{n, t, tx};
 use luks_assistant_sysinfo::SystemInfo;
 use luks_assistant_sysinfo::bootcheck;
 use luks_assistant_sysinfo::tpm::PcrValues;
@@ -22,24 +23,46 @@ use std::time::{Duration, Instant};
 pub enum Tab {
     Slots,
     System,
-    Health,
-    Boot,
-    Backup,
+    Check,
+    Headers,
     Log,
+    About,
 }
 
 pub const TABS: [(Tab, &str); 6] = [
     (Tab::Slots, n!("1 槽位")),
     (Tab::System, n!("2 系统信息")),
-    (Tab::Health, n!("3 体检")),
-    (Tab::Boot, n!("4 开机检查")),
-    (Tab::Backup, n!("5 备份")),
-    (Tab::Log, n!("6 日志")),
+    (Tab::Check, n!("3 自我检查")),
+    (Tab::Headers, n!("4 头部管理")),
+    (Tab::Log, n!("5 日志")),
+    (Tab::About, n!("6 关于")),
 ];
+
+pub const REPO_URL: &str = "https://github.com/Fosvcat/Luks-Assistant";
 
 #[derive(Debug, Clone)]
 pub enum MenuItem {
     Form(FormKind),
+    /// Back up / restore the volume with this index in `devices`.
+    Backup(usize),
+    Restore(usize),
+}
+
+/// The buttons of the header page.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HeaderButton {
+    All,
+    Invert,
+    Clear,
+    Backup,
+    Restore,
+}
+
+/// What a form is for: a core operation, or the TUI's own log export.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FormUse {
+    Core,
+    ExportLog,
 }
 
 /// A row of the disk picker: the lsblk tree, LUKS rows selectable.
@@ -59,7 +82,7 @@ pub enum Modal {
         rows: Vec<PickRow>,
         sel: usize,
     },
-    Form(FormState),
+    Form(FormState, FormUse),
     Confirm {
         plans: Vec<Plan>,
         typed: String,
@@ -84,9 +107,11 @@ pub enum Modal {
 
 pub enum Job {
     Execute(Vec<Plan>),
-    VerifyTokens {
+    /// Try the tokens in turn: verify only, or open the volume.
+    Tokens {
         kind: TokenKind,
         tests: Vec<TokenTest>,
+        unlock: bool,
     },
 }
 
@@ -97,10 +122,12 @@ pub struct Rects {
     pub menu: Vec<(Rect, usize)>,
     pub issues: Vec<(Rect, usize)>,
     pub backups: Vec<(Rect, usize)>,
+    pub header_buttons: Vec<(Rect, HeaderButton)>,
     pub disk: Option<Rect>,
     pub verify: Option<Rect>,
-    pub trim: Option<Rect>,
-    pub backup_button: Option<Rect>,
+    pub lock: Option<Rect>,
+    pub refresh: Option<Rect>,
+    pub all_pcrs: Option<Rect>,
 }
 
 pub struct App {
@@ -119,6 +146,8 @@ pub struct App {
     pub fido2_devices: Option<Vec<String>>,
     pub pkcs11_tokens: Option<Vec<String>>,
     pub tab: Tab,
+    /// Show all 24 PCRs instead of the ones useful for LUKS.
+    pub show_all_pcrs: bool,
     pub selected: u32,
     pub issue_sel: usize,
     pub log_scroll: u16,
@@ -151,6 +180,7 @@ impl App {
             fido2_devices: None,
             pkcs11_tokens: None,
             tab: Tab::Slots,
+            show_all_pcrs: false,
             selected: 0,
             issue_sel: 0,
             log_scroll: 0,
@@ -273,9 +303,35 @@ impl App {
                     self.pkcs11_tokens = Some(luks_assistant_sysinfo::fido2::list_pkcs11());
                 }
             }
-            Tab::Boot => self.ensure_boot(),
+            Tab::Check => self.ensure_boot(),
             _ => {}
         }
+    }
+
+    /// PCRs shown in lists and pickers: the ones useful for LUKS, or all.
+    pub fn visible_pcrs(&self) -> Vec<u8> {
+        if self.show_all_pcrs {
+            (0..24).collect()
+        } else {
+            luks_assistant_core::pcr::PREFERRED.to_vec()
+        }
+    }
+
+    /// Re-read everything, like the GUI's refresh button.
+    pub fn refresh(&mut self) {
+        self.rescan();
+        self.reload();
+        self.pcr_table = None;
+        self.fido2_devices = None;
+        self.pkcs11_tokens = None;
+        self.set_tab(self.tab);
+        self.status = t!("已刷新").into();
+    }
+
+    /// Add a line to the (English) log.
+    fn log_line(&mut self, line: &str) {
+        let time = luks_assistant_core::util::format_time(luks_assistant_core::util::now_unix());
+        self.log.push(format!("[{time}] {line}"));
     }
 
     fn message(&mut self, title: &str, text: impl Into<String>) {
@@ -283,14 +339,6 @@ impl App {
             title: title.into(),
             text: text.into(),
         });
-    }
-
-    /// TRIM support of the current device: (header flag, device accepts discards).
-    pub fn trim_state(&self) -> Option<(bool, Option<bool>)> {
-        let ov = self.ov.as_ref()?;
-        let node = self.tree.find(&ov.device.path.to_string_lossy());
-        let dev = node.and_then(|n| n.mapping().and_then(|m| m.trim()).or(n.trim()));
-        Some((ov.header.allows_discards(), dev))
     }
 
     // ---- menus and forms ---------------------------------------------------
@@ -392,9 +440,46 @@ impl App {
             paths: &self.ctx.paths,
             ask_pins: false,
         };
+        let pcrs: Vec<usize> = self.visible_pcrs().into_iter().map(usize::from).collect();
         match forms::build(kind, &env) {
-            Ok(f) => self.modal = Some(Modal::Form(FormState::new(f))),
+            Ok(f) => self.modal = Some(Modal::Form(FormState::new(f, pcrs), FormUse::Core)),
             Err(e) => self.message(t!("无法执行"), e),
+        }
+    }
+
+    fn open_export(&mut self) {
+        let time = luks_assistant_core::util::format_time(luks_assistant_core::util::now_unix())
+            .trim_end_matches(" UTC")
+            .replace(['-', ':'], "")
+            .replace(' ', "-");
+        let dir = std::env::current_dir().unwrap_or_default();
+        let path = dir.join(format!("luks-assistant-log-{time}.txt"));
+        let form = forms::Form {
+            title: t!("导出日志").into(),
+            kind: FormKind::BackupDir,
+            fields: vec![forms::Field::save_file(
+                "path",
+                t!("文件"),
+                &path.to_string_lossy(),
+            )],
+        };
+        self.modal = Some(Modal::Form(
+            FormState::new(form, Vec::new()),
+            FormUse::ExportLog,
+        ));
+    }
+
+    fn export_log(&mut self, mut state: FormState) {
+        let path = state.form.text("path");
+        let path = path.trim();
+        let mut text = self.log.join("\n");
+        text.push('\n');
+        match std::fs::write(path, text) {
+            Ok(()) => self.status = t!("日志已导出：{}", path),
+            Err(e) => {
+                state.error = Some(e.to_string());
+                self.modal = Some(Modal::Form(state, FormUse::ExportLog));
+            }
         }
     }
 
@@ -402,30 +487,42 @@ impl App {
         !self.sys.is_root && !self.ov.as_ref().is_some_and(|o| o.device.is_file)
     }
 
-    fn submit_form(&mut self, mut state: FormState) {
+    fn submit_form(&mut self, mut state: FormState, using: FormUse) {
+        if using == FormUse::ExportLog {
+            return self.export_log(state);
+        }
         let submit = match forms::submit(&state.form) {
             Ok(s) => s,
             Err(e) => {
                 state.error = Some(e);
-                self.modal = Some(Modal::Form(state));
+                self.modal = Some(Modal::Form(state, using));
                 return;
             }
         };
         match submit {
             Submit::Verify(m) => self.verify(m),
-            // only the GUI offers an unlock form
-            Submit::Unlock(_) => {}
+            Submit::Unlock(m) => {
+                if !self.sys.is_root {
+                    state.error = Some(t!("需要 root：sudo Luks-Assistant-TUI").into());
+                    self.modal = Some(Modal::Form(state, using));
+                    return;
+                }
+                if let Err(e) = self.unlock(m) {
+                    state.error = Some(e);
+                    self.modal = Some(Modal::Form(state, using));
+                }
+            }
             Submit::SetBackupDir(d) => match config::set_backup_dir(&mut self.ctx.paths, d) {
                 Ok(()) => self.status = t!("备份位置: {}", self.ctx.paths.backup_root.display()),
                 Err(e) => {
                     state.error = Some(e.to_string());
-                    self.modal = Some(Modal::Form(state));
+                    self.modal = Some(Modal::Form(state, using));
                 }
             },
             Submit::Request(req) => {
                 if self.needs_root() {
                     state.error = Some(t!("需要 root：sudo Luks-Assistant-TUI").into());
-                    self.modal = Some(Modal::Form(state));
+                    self.modal = Some(Modal::Form(state, using));
                     return;
                 }
                 let Some(ov) = &self.ov else { return };
@@ -433,9 +530,86 @@ impl App {
                     Ok(plan) => self.confirm(vec![plan]),
                     Err(e) => {
                         state.error = Some(e.to_string());
-                        self.modal = Some(Modal::Form(state));
+                        self.modal = Some(Modal::Form(state, using));
                     }
                 }
+            }
+        }
+    }
+
+    /// Open the volume with a password or key file right away; tokens may
+    /// prompt for a PIN or touch, so they run as a job outside the TUI.
+    fn unlock(&mut self, m: VerifyMethod) -> Result<(), String> {
+        let Some(ov) = &self.ov else { return Ok(()) };
+        match m {
+            VerifyMethod::Credential(c) => {
+                let cmd = ops::unlock_cmd(ov, &c).map_err(|e| e.to_string())?;
+                let out = self.ctx.runner.run(&cmd).map_err(|e| e.to_string())?;
+                if !out.success() {
+                    let why = match out.code {
+                        2 => tx!("密码或密钥文件不正确"),
+                        _ => ops::token_failure(&out),
+                    };
+                    let text = tx!("解锁失败：{}", why);
+                    self.log_line(&text.en());
+                    return Err(text.to_string());
+                }
+                self.unlocked();
+            }
+            VerifyMethod::Token { kind, pin } => {
+                let tests =
+                    ops::token_unlock_cmds(ov, kind, pin.as_ref()).map_err(|e| e.to_string())?;
+                if tests.is_empty() {
+                    return Err(t!("没有 {} 令牌", kind.label()));
+                }
+                self.busy = Some(t!("正在解锁…").into());
+                self.pending = Some(Job::Tokens {
+                    kind,
+                    tests,
+                    unlock: true,
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn unlocked(&mut self) {
+        let Some(ov) = &self.ov else { return };
+        let text = tx!(
+            "已解锁 {} → {}",
+            ov.device.path.display(),
+            ops::mapping_name(ov)
+        );
+        self.log_line(&text.en());
+        self.status = text.to_string();
+        self.rescan();
+        self.reload();
+    }
+
+    /// The lock/unlock button: lock an open volume, or ask how to unlock.
+    fn toggle_lock(&mut self) {
+        let Some(ov) = &self.ov else { return };
+        if ov.device.mapping.is_none() {
+            return self.open_form(FormKind::Unlock);
+        }
+        if !self.sys.is_root {
+            return self.message(t!("锁定"), t!("需要 root：sudo Luks-Assistant-TUI"));
+        }
+        let path = ov.device.path.display().to_string();
+        let result = ops::lock_cmd(ov)
+            .and_then(|cmd| self.ctx.runner.run(&cmd))
+            .and_then(|out| out.check("cryptsetup close").map(|_| ()));
+        match result {
+            Ok(()) => {
+                let text = tx!("已锁定 {}", path);
+                self.log_line(&text.en());
+                self.status = text.to_string();
+                self.rescan();
+                self.reload();
+            }
+            Err(e) => {
+                self.log_line(&format!("Lock {path} failed: {}", e.text().en()));
+                self.message(t!("锁定"), e.to_string());
             }
         }
     }
@@ -446,14 +620,6 @@ impl App {
             typed: String::new(),
             scroll: 0,
         });
-    }
-
-    fn request_plan(&mut self, req: Request) {
-        let Some(ov) = &self.ov else { return };
-        match ops::plan(&self.ctx, ov, &req) {
-            Ok(plan) => self.confirm(vec![plan]),
-            Err(e) => self.message(t!("无法执行"), e.to_string()),
-        }
     }
 
     fn verify(&mut self, m: VerifyMethod) {
@@ -474,20 +640,77 @@ impl App {
                     self.message(t!("验证"), t!("没有 {} 令牌", kind.label()));
                 } else {
                     self.busy = Some(t!("正在验证 {}…", kind.label()));
-                    self.pending = Some(Job::VerifyTokens { kind, tests });
+                    self.pending = Some(Job::Tokens {
+                        kind,
+                        tests,
+                        unlock: false,
+                    });
                 }
             }
         }
     }
 
-    fn backup_selected(&mut self) {
-        if !self.sys.is_root && self.devices.iter().any(|d| !d.is_file) {
+    /// Indices of the checked volumes on the header page.
+    pub fn checked_volumes(&self) -> Vec<usize> {
+        (0..self.devices.len())
+            .filter(|i| self.backup_sel.get(*i).copied().unwrap_or(false))
+            .collect()
+    }
+
+    fn header_button(&mut self, b: HeaderButton) {
+        match b {
+            HeaderButton::All => self.backup_sel.iter_mut().for_each(|x| *x = true),
+            HeaderButton::Invert => self.backup_sel.iter_mut().for_each(|x| *x = !*x),
+            HeaderButton::Clear => self.backup_sel.iter_mut().for_each(|x| *x = false),
+            HeaderButton::Backup => self.backup_volumes(self.checked_volumes()),
+            HeaderButton::Restore => {
+                if let [i] = self.checked_volumes()[..] {
+                    self.restore_volume(i);
+                }
+            }
+        }
+    }
+
+    fn volume_menu(&mut self, i: usize) {
+        let Some(d) = self.devices.get(i) else { return };
+        self.open_menu(
+            d.display_name(),
+            vec![
+                (t!("备份").into(), MenuItem::Backup(i)),
+                (t!("恢复…").into(), MenuItem::Restore(i)),
+            ],
+        );
+    }
+
+    fn menu_item(&mut self, item: MenuItem) {
+        match item {
+            MenuItem::Form(kind) => self.open_form(kind),
+            MenuItem::Backup(i) => self.backup_volumes(vec![i]),
+            MenuItem::Restore(i) => self.restore_volume(i),
+        }
+    }
+
+    fn restore_volume(&mut self, i: usize) {
+        if self.dev_idx != i {
+            self.dev_idx = i;
+            self.selected = 0;
+            self.reload();
+        }
+        self.open_form(FormKind::Restore);
+    }
+
+    fn backup_volumes(&mut self, volumes: Vec<usize>) {
+        if !self.sys.is_root
+            && volumes
+                .iter()
+                .any(|i| self.devices.get(*i).is_some_and(|d| !d.is_file))
+        {
             return self.message(t!("备份"), t!("需要 root：sudo Luks-Assistant-TUI"));
         }
         let mut plans = Vec::new();
         let mut errors = Vec::new();
         for (i, d) in self.devices.iter().enumerate() {
-            if !self.backup_sel.get(i).copied().unwrap_or(false) {
+            if !volumes.contains(&i) {
                 continue;
             }
             let r = Overview::load(&self.ctx, d.clone())
@@ -521,8 +744,13 @@ impl App {
         self.busy = None;
         match job {
             Job::Execute(plans) => self.execute(plans, terminal),
-            Job::VerifyTokens { kind, tests } => {
-                let mut last = String::new();
+            Job::Tokens {
+                kind,
+                tests,
+                unlock,
+            } => {
+                let title = if unlock { t!("解锁") } else { t!("验证") };
+                let mut last = Text::plain("");
                 for t in tests {
                     let out = if t.cmd.interactive {
                         let mut hooks = TuiHooks { terminal };
@@ -534,6 +762,7 @@ impl App {
                         self.ctx.runner.run(&t.cmd)
                     };
                     match out {
+                        Ok(o) if o.success() && unlock => return self.unlocked(),
                         Ok(o) if o.success() => {
                             let slots = t
                                 .slots
@@ -551,11 +780,20 @@ impl App {
                                 ),
                             );
                         }
-                        Ok(o) => last = ops::token_failure(&o).to_string(),
-                        Err(e) => last = e.to_string(),
+                        Ok(o) => last = ops::token_failure(&o),
+                        Err(e) => last = e.text(),
                     }
                 }
-                self.message(t!("验证"), t!("✗ {} 验证失败\n{}", kind.label(), last));
+                if unlock {
+                    self.log_line(&format!(
+                        "Unlock with {} failed: {}",
+                        kind.label(),
+                        last.en()
+                    ));
+                    self.message(title, t!("✗ 解锁失败：{}", last));
+                } else {
+                    self.message(title, t!("✗ {} 验证失败\n{}", kind.label(), last));
+                }
             }
         }
     }
@@ -637,7 +875,7 @@ impl App {
     // ---- input -------------------------------------------------------------
 
     pub fn on_paste(&mut self, s: &str) {
-        if let Some(Modal::Form(f)) = &mut self.modal {
+        if let Some(Modal::Form(f, _)) = &mut self.modal {
             f.on_paste(s);
         }
     }
@@ -665,25 +903,23 @@ impl App {
                 };
                 self.set_tab(TABS[next].0);
             }
-            KeyCode::F(5) => {
-                self.rescan();
-                self.reload();
-                self.pcr_table = None;
-                self.fido2_devices = None;
-                self.pkcs11_tokens = None;
-                self.set_tab(self.tab);
-                self.status = t!("已刷新").into();
-            }
+            KeyCode::F(5) => self.refresh(),
             _ => match self.tab {
                 Tab::Slots => self.on_slots_key(k),
-                Tab::Health => self.on_health_key(k),
-                Tab::Backup => self.on_backup_key(k),
+                Tab::System => {
+                    if k.code == KeyCode::Char('p') {
+                        self.show_all_pcrs = !self.show_all_pcrs;
+                    }
+                }
+                Tab::Check => self.on_check_key(k),
+                Tab::Headers => self.on_headers_key(k),
                 Tab::Log => match k.code {
                     KeyCode::Up => self.log_scroll = self.log_scroll.saturating_sub(1),
                     KeyCode::Down => self.log_scroll = self.log_scroll.saturating_add(1),
+                    KeyCode::Char('x') => self.open_export(),
                     _ => {}
                 },
-                _ => {}
+                Tab::About => {}
             },
         }
     }
@@ -718,28 +954,23 @@ impl App {
                 }
             }
             KeyCode::Char('v') => self.open_form(FormKind::Verify),
-            KeyCode::Char('T') => self.open_form(FormKind::Discards),
+            KeyCode::Char('u') => self.toggle_lock(),
             KeyCode::Char('D') => self.open_picker(),
             _ => {}
         }
     }
 
-    fn on_health_key(&mut self, k: KeyEvent) {
+    fn on_check_key(&mut self, k: KeyEvent) {
         match k.code {
             KeyCode::Up => self.issue_sel = self.issue_sel.saturating_sub(1),
             KeyCode::Down => {
                 self.issue_sel = (self.issue_sel + 1).min(self.issues.len().saturating_sub(1))
             }
-            KeyCode::Enter => {
-                if let Some(fix) = self.issues.get(self.issue_sel).and_then(|i| i.fix.clone()) {
-                    self.request_plan(fix);
-                }
-            }
             _ => {}
         }
     }
 
-    fn on_backup_key(&mut self, k: KeyEvent) {
+    fn on_headers_key(&mut self, k: KeyEvent) {
         let n = self.devices.len();
         match k.code {
             KeyCode::Up => self.backup_cursor = self.backup_cursor.saturating_sub(1),
@@ -749,19 +980,13 @@ impl App {
                     *b = !*b;
                 }
             }
-            KeyCode::Char('a') => {
-                let all = self.backup_sel.iter().all(|b| *b);
-                self.backup_sel.iter_mut().for_each(|b| *b = !all);
-            }
-            KeyCode::Enter | KeyCode::Char('b') => self.backup_selected(),
+            KeyCode::Enter if n > 0 => self.volume_menu(self.backup_cursor),
+            KeyCode::Char('a') => self.header_button(HeaderButton::All),
+            KeyCode::Char('i') => self.header_button(HeaderButton::Invert),
+            KeyCode::Char('x') => self.header_button(HeaderButton::Clear),
+            KeyCode::Char('b') => self.header_button(HeaderButton::Backup),
+            KeyCode::Char('r') => self.header_button(HeaderButton::Restore),
             KeyCode::Char('c') => self.open_form(FormKind::BackupDir),
-            KeyCode::Char('r') if n > 0 => {
-                if self.dev_idx != self.backup_cursor {
-                    self.dev_idx = self.backup_cursor;
-                    self.reload();
-                }
-                self.open_form(FormKind::Restore);
-            }
             _ => {}
         }
     }
@@ -782,10 +1007,7 @@ impl App {
                     sel = (sel + 1) % items.len();
                     self.modal = Some(Modal::Menu { title, items, sel });
                 }
-                KeyCode::Enter | KeyCode::Char(' ') => {
-                    let MenuItem::Form(kind) = items[sel].1.clone();
-                    self.open_form(kind);
-                }
+                KeyCode::Enter | KeyCode::Char(' ') => self.menu_item(items[sel].1.clone()),
                 _ => self.modal = Some(Modal::Menu { title, items, sel }),
             },
             Modal::Picker { rows, mut sel } => {
@@ -817,10 +1039,10 @@ impl App {
                     _ => self.modal = Some(Modal::Picker { rows, sel }),
                 }
             }
-            Modal::Form(mut state) => match state.on_key(k) {
+            Modal::Form(mut state, using) => match state.on_key(k) {
                 FormEvent::Cancel => {}
-                FormEvent::Submit => self.submit_form(state),
-                FormEvent::None => self.modal = Some(Modal::Form(state)),
+                FormEvent::Submit => self.submit_form(state, using),
+                FormEvent::None => self.modal = Some(Modal::Form(state, using)),
             },
             Modal::Confirm {
                 plans,
@@ -939,8 +1161,7 @@ impl App {
                             .map(|(_, i)| *i)
                         {
                             if let Some(Modal::Menu { items, .. }) = self.modal.take() {
-                                let MenuItem::Form(kind) = items[i].1.clone();
-                                self.open_form(kind);
+                                self.menu_item(items[i].1.clone());
                             }
                         }
                         return;
@@ -966,6 +1187,9 @@ impl App {
                     self.set_tab(t);
                     return;
                 }
+                if hit(&self.rects.refresh) {
+                    return self.refresh();
+                }
                 match self.tab {
                     Tab::Slots => {
                         if hit(&self.rects.disk) {
@@ -974,8 +1198,8 @@ impl App {
                         if hit(&self.rects.verify) {
                             return self.open_form(FormKind::Verify);
                         }
-                        if hit(&self.rects.trim) {
-                            return self.open_form(FormKind::Discards);
+                        if hit(&self.rects.lock) {
+                            return self.toggle_lock();
                         }
                         if let Some((_, id)) = self
                             .rects
@@ -995,16 +1219,27 @@ impl App {
                             }
                         }
                     }
-                    Tab::Health => {
+                    Tab::System => {
+                        if hit(&self.rects.all_pcrs) {
+                            self.show_all_pcrs = !self.show_all_pcrs;
+                        }
+                    }
+                    Tab::Check => {
                         if let Some((_, i)) =
                             self.rects.issues.iter().find(|(r, _)| r.contains(pos))
                         {
                             self.issue_sel = *i;
                         }
                     }
-                    Tab::Backup => {
-                        if hit(&self.rects.backup_button) {
-                            return self.backup_selected();
+                    Tab::Headers => {
+                        if let Some((_, b)) = self
+                            .rects
+                            .header_buttons
+                            .iter()
+                            .find(|(r, _)| r.contains(pos))
+                            .copied()
+                        {
+                            return self.header_button(b);
                         }
                         if let Some((r, i)) = self
                             .rects
@@ -1025,6 +1260,34 @@ impl App {
                     _ => {}
                 }
             }
+            // context menus, like the GUI's right click
+            MouseEventKind::Down(MouseButton::Right) if self.modal.is_none() => match self.tab {
+                Tab::Slots => {
+                    if let Some((_, id)) = self
+                        .rects
+                        .slots
+                        .iter()
+                        .find(|(r, _)| r.contains(pos))
+                        .copied()
+                    {
+                        self.selected = id;
+                        self.open_slot_menu();
+                    }
+                }
+                Tab::Headers => {
+                    if let Some((_, i)) = self
+                        .rects
+                        .backups
+                        .iter()
+                        .find(|(r, _)| r.contains(pos))
+                        .copied()
+                    {
+                        self.backup_cursor = i;
+                        self.volume_menu(i);
+                    }
+                }
+                _ => {}
+            },
             MouseEventKind::ScrollDown | MouseEventKind::ScrollUp => {
                 let code = if matches!(m.kind, MouseEventKind::ScrollDown) {
                     KeyCode::Down

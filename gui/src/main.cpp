@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <sys/prctl.h>
 #include <unistd.h>
 #include <vector>
 
@@ -88,6 +89,8 @@ std::string selfDir()
 
 int main(int argc, char *argv[])
 {
+    // ps/top/crash reports would cut "Luks-Assistant-GUI" to 15 characters
+    prctl(PR_SET_NAME, "Luks-Assistant");
     bool forceGui = false;
     bool forceTui = false;
     std::vector<std::string> rest;

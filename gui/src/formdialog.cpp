@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QTextBrowser>
 #include <QVBoxLayout>
 
 namespace {
@@ -158,11 +159,14 @@ FormDialog::FormDialog(const QJsonObject &form, const QList<int> &offeredPcrs, Q
         m_widgets.push_back(w);
     }
 
-    m_notes = new QLabel;
-    m_notes->setWordWrap(true);
-    m_notes->setTextFormat(Qt::RichText);
-    m_notes->hide();
-    outer->addWidget(m_notes);
+    bool hasPcrs = false;
+    for (const FieldWidgets &w : m_widgets)
+        hasPcrs |= !w.pcrs.isEmpty();
+    if (hasPcrs) {
+        m_messages = new QTextBrowser;
+        m_messages->setFixedHeight(fontMetrics().lineSpacing() * 7 + 2 * m_messages->frameWidth() + 8);
+        outer->addWidget(m_messages);
+    }
 
     m_error = new QLabel;
     m_error->setWordWrap(true);
@@ -183,6 +187,10 @@ FormDialog::FormDialog(const QJsonObject &form, const QList<int> &offeredPcrs, Q
     outer->addWidget(m_buttons);
     updateVisibility();
     updateEnabled();
+    if (m_messages) {
+        outer->setSizeConstraint(QLayout::SetDefaultConstraint);
+        setFixedSize(sizeHint());
+    }
     // Start typing in the first text field shown (the password, usually).
     for (const FieldWidgets &w : m_widgets) {
         if (w.line && !w.rows.isEmpty() && !w.rows.first()->isHidden() && w.line->isEnabled()) {
@@ -219,7 +227,10 @@ void FormDialog::updateVisibility()
         for (QWidget *r : w.rows)
             r->setVisible(shown);
     }
-    // Let the layout drop the hidden rows before shrinking to fit.
+    // Let the layout drop the hidden rows before shrinking to fit; a PCR
+    // form keeps its size.
+    if (m_messages)
+        return;
     layout()->activate();
     adjustSize();
 }
@@ -266,6 +277,12 @@ QList<int> FormDialog::selectedPcrs() const
 
 void FormDialog::setError(const QString &message)
 {
+    if (m_messages) {
+        m_errorHtml = message.isEmpty() ? QString()
+                                        : QStringLiteral("<b style=\"color:#da4453\">%1</b>").arg(message.toHtmlEscaped());
+        showMessages();
+        return;
+    }
     m_error->setText(QStringLiteral("<b>%1</b>").arg(message.toHtmlEscaped()));
     QPalette p = m_error->palette();
     p.setColor(QPalette::WindowText, QColor(0xda, 0x44, 0x53));
@@ -281,12 +298,28 @@ void FormDialog::setBusy(bool busy)
 
 void FormDialog::setNotes(const QStringList &notes)
 {
-    QStringList html;
+    m_notesHtml.clear();
     for (const QString &n : notes) {
         const bool warn = n.startsWith(QStringLiteral("⚠"));
-        html << (warn ? QStringLiteral("<span style=\"color:#d4720b\">%1</span>").arg(n.toHtmlEscaped())
-                      : n.toHtmlEscaped());
+        m_notesHtml << (warn ? QStringLiteral("<span style=\"color:#d4720b\">%1</span>").arg(n.toHtmlEscaped())
+                             : n.toHtmlEscaped());
     }
-    m_notes->setText(html.join(QStringLiteral("<br>")));
-    m_notes->setVisible(!notes.isEmpty());
+    showMessages();
+}
+
+void FormDialog::showMessages()
+{
+    if (!m_messages)
+        return;
+    // error, then warnings, then the meaning of each PCR
+    QStringList parts;
+    if (!m_errorHtml.isEmpty())
+        parts << m_errorHtml;
+    for (const QString &n : m_notesHtml)
+        if (n.startsWith(QStringLiteral("<span")))
+            parts << n;
+    for (const QString &n : m_notesHtml)
+        if (!n.startsWith(QStringLiteral("<span")))
+            parts << n;
+    m_messages->setHtml(parts.join(QStringLiteral("<br>")));
 }

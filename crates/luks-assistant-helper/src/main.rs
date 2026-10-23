@@ -366,6 +366,7 @@ fn message(ok: bool, text: Text) -> SubmitReply {
 }
 
 fn main() {
+    luks_assistant_sysinfo::set_process_name();
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         // SAFETY (set_var): single-threaded at this point.

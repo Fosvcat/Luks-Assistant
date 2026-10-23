@@ -549,13 +549,32 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
         }
         FormKind::Restore => {
             let files = crate::backup::list(env.paths, &ov.header.uuid);
-            let latest = files
-                .first()
-                .map(|f| f.path.to_string_lossy().into_owned())
-                .unwrap_or_default();
+            let latest = files.first().map(|f| &f.path);
+            let ours = t!(
+                "恢复本程序的备份文件：{}",
+                latest
+                    .and_then(|p| p.file_name())
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| t!("未找到备份").into())
+            );
             (
                 t!("恢复头部").into(),
-                vec![Field::file("path", t!("备份文件"), &latest)],
+                vec![
+                    Field::choice(
+                        "source",
+                        t!("来源"),
+                        &[&ours, t!("指定要恢复的备份文件")],
+                        0,
+                    ),
+                    // never shown: the file behind the first choice
+                    Field::text(
+                        "latest",
+                        "",
+                        &latest.map(|p| p.to_string_lossy()).unwrap_or_default(),
+                    )
+                    .show_if("source", &[]),
+                    Field::file("path", t!("备份文件"), "").show_if("source", &[1]),
+                ],
             )
         }
         FormKind::BackupDir => (
@@ -729,9 +748,21 @@ pub fn submit(form: &Form) -> Result<Submit, String> {
             enable: form.get("discards_on").is_none(),
             auth: cred(form)?,
         },
-        FormKind::Restore => Request::RestoreHeader {
-            file: PathBuf::from(form.text("path").trim()),
-        },
+        FormKind::Restore => {
+            let ours = form.choice("source") == 0;
+            let file = form.text(if ours { "latest" } else { "path" });
+            if file.trim().is_empty() {
+                return Err(if ours {
+                    t!("没有找到本程序为这个卷保存的备份。")
+                } else {
+                    t!("请选择备份文件。")
+                }
+                .into());
+            }
+            Request::RestoreHeader {
+                file: PathBuf::from(file.trim()),
+            }
+        }
         FormKind::BackupDir => {
             let d = form.text("dir");
             let d = d.trim();

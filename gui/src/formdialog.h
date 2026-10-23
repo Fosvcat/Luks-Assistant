@@ -55,7 +55,12 @@ private:
 
     QJsonObject m_form;
     QVector<FieldWidgets> m_widgets;
-    QLabel *m_notes = nullptr;
+    // PCR forms: notes, warnings and errors in a fixed-height box, so the
+    // dialog never changes size.
+    class QTextBrowser *m_messages = nullptr;
+    QStringList m_notesHtml;
+    QString m_errorHtml;
     QLabel *m_error = nullptr;
+    void showMessages();
     QDialogButtonBox *m_buttons = nullptr;
 };

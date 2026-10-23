@@ -15,6 +15,11 @@ HelperClient::HelperClient(QObject *parent)
 
 HelperClient::~HelperClient()
 {
+    // Nobody is listening any more: waiting below must not run callbacks or
+    // emit signals into a window that is being destroyed.
+    m_pending.clear();
+    if (m_proc)
+        m_proc->disconnect(this);
     if (m_proc && m_proc->state() != QProcess::NotRunning) {
         // The helper runs as root and cannot be killed from here; closing
         // its stdin ends its request loop.

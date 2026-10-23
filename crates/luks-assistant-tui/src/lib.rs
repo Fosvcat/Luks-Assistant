@@ -36,6 +36,7 @@ fn usage() -> &'static str {
 /// (without the program name). Never returns.
 pub fn main_with_args(mut args: Vec<String>) -> ! {
     use luks_assistant_core::i18n;
+    luks_assistant_sysinfo::set_process_name();
     i18n::set_lang(i18n::Lang::from_env());
     if args.iter().any(|a| a == "-h" || a == "--help") {
         print!("{}", usage());

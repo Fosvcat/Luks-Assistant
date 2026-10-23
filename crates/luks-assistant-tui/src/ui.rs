@@ -1,9 +1,10 @@
 //! Rendering.
 
-use crate::app::{App, Modal, TABS, Tab};
+use crate::app::{App, HeaderButton, Modal, REPO_URL, TABS, Tab};
 use crate::form::FormState;
 use luks_assistant_core::forms::Value;
 use luks_assistant_core::health::Severity;
+use luks_assistant_core::notes::Location;
 use luks_assistant_core::ops::Danger;
 use luks_assistant_core::pcr::{self, TpmStatus};
 use luks_assistant_core::slots::{Slot, SlotKind};
@@ -95,24 +96,56 @@ fn button(label: &str) -> Span<'static> {
     )
 }
 
+fn button_off(label: &str) -> Span<'static> {
+    Span::styled(format!("[ {label} ]"), Style::new().dark_gray())
+}
+
+/// Lays out spans left to right and records where the clickable ones are.
+struct Row {
+    x: u16,
+    y: u16,
+    spans: Vec<Span<'static>>,
+}
+
+impl Row {
+    fn new(area: Rect) -> Self {
+        Row {
+            x: area.x,
+            y: area.y,
+            spans: Vec::new(),
+        }
+    }
+
+    fn push(&mut self, s: impl Into<Span<'static>>) -> Rect {
+        let s = s.into();
+        let w = s.content.width() as u16;
+        let r = Rect::new(self.x, self.y, w, 1);
+        self.x += w;
+        self.spans.push(s);
+        r
+    }
+
+    fn line(self) -> Line<'static> {
+        Line::from(self.spans)
+    }
+}
+
 pub fn draw(f: &mut Frame, app: &mut App) {
     app.rects = Default::default();
-    let [top, tabs, body, bottom] = Layout::vertical([
-        Constraint::Length(1),
+    let [tabs, body, bottom] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Min(5),
         Constraint::Length(1),
     ])
     .areas(f.area());
-    draw_top(f, app, top);
     draw_tabs(f, app, tabs);
     match app.tab {
         Tab::Slots => draw_slots(f, app, body),
         Tab::System => draw_system(f, app, body),
-        Tab::Health => draw_health(f, app, body),
-        Tab::Boot => draw_boot(f, app, body),
-        Tab::Backup => draw_backup(f, app, body),
+        Tab::Check => draw_check(f, app, body),
+        Tab::Headers => draw_headers(f, app, body),
         Tab::Log => draw_log(f, app, body),
+        Tab::About => draw_about(f, body),
     }
     draw_bottom(f, app, bottom);
     draw_modal(f, app);
@@ -126,51 +159,11 @@ pub fn draw(f: &mut Frame, app: &mut App) {
     }
 }
 
-fn draw_top(f: &mut Frame, app: &App, area: Rect) {
-    let s = &app.sys;
-    let tpm = if app.ctx.tpm2_device != "auto" {
-        format!("TPM2 → {}", app.ctx.tpm2_device)
-    } else if s.tpm.is_tpm2() {
-        format!("TPM2 ✓ {}", s.tpm.banks.join("/"))
-    } else if s.tpm.present {
-        "TPM 1.2".into()
-    } else {
-        t!("无 TPM").into()
-    };
-    let ver = |v: Option<luks_assistant_sysinfo::tools::Version>| {
-        v.map(|v| v.to_string()).unwrap_or_else(|| "-".into())
-    };
-    let line = Line::from(vec![
-        " Luks Assistant ".black().on_cyan().bold(),
-        t!(
-            " {} · 内核 {} · systemd {} · cryptsetup {} · {} · 安全启动 {} ",
-            s.os.pretty_name,
-            s.os.kernel,
-            ver(s.tools.systemd),
-            ver(s.tools.cryptsetup),
-            tpm,
-            s.firmware.secure_boot_label()
-        )
-        .into(),
-        if s.is_root {
-            " root ".black().on_green()
-        } else {
-            t!(" 只读 ").black().on_yellow()
-        },
-    ]);
-    f.render_widget(Paragraph::new(line), area);
-}
-
 fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) {
     let mut x = area.x;
     let mut spans = Vec::new();
     for (t, name) in TABS {
-        let name = luks_assistant_core::i18n::tr(name);
-        let label = if t == Tab::Health && !app.issues.is_empty() {
-            format!(" {name}({}) ", app.issues.len())
-        } else {
-            format!(" {name} ")
-        };
+        let label = format!(" {} ", luks_assistant_core::i18n::tr(name));
         let w = label.width() as u16;
         app.rects.tabs.push((Rect::new(x, area.y, w, 1), t));
         x += w + 1;
@@ -183,18 +176,30 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) {
         spans.push(" ".into());
     }
     f.render_widget(Paragraph::new(Line::from(spans)), area);
+    // the refresh button sits at the right end, as in the GUI
+    let label = format!("[ ⟳ {} ]", t!("刷新"));
+    let w = label.width() as u16;
+    if area.width > w {
+        let r = Rect::new(area.x + area.width - w, area.y, w, 1);
+        app.rects.refresh = Some(r);
+        f.render_widget(Paragraph::new(label).style(Style::new().cyan()), r);
+    }
 }
 
 fn draw_bottom(f: &mut Frame, app: &App, area: Rect) {
     let hints = match app.tab {
         Tab::Slots => {
             t!(
-                "←↑↓→ 选择  Enter 操作  a 添加  d 删除  n 备注  e 修改  v 验证  D 磁盘  T TRIM  ? 帮助  q 退出"
+                "←↑↓→ 选择  Enter 操作  a 添加  d 删除  n 备注  e 修改  v 验证  u 解锁/锁定  D 磁盘  ? 帮助  q 退出"
             )
         }
-        Tab::Health => t!("↑↓ 选择  Enter 修复"),
-        Tab::Backup => t!("↑↓ 选择  空格 勾选  a 全选  Enter 备份所选  r 恢复  c 备份位置"),
-        _ => t!("Tab/1-6 切换  F5 刷新  q 退出"),
+        Tab::System => t!("p 显示所有的 PCR 度量  Tab/1-6 切换  F5 刷新  q 退出"),
+        Tab::Check => t!("↑↓ 选择  Tab/1-6 切换  F5 刷新  q 退出"),
+        Tab::Headers => t!(
+            "↑↓ 选择  空格 勾选  Enter 备份/恢复  a 全选  i 反选  x 清空  b 备份所选  r 恢复  c 备份位置"
+        ),
+        Tab::Log => t!("↑↓ 滚动  x 导出  Tab/1-6 切换  q 退出"),
+        Tab::About => t!("Tab/1-6 切换  F5 刷新  q 退出"),
     };
     let line = Line::from(vec![
         Span::styled(format!(" {} ", app.status), Style::new().yellow()),
@@ -204,59 +209,38 @@ fn draw_bottom(f: &mut Frame, app: &App, area: Rect) {
 }
 
 fn draw_device_bar(f: &mut Frame, app: &mut App, area: Rect) {
-    let (luks, total) = app.tree.volume_counts();
-    let luks = luks + app.extra.len();
-    let total = total + app.extra.len();
     let dev = app.device().map(|d| {
         let size = d.size.clone().unwrap_or_default();
         format!("{} {size}", d.display_name())
     });
     let disk = format!(" ▼ {} ", trunc(&dev.unwrap_or_else(|| t!("无").into()), 60));
-    let mut x = area.x;
-    let mut spans: Vec<Span> = Vec::new();
-    let mut push =
-        |spans: &mut Vec<Span<'static>>, s: Span<'static>, rect: Option<&mut Option<Rect>>| {
-            let w = s.content.width() as u16;
-            if let Some(r) = rect {
-                *r = Some(Rect::new(x, area.y, w, 1));
-            }
-            x += w;
-            spans.push(s);
+    let mut row = Row::new(area);
+    row.push(t!("磁盘 "));
+    app.rects.disk = Some(row.push(Span::styled(disk, Style::new().black().on_white())));
+    if let Some(ov) = &app.ov {
+        let unlocked = ov.device.mapping.is_some();
+        row.push("   ");
+        row.push(if unlocked {
+            t!("状态：已解锁").green()
+        } else {
+            t!("状态：锁定").yellow()
+        });
+        row.push("  ");
+        // the running system's own volume cannot be locked
+        let lock = if unlocked {
+            format!("🔒 {}", t!("锁定"))
+        } else {
+            format!("🔓 {}", t!("解锁"))
         };
-    push(&mut spans, t!("磁盘 ").into(), None);
-    push(
-        &mut spans,
-        Span::styled(disk, Style::new().black().on_white()),
-        Some(&mut app.rects.disk),
-    );
-    push(
-        &mut spans,
-        t!("  LUKS 卷 {}/{}   ", luks, total).into(),
-        None,
-    );
-    push(&mut spans, button(t!("验证")), Some(&mut app.rects.verify));
-    let unlocked = app.ov.as_ref().is_some_and(|o| o.device.mapping.is_some());
-    if let Some((flag, dev)) = app.trim_state() {
-        let d = match dev {
-            Some(true) => t!("支持"),
-            Some(false) => t!("不支持"),
-            None => "?",
-        };
-        push(
-            &mut spans,
-            t!(
-                "   TRIM 头部:{} 设备:{} ",
-                if flag { t!("开") } else { t!("关") },
-                d
-            )
-            .into(),
-            None,
-        );
-        if unlocked {
-            push(&mut spans, button("TRIM"), Some(&mut app.rects.trim));
+        if unlocked && ov.device.holds_root() {
+            row.push(button_off(&lock));
+        } else {
+            app.rects.lock = Some(row.push(button(&lock)));
         }
+        row.push(" ");
+        app.rects.verify = Some(row.push(button(t!("验证"))));
     }
-    f.render_widget(Paragraph::new(Line::from(spans)), area);
+    f.render_widget(Paragraph::new(row.line()), area);
 }
 
 fn draw_slots(f: &mut Frame, app: &mut App, area: Rect) {
@@ -304,7 +288,7 @@ fn draw_slots(f: &mut Frame, app: &mut App, area: Rect) {
             format!("{:02} {} {}", s.id, kind_icon(&s.kind), s.kind.label())
         };
         let l2 = match (&s.note, &s.tpm2_status) {
-            (_, Some(TpmStatus::Mismatch { .. })) => t!("⚠ PCR 已变化").to_owned(),
+            (_, Some(TpmStatus::Mismatch { .. })) => t!("PCR 已变化").to_owned(),
             (Some(n), _) if !n.note.text.is_empty() => n.note.text.clone(),
             (_, Some(TpmStatus::Match)) => {
                 format!("✓ PCR {}", pcr_list(&s.tpm2.as_ref().unwrap().pcrs))
@@ -342,25 +326,19 @@ fn draw_slot_detail(f: &mut Frame, app: &App, area: Rect) {
         if !s.tokens.is_empty() {
             lines.push(kv(t!("令牌"), format!("{:?}", s.tokens)));
         }
-        lines.push(kv(
-            t!("备注"),
-            match &s.note {
-                Some(n) => format!(
-                    "{}  [{}{}]",
-                    if n.note.text.is_empty() {
-                        "—"
-                    } else {
-                        &n.note.text
-                    },
-                    n.location.label(),
-                    n.note
-                        .kind
-                        .map(|k| t!("，{}", k.label()))
-                        .unwrap_or_default()
-                ),
-                None => "—".into(),
-            },
-        ));
+        // Both stores, so it is clear where a note lives.
+        for (label, loc) in [
+            (t!("头部备注"), Location::Header),
+            (t!("本机备注"), Location::Local),
+        ] {
+            let text = ov
+                .notes
+                .at(&ov.header, s.id, loc)
+                .map(|n| n.text.as_str())
+                .filter(|t| !t.is_empty())
+                .unwrap_or("—");
+            lines.push(kv(label, text));
+        }
         if let Some(t) = &s.tpm2 {
             lines.push(kv("TPM2", t.describe()));
             if let Some(st) = &s.tpm2_status {
@@ -422,9 +400,9 @@ fn draw_slot_detail(f: &mut Frame, app: &App, area: Rect) {
 
 fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
     let [left, mid, right] = Layout::horizontal([
-        Constraint::Ratio(1, 3),
-        Constraint::Ratio(1, 3),
-        Constraint::Ratio(1, 3),
+        Constraint::Ratio(3, 10),
+        Constraint::Ratio(4, 10),
+        Constraint::Ratio(3, 10),
     ])
     .areas(area);
     let s = &app.sys;
@@ -500,11 +478,14 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
     // block devices
     let (luks, total) = app.tree.volume_counts();
     let mut dl: Vec<Line> = vec![Line::from(
-        t!(
-            "{} {} {} 加密",
-            format!("{:<16}", t!("名称")),
-            format!("{:>6}", t!("大小")),
-            format!("{:<5}", "TRIM")
+        format!(
+            "{} {} {} {} {} {}",
+            pad(t!("名称"), 16),
+            pad(t!("大小"), 6),
+            pad(t!("加密"), 12),
+            pad(t!("类型"), 4),
+            pad("TRIM", 4),
+            t!("挂载点")
         )
         .dark_gray(),
     )];
@@ -514,10 +495,17 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
             "  ".repeat(depth),
             n.path.rsplit('/').next().unwrap_or(&n.path)
         );
-        let trim = match n.trim() {
-            Some(true) => "✓",
-            Some(false) => "✗",
-            None => "-",
+        // TRIM: "—" for spinning disks, ✓/✗ otherwise
+        let media = match n.rota {
+            Some(true) => "HDD",
+            Some(false) => "SSD",
+            None => "",
+        };
+        let trim = match (n.rota, n.trim()) {
+            (Some(true), _) => "—",
+            (_, Some(true)) => "✓",
+            (_, Some(false)) => "✗",
+            (_, None) => "",
         };
         let style = if n.is_luks() {
             Style::new().green()
@@ -526,15 +514,13 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
         } else {
             Style::new()
         };
-        let mut extra = n.encryption();
-        if let Some(mp) = n.mountpoints.first() {
-            extra = format!("{extra} {mp}");
-        }
         dl.push(Line::from(vec![
             Span::styled(format!("{} ", pad(&trunc(&name, 16), 16)), style),
-            Span::raw(format!("{:>6} ", n.size.clone().unwrap_or_default())),
-            Span::raw(format!("{:<5} ", trim)),
-            Span::styled(extra, style),
+            Span::raw(format!("{} ", pad(&n.size.clone().unwrap_or_default(), 6))),
+            Span::styled(format!("{} ", pad(&trunc(&n.encryption(), 12), 12)), style),
+            Span::raw(format!("{} ", pad(media, 4))),
+            Span::raw(format!("{} ", pad(trim, 4))),
+            Span::raw(n.mountpoints.join(" ")),
         ]));
     }
     f.render_widget(
@@ -542,7 +528,19 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
         mid,
     );
 
-    let mut pl: Vec<Line> = Vec::new();
+    let shown = app.visible_pcrs();
+    let toggle = format!(
+        "{} {}",
+        if app.show_all_pcrs { "[x]" } else { "[ ]" },
+        t!("显示所有的 PCR 度量")
+    );
+    app.rects.all_pcrs = Some(Rect::new(
+        right.x + 1,
+        right.y + 1,
+        toggle.width() as u16,
+        1,
+    ));
+    let mut pl: Vec<Line> = vec![Line::from(toggle.cyan()), Line::from("")];
     let vals = app.pcr_table.as_ref();
     if let Some(Err(e)) = vals {
         pl.push(Line::from(e.clone().yellow()));
@@ -558,7 +556,7 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
                 .collect()
         })
         .unwrap_or_default();
-    for info in pcr::PCRS.iter() {
+    for info in pcr::PCRS.iter().filter(|p| shown.contains(&p.index)) {
         let v = vals
             .and_then(|r| r.as_ref().ok())
             .and_then(|m| m.get(&info.index))
@@ -599,9 +597,17 @@ fn sev_style(s: Severity) -> Style {
     }
 }
 
-fn draw_health(f: &mut Frame, app: &mut App, area: Rect) {
-    let [list, detail] = Layout::vertical([Constraint::Min(5), Constraint::Length(5)]).areas(area);
-    let block = Block::bordered().title(t!(" 元数据体检 "));
+/// Problems and warnings on the left, hardware unlock availability on the right.
+fn draw_check(f: &mut Frame, app: &mut App, area: Rect) {
+    let [left, right] =
+        Layout::horizontal([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)]).areas(area);
+    draw_issues(f, app, left);
+    draw_boot(f, app, right);
+}
+
+fn draw_issues(f: &mut Frame, app: &mut App, area: Rect) {
+    let [list, detail] = Layout::vertical([Constraint::Min(5), Constraint::Length(6)]).areas(area);
+    let block = Block::bordered().title(t!(" 问题与警告 "));
     let inner = block.inner(list);
     f.render_widget(block, list);
     if app.issues.is_empty() {
@@ -627,11 +633,6 @@ fn draw_health(f: &mut Frame, app: &mut App, area: Rect) {
                 sev_style(issue.severity),
             ),
             Span::raw(issue.title.clone()),
-            if issue.fix.is_some() {
-                t!("  (Enter 修复)").green()
-            } else {
-                "".into()
-            },
         ]);
         if i == app.issue_sel {
             line = line.patch_style(Style::new().add_modifier(Modifier::REVERSED));
@@ -659,38 +660,60 @@ fn draw_boot(f: &mut Frame, app: &App, area: Rect) {
             Status::Unknown => Style::new().gray(),
         };
         lines.push(Line::from(vec![
-            Span::styled(format!(" {} ", item.status.symbol()), st),
-            Span::styled(pad(&item.title, 22), Style::new().bold()),
-            Span::raw(item.detail.replace('\n', " ")),
+            Span::styled(format!("{} ", item.status.symbol()), st),
+            Span::styled(item.title.clone(), Style::new().bold()),
         ]));
+        for l in item.detail.lines() {
+            lines.push(Line::from(format!("  {l}").dark_gray()));
+        }
     }
     f.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
-            .block(Block::bordered().title(t!(" 检查开机时 TPM2/FIDO2 自动解锁是否可用 "))),
+            .block(Block::bordered().title(t!(" 硬件解锁可用性 "))),
         area,
     );
 }
 
-fn draw_backup(f: &mut Frame, app: &mut App, area: Rect) {
-    let [head, list] = Layout::vertical([Constraint::Length(3), Constraint::Min(3)]).areas(area);
-    let selected = app.backup_sel.iter().filter(|b| **b).count();
-    let mut spans = vec![
+fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
+    let [head, list, buttons] = Layout::vertical([
+        Constraint::Length(3),
+        Constraint::Min(3),
+        Constraint::Length(1),
+    ])
+    .areas(area);
+    let line = Line::from(vec![
         Span::raw(t!(" 备份位置: ")),
         Span::styled(
             app.ctx.paths.backup_root.display().to_string(),
             Style::new().bold(),
         ),
-        Span::raw(t!("  (c 修改)    ")),
-    ];
-    let label = t!("备份所选 ({})", selected);
-    let x = head.x + 1 + spans.iter().map(|s| s.content.width() as u16).sum::<u16>();
-    app.rects.backup_button = Some(Rect::new(x, head.y + 1, label.width() as u16 + 4, 1));
-    spans.push(button(&label));
-    f.render_widget(
-        Paragraph::new(Line::from(spans)).block(Block::bordered()),
-        head,
-    );
+        Span::styled(t!("  (c 修改)"), Style::new().dark_gray()),
+    ]);
+    f.render_widget(Paragraph::new(line).block(Block::bordered()), head);
+
+    let checked = app.checked_volumes().len();
+    let mut row = Row::new(buttons);
+    for (b, label, on) in [
+        (HeaderButton::All, t!("全选").to_owned(), true),
+        (HeaderButton::Invert, t!("反选").into(), true),
+        (HeaderButton::Clear, t!("清空").into(), true),
+        (
+            HeaderButton::Backup,
+            t!("备份所选 ({})", checked),
+            checked > 0,
+        ),
+        (HeaderButton::Restore, t!("恢复…").into(), checked == 1),
+    ] {
+        if on {
+            let r = row.push(button(&label));
+            app.rects.header_buttons.push((r, b));
+        } else {
+            row.push(button_off(&label));
+        }
+        row.push(" ");
+    }
+    f.render_widget(Paragraph::new(row.line()), buttons);
 
     let block = Block::bordered().title(t!(" LUKS 卷 "));
     let inner = block.inner(list);
@@ -775,6 +798,29 @@ fn draw_log(f: &mut Frame, app: &App, area: Rect) {
             .wrap(Wrap { trim: false })
             .block(Block::bordered().title(t!(" 日志 "))),
         area,
+    );
+}
+
+fn draw_about(f: &mut Frame, area: Rect) {
+    let lines = vec![
+        Line::from("Luks Assistant".bold().cyan()),
+        Line::from(format!(
+            "{} {}",
+            env!("CARGO_PKG_VERSION"),
+            std::env::consts::ARCH
+        )),
+        Line::from(REPO_URL.underlined()),
+    ];
+    let h = lines.len() as u16;
+    let r = Rect::new(
+        area.x,
+        area.y + area.height.saturating_sub(h) / 2,
+        area.width,
+        h.min(area.height),
+    );
+    f.render_widget(
+        Paragraph::new(lines).alignment(ratatui::layout::Alignment::Center),
+        r,
     );
 }
 
@@ -865,7 +911,7 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
                 );
             }
         }
-        Modal::Form(state) => draw_form(f, app, state, area),
+        Modal::Form(state, _) => draw_form(f, app, state, area),
         Modal::Confirm {
             plans,
             typed,
@@ -989,14 +1035,21 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
         Modal::Help => {
             let text = t!("\
 槽位
-  ←↑↓→ hjkl / 点击   选择；双击或 Enter 打开菜单
+  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单
   a 添加   e 修改/重新录入   d 删除   n 备注
-  v 验证   D 选择磁盘   T TRIM 穿透
-备份
-  空格 勾选   a 全选   Enter 备份所选   r 恢复   c 备份位置
+  v 验证   u 解锁/锁定   D 选择磁盘
+系统信息
+  p 显示所有的 PCR 度量
+头部管理
+  空格 勾选   a 全选   i 反选   x 清空
+  b 备份所选   r 恢复   Enter/右键 单个卷的备份与恢复
+  c 备份位置
+日志
+  x 导出为 txt
 全局
   Tab / 1-6 切换页面   F5 刷新   q 退出");
-            let r = centered(area, 60, 12);
+            let w = text.lines().map(|l| l.width()).max().unwrap_or(40) as u16 + 3;
+            let r = centered(area, w, text.lines().count() as u16 + 2);
             clear(f, r);
             f.render_widget(
                 Paragraph::new(text).block(Block::bordered().title(t!(" 帮助 "))),
@@ -1006,26 +1059,23 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
     }
 }
 
+/// Rows `lines` take when wrapped to `width` (a close estimate).
+fn wrapped_rows(lines: &[Line], width: u16) -> u16 {
+    lines
+        .iter()
+        .map(|l| (l.width() as u16).div_ceil(width).max(1))
+        .sum()
+}
+
 fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
     let form = &state.form;
     let has_pcrs = form
         .fields
         .iter()
         .any(|x| matches!(x.value, Value::Pcrs(..)));
-    let shown = (0..form.fields.len()).filter(|i| form.visible(*i)).count();
-    let h = shown as u16 + if has_pcrs { 11 } else { 4 };
-    let r = centered(
-        area,
-        area.width.saturating_sub(4).min(100),
-        h.min(area.height),
-    );
-    clear(f, r);
-    let block = Block::bordered()
-        .title(format!(" {} ", form.title))
-        .title_bottom(t!(" Tab/↑↓ 切换  空格/←→ 选择  Enter 确定  Esc 取消 "))
-        .border_style(Color::Cyan);
-    let inner = block.inner(r).inner(Margin::new(1, 0));
-    f.render_widget(block, r);
+    let w = area.width.saturating_sub(4).min(100);
+    // inside the border and the margin
+    let text_w = w.saturating_sub(4).max(1);
     let mut lines: Vec<Line> = Vec::new();
     let label_w = 16;
     for (i, field) in form.fields.iter().enumerate() {
@@ -1056,8 +1106,10 @@ fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
             Value::Secret(s) => vec![Span::raw("•".repeat(s.chars().count())), cursor],
             Value::Toggle(b) => vec![Span::raw(if *b { "[x]" } else { "[ ]" })],
             Value::Choice { options, index } => vec![Span::raw(format!("◀ {} ▶", options[*index]))],
-            Value::Pcrs(set) => (0..24)
-                .map(|p| {
+            Value::Pcrs(set) => state
+                .pcrs
+                .iter()
+                .map(|&p| {
                     let mut st = if set[p] {
                         Style::new().black().on_magenta()
                     } else {
@@ -1092,36 +1144,79 @@ fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
             }
         }
     }
-    if has_pcrs {
-        let sel = form.pcrs("pcrs");
-        let c = state.pcr_cursor;
-        let info = &pcr::PCRS[c];
-        let val = app
-            .pcr_table
-            .as_ref()
-            .and_then(|r| r.as_ref().ok())
-            .and_then(|m| m.get(&(c as u8)))
-            .map(|b| encode_hex(b))
-            .unwrap_or_else(|| "—".into());
-        lines.push(Line::from(""));
-        lines.push(Line::from(t!("已选 PCR {}", pcr_list(&sel)).bold()));
-        lines.push(Line::from(t!(
-            "PCR {} {}：{}",
-            c,
-            info.name(),
-            info.measures()
-        )));
-        lines.push(Line::from(t!("  改变：{}", info.changes()).dark_gray()));
-        lines.push(Line::from(
-            t!("  当前：{}", trunc(&val, inner.width as usize - 10)).dark_gray(),
-        ));
-        for w in pcr::selection_warnings(&sel, app.sys.firmware.secure_boot) {
-            lines.push(Line::from(format!("! {w}").yellow()));
+    let block = Block::bordered()
+        .title(format!(" {} ", form.title))
+        .title_bottom(t!(" Tab/↑↓ 切换  空格/←→ 选择  Enter 确定  Esc 取消 "))
+        .border_style(Color::Cyan);
+    if !has_pcrs {
+        if let Some(e) = &state.error {
+            lines.push(Line::from(""));
+            lines.push(Line::from(format!("✗ {e}").red().bold()));
         }
+        let h = wrapped_rows(&lines, text_w) + 3;
+        let r = centered(area, w, h.min(area.height));
+        clear(f, r);
+        let inner = block.inner(r).inner(Margin::new(1, 0));
+        f.render_widget(block, r);
+        f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
+        return;
     }
+
+    // Like the GUI: notes and warnings go to a box of fixed height at the
+    // bottom (scrolled with PgUp/PgDn), so the popup never changes size.
+    let msg_w = text_w.saturating_sub(2).max(1);
+    let mut msgs: Vec<Line> = Vec::new();
     if let Some(e) = &state.error {
-        lines.push(Line::from(""));
-        lines.push(Line::from(format!("✗ {e}").red().bold()));
+        msgs.push(Line::from(format!("✗ {e}").red().bold()));
     }
-    f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), inner);
+    let sel = form.pcrs("pcrs");
+    for w in pcr::selection_warnings(&sel, app.sys.firmware.secure_boot) {
+        msgs.push(Line::from(format!("! {w}").yellow()));
+    }
+    let c = state.pcr_cursor;
+    let info = &pcr::PCRS[c];
+    let val = app
+        .pcr_table
+        .as_ref()
+        .and_then(|r| r.as_ref().ok())
+        .and_then(|m| m.get(&(c as u8)))
+        .map(|b| encode_hex(b))
+        .unwrap_or_else(|| "—".into());
+    msgs.push(Line::from(
+        t!("PCR {} {}：{}", c, info.name(), info.measures()).bold(),
+    ));
+    msgs.push(Line::from(t!("  改变：{}", info.changes()).dark_gray()));
+    msgs.push(Line::from(
+        t!(
+            "  当前：{}",
+            trunc(&val, (msg_w as usize).saturating_sub(10))
+        )
+        .dark_gray(),
+    ));
+    msgs.push(Line::from(t!("已选 PCR {}", pcr_list(&sel))));
+    let box_h = 9;
+    // Room for every field whatever is shown, plus a hint and a wrapped
+    // PCR row: the height only depends on the form.
+    let pcr_rows = (18 + state.pcrs.len() as u16 * 3).div_ceil(text_w);
+    let fields_h = form.fields.len() as u16 + 1 + pcr_rows;
+    let h = fields_h + box_h + 2;
+    let r = centered(area, w, h.min(area.height));
+    clear(f, r);
+    let inner = block.inner(r).inner(Margin::new(1, 0));
+    f.render_widget(block, r);
+    let [top, bottom] =
+        Layout::vertical([Constraint::Min(1), Constraint::Length(box_h)]).areas(inner);
+    f.render_widget(Paragraph::new(lines).wrap(Wrap { trim: false }), top);
+    let max_scroll = wrapped_rows(&msgs, msg_w).saturating_sub(box_h - 2);
+    f.render_widget(
+        Paragraph::new(msgs)
+            .wrap(Wrap { trim: false })
+            .scroll((state.msg_scroll.min(max_scroll), 0))
+            .block(
+                Block::bordered()
+                    .title_bottom(" PgUp/PgDn ")
+                    .border_style(Color::DarkGray),
+            ),
+        bottom,
+    );
 }

@@ -6,8 +6,12 @@ use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 pub struct FormState {
     pub form: Form,
     pub focus: usize,
-    /// Cursor inside a PCR picker.
+    /// Cursor inside a PCR picker (a PCR number).
     pub pcr_cursor: usize,
+    /// The PCRs the picker shows, in order.
+    pub pcrs: Vec<usize>,
+    /// Scroll of the message box under a PCR picker.
+    pub msg_scroll: u16,
     pub error: Option<String>,
 }
 
@@ -18,15 +22,41 @@ pub enum FormEvent {
 }
 
 impl FormState {
-    pub fn new(form: Form) -> Self {
+    /// `pcrs`: the PCRs a picker shows (empty = all 24). Hidden PCRs are
+    /// unchecked, so what is submitted is what was shown.
+    pub fn new(mut form: Form, pcrs: Vec<usize>) -> Self {
+        let pcrs = if pcrs.is_empty() {
+            (0..24).collect()
+        } else {
+            pcrs
+        };
+        for field in &mut form.fields {
+            if let Value::Pcrs(set) = &mut field.value {
+                for (i, on) in set.iter_mut().enumerate() {
+                    *on &= pcrs.contains(&i);
+                }
+            }
+        }
         let mut f = FormState {
             form,
             focus: 0,
-            pcr_cursor: 7,
+            pcr_cursor: if pcrs.contains(&7) { 7 } else { pcrs[0] },
+            pcrs,
+            msg_scroll: 0,
             error: None,
         };
-        if !f.focusable(0) {
-            f.move_focus(1);
+        // like the GUI: start in the first text field, so typing goes there
+        let text = (0..f.form.fields.len()).find(|&i| {
+            f.focusable(i)
+                && matches!(
+                    f.form.fields[i].value,
+                    Value::Text(_) | Value::Secret(_) | Value::File(_) | Value::SaveFile(_)
+                )
+        });
+        match text {
+            Some(i) => f.focus = i,
+            None if !f.focusable(0) => f.move_focus(1),
+            None => {}
         }
         f
     }
@@ -72,9 +102,20 @@ impl FormState {
                 self.move_focus(-1);
                 return FormEvent::None;
             }
+            KeyCode::PageUp => {
+                self.msg_scroll = self.msg_scroll.saturating_sub(3);
+                return FormEvent::None;
+            }
+            KeyCode::PageDown => {
+                self.msg_scroll = self.msg_scroll.saturating_add(3).min(50);
+                return FormEvent::None;
+            }
             _ => {}
         }
         let cur = &mut self.pcr_cursor;
+        let shown = &self.pcrs;
+        let pos = shown.iter().position(|p| p == cur).unwrap_or(0);
+        let n = shown.len();
         let Some(field) = self.form.fields.get_mut(self.focus) else {
             return FormEvent::None;
         };
@@ -99,8 +140,8 @@ impl FormState {
                 _ => {}
             },
             Value::Pcrs(set) => match k.code {
-                KeyCode::Left => *cur = (*cur + 23) % 24,
-                KeyCode::Right => *cur = (*cur + 1) % 24,
+                KeyCode::Left => *cur = shown[(pos + n - 1) % n],
+                KeyCode::Right => *cur = shown[(pos + 1) % n],
                 KeyCode::Char(' ') => set[*cur] = !set[*cur],
                 _ => {}
             },

@@ -41,6 +41,15 @@ impl SystemInfo {
     }
 }
 
+/// Name the process "Luks-Assistant" in ps, top and crash reports; the
+/// binary names are longer than the kernel's 15 characters.
+pub fn set_process_name() {
+    // SAFETY: PR_SET_NAME reads a NUL-terminated string of at most 16 bytes.
+    unsafe {
+        libc::prctl(libc::PR_SET_NAME, c"Luks-Assistant".as_ptr());
+    }
+}
+
 pub fn is_root() -> bool {
     // SAFETY: geteuid has no preconditions and cannot fail.
     unsafe { libc::geteuid() == 0 }

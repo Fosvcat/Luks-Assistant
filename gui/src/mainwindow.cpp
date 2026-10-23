@@ -309,6 +309,8 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    disconnect(m_helper, nullptr, this, nullptr);
+    delete m_helper; // closes the helper while the window is still whole
     delete ui;
 }
 
