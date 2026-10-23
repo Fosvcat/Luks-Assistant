@@ -10,6 +10,8 @@
 - **图形界面** `Luks-Assistant-GUI`：Qt6 Widgets 原生界面（KDE 下使用系统样式，GNOME 下随 Qt 平台主题呈现 GTK 风格），普通用户运行，通过 `pkexec` 启动 root 后端 `Luks-Assistant-Helper`
 - **终端界面** `Luks-Assistant-TUI`：`sudo` 运行，适合服务器和 SSH
 
+<p align="center"><img src="docs/UI.png"></p>
+
 ## 功能
 
 - **32 槽位总览**：类型、KDF、优先级、令牌、备注，以及 TPM2 策略是否仍与当前 PCR 匹配
