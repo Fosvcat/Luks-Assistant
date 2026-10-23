@@ -129,7 +129,8 @@ jobs:
           echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
           sudo rm -f /var/lib/man-db/auto-update
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build g++ qt6-base-dev
+          # Qt 6.2 on 22.04 needs the GL headers but does not depend on them
+          sudo apt-get install -y cmake ninja-build g++ qt6-base-dev libgl1-mesa-dev libopengl-dev
       - name: Build
         run: |
           cmake -S gui -B gui/build -G Ninja -DCMAKE_BUILD_TYPE=Release
