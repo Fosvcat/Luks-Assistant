@@ -516,7 +516,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 磁盘	Disk
 磁盘 	Disk 
 空	Empty
-空闲	free
+空闲	Empty
 策略哈希	Policy hash
 类型	Type
 系列	Family
