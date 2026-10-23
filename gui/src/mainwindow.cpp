@@ -98,6 +98,34 @@ QIcon formIcon(const QJsonValue &form, const QStyle *style)
     return {};
 }
 
+/// A monochrome (symbolic) icon: every visible pixel is grey.
+bool isMonochrome(const QImage &image)
+{
+    const QImage img = image.convertToFormat(QImage::Format_ARGB32);
+    for (int y = 0; y < img.height(); ++y) {
+        const auto *line = reinterpret_cast<const QRgb *>(img.constScanLine(y));
+        for (int x = 0; x < img.width(); ++x) {
+            const QRgb c = line[x];
+            if (qAlpha(c) < 32)
+                continue;
+            const int hi = std::max({qRed(c), qGreen(c), qBlue(c)});
+            const int lo = std::min({qRed(c), qGreen(c), qBlue(c)});
+            if (hi - lo > 40)
+                return false;
+        }
+    }
+    return true;
+}
+
+/// `pixmap` in a single colour, keeping its shape.
+QPixmap tinted(QPixmap pixmap, const QColor &color)
+{
+    QPainter p(&pixmap);
+    p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    p.fillRect(pixmap.rect(), color);
+    return pixmap;
+}
+
 /// Slot cells with square selection and hover marks whatever the style draws
 /// (Breeze rounds them), and no separate focus frame.
 class SquareCellDelegate : public QStyledItemDelegate
@@ -111,8 +139,19 @@ public:
         initStyleOption(&opt, index);
         const bool selected = opt.state & QStyle::State_Selected;
         if (selected) {
-            p->fillRect(opt.rect, opt.palette.brush(QPalette::Active, QPalette::Highlight));
+            const QColor highlight = opt.palette.color(QPalette::Active, QPalette::Highlight);
+            p->fillRect(opt.rect, highlight);
             opt.palette.setColor(QPalette::Text, opt.palette.color(QPalette::Active, QPalette::HighlightedText));
+            // Symbolic icons are drawn light in dark themes and vanish on a
+            // light highlight: draw them dark (or light) against it.
+            if (!opt.icon.isNull()) {
+                const qreal dpr = opt.widget ? opt.widget->devicePixelRatioF() : 1.0;
+                const QPixmap pm = opt.icon.pixmap(opt.decorationSize, dpr);
+                if (isMonochrome(pm.toImage())) {
+                    const QColor ink = highlight.lightnessF() > 0.45 ? QColor(0x23, 0x26, 0x29) : QColor(Qt::white);
+                    opt.icon = QIcon(tinted(pm, ink));
+                }
+            }
         } else if (opt.state & QStyle::State_MouseOver) {
             QColor hover = opt.palette.color(QPalette::Active, QPalette::Highlight);
             hover.setAlpha(40);
@@ -153,7 +192,14 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
     , m_extra(extraDevices)
 {
     ui->setupUi(this);
-    ui->appIcon->setPixmap(QPixmap(S(":/icons/luks-assistant.png")));
+    {
+        // the logo is large; show it at 112 px (sharp on HiDPI screens)
+        const qreal dpr = devicePixelRatioF();
+        QPixmap logo = QPixmap(S(":/icons/luks-assistant.png"))
+                           .scaled(QSize(112, 112) * dpr, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        logo.setDevicePixelRatio(dpr);
+        ui->appIcon->setPixmap(logo);
+    }
     QFont nameFont = ui->appName->font();
     nameFont.setPointSizeF(nameFont.pointSizeF() * 1.6);
     nameFont.setBold(true);
