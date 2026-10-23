@@ -70,7 +70,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
     }
 
     for t in ov.header.tokens.values() {
-        if t.keyslots.is_empty() && t.kind != notes::TOKEN_TYPE {
+        if t.keyslots.is_empty() && !notes::is_notes_token(&t.kind) {
             out.push(issue(
                 Severity::Warning,
                 format!("孤立令牌 {}（{}）", t.id, t.kind),
@@ -130,7 +130,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             out.push(issue(
                 Severity::Info,
                 format!("槽位 {} 由其它工具管理（{t}）", s.id),
-                "luks-assistant 不修改其令牌。",
+                "Luks Assistant 不修改其令牌。",
                 None,
             ));
         }

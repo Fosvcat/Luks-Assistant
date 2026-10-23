@@ -1,4 +1,4 @@
-//! System probing for luks-assistant: distribution, tool versions and capabilities,
+//! System probing for Luks Assistant: distribution, tool versions and capabilities,
 //! firmware / Secure Boot state, TPM2 and FIDO2 devices, PCR values and a
 //! simple boot-chain check.
 //!

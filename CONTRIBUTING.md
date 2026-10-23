@@ -23,7 +23,7 @@ swtpm socket --tpmstate dir=/tmp/swtpm --tpm2 \
 sudo env "PATH=$PATH" LUKS_ASSISTANT_TEST_SWTPM=swtpm:host=127.0.0.1,port=2321 cargo test --workspace
 ```
 
-测试会录入 TPM2，用 `tpm2_pcrextend` 改变 PCR，检查 luks-assistant 能否报告“PCR 9 已变化”，再带 PIN 重新录入并替换旧槽位。
+测试会录入 TPM2，用 `tpm2_pcrextend` 改变 PCR，检查 Luks Assistant 能否报告“PCR 9 已变化”，再带 PIN 重新录入并替换旧槽位。
 
 ## 在镜像上手动试用 TUI
 
@@ -34,7 +34,7 @@ printf 'first-pass' | sudo cryptsetup luksFormat --type luks2 -q \
 sudo env LUKS_ASSISTANT_FAST_KDF=1 \
   LUKS_ASSISTANT_TPM2_DEVICE=swtpm:host=127.0.0.1,port=2321 \
   LUKS_ASSISTANT_ETC_DIR=/tmp/luks-assistant/etc LUKS_ASSISTANT_STATE_DIR=/tmp/luks-assistant/state \
-  ./target/debug/luks-assistant-tui /tmp/demo.img
+  ./target/debug/Luks-Assistant-TUI /tmp/demo.img
 ```
 
 | 变量 | 作用 |
@@ -50,9 +50,9 @@ sudo env LUKS_ASSISTANT_FAST_KDF=1 \
 sudo apt install libfontconfig1-dev libxkbcommon-dev
 cargo build -p luks-assistant-gui -p luks-assistant-helper
 # 以 root 运行时 GUI 直接启动 helper，不经过 pkexec；开发用环境变量会转成 helper 参数
-sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/luks-assistant-helper LUKS_ASSISTANT_FAST_KDF=1 \
+sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/Luks-Assistant-Helper LUKS_ASSISTANT_FAST_KDF=1 \
   LUKS_ASSISTANT_ETC_DIR=/tmp/luks-assistant/etc LUKS_ASSISTANT_STATE_DIR=/tmp/luks-assistant/state \
-  ./target/debug/luks-assistant --gui /tmp/demo.img
+  ./target/debug/Luks-Assistant-GUI --gui /tmp/demo.img
 ```
 
 无显示器的环境可以用 `Xvfb :99` + `DISPLAY=:99`，再用 `xdotool` 点击、`import -window root` 截图。

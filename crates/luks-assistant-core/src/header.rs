@@ -152,7 +152,7 @@ impl Header {
         (0..crate::MAX_SLOTS).filter(|i| !self.keyslots.contains_key(i))
     }
 
-    /// Highest unused token id (luks-assistant keeps low ids for systemd, which
+    /// Highest unused token id (Luks Assistant keeps low ids for systemd, which
     /// takes the lowest free one).
     pub fn free_token_id_high(&self) -> Option<u32> {
         (0..crate::MAX_SLOTS)

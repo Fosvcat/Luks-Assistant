@@ -4,7 +4,7 @@ use crate::exec::{Runner, SystemRunner};
 use luks_assistant_sysinfo::tools::{Caps, Tools};
 use std::path::{Path, PathBuf};
 
-/// Where luks-assistant keeps its own files.
+/// Where Luks Assistant keeps its own files.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Paths {
     /// Configuration and local slot notes (default `/etc/luks-assistant`).
@@ -99,7 +99,8 @@ impl Ctx {
             paths: Paths::from_env(),
             caps,
             tools,
-            tpm2_device: std::env::var("LUKS_ASSISTANT_TPM2_DEVICE").unwrap_or_else(|_| "auto".into()),
+            tpm2_device: std::env::var("LUKS_ASSISTANT_TPM2_DEVICE")
+                .unwrap_or_else(|_| "auto".into()),
             extra_kdf_args: if fast { fast_kdf_args() } else { Vec::new() },
         }
     }

@@ -4,11 +4,11 @@
 
 ```
 ┌──────────────┐   ┌──────────────────────────────┐
-│ luks-assistant-tui  │   │ luks-assistant-gui（Slint，普通用户）  │
+│ Luks-Assistant-TUI  │   │ luks-assistant-gui（Slint，普通用户）  │
 └──────┬───────┘   └──────────────┬───────────────┘
        │ 直接调用（sudo 运行）       │ pkexec + stdin/stdout 逐行 JSON
        │                    ┌─────▼──────────────────┐
-       │                    │ luks-assistant-helper（root）   │
+       │                    │ Luks-Assistant-Helper（root）   │
        │                    └─────┬──────────────────┘
 ┌──────▼──────────────────────────▼──────────────────┐
 │ luks-assistant-core                                         │
@@ -38,13 +38,13 @@ PolicyPCR:       policy = SHA256(policy ‖ 0x0000017F ‖ TPML_PCR_SELECTION �
 PolicyAuthValue: policy = SHA256(policy ‖ 0x0000016B)          （使用 PIN 时）
 ```
 
-luks-assistant 用当前 PCR 值（`/sys/class/tpm/tpm0/pcr-<bank>/N`）重新计算并比较，不访问 TPM 封装对象，就能判断该槽位现在能否自动解锁。测试中的向量取自 systemd 255 + swtpm 的实际输出。签名策略（`--tpm2-public-key`）和 pcrlock 无法这样判断，会显示为“无法判断”。
+Luks Assistant 用当前 PCR 值（`/sys/class/tpm/tpm0/pcr-<bank>/N`）重新计算并比较，不访问 TPM 封装对象，就能判断该槽位现在能否自动解锁。测试中的向量取自 systemd 255 + swtpm 的实际输出。签名策略（`--tpm2-public-key`）和 pcrlock 无法这样判断，会显示为“无法判断”。
 
-策略匹配时，luks-assistant 把这些 PCR 的值按策略哈希保存为快照（`/var/lib/luks-assistant/pcr-snapshots/<UUID>.json`）。之后再失配时，与快照对比即可指出是哪个 PCR 变了。
+策略匹配时，Luks Assistant 把这些 PCR 的值按策略哈希保存为快照（`/var/lib/luks-assistant/pcr-snapshots/<UUID>.json`）。之后再失配时，与快照对比即可指出是哪个 PCR 变了。
 
 ## 图形界面与 helper
 
-- `luks-assistant`（图形界面）以普通用户运行。启动时用 `pkexec /usr/libexec/luks-assistant-helper` 拉起后端，polkit 弹出管理员认证（策略 `io.github.fosvcat.luks-assistant.helper`，`auth_admin_keep`）。本身已是 root 时直接启动 helper。
+- `Luks-Assistant-GUI`（图形界面）以普通用户运行。启动时用 `pkexec /usr/libexec/Luks-Assistant-Helper` 拉起后端，polkit 弹出管理员认证（策略 `io.github.fosvcat.luks-assistant.helper`，`auth_admin_keep`）。本身已是 root 时直接启动 helper。
 - 协议见 `luks_assistant_core::proto`：每行一个 JSON 请求，返回同 id 的 `ok` / `err`，执行过程中插入 `event`（步骤进度、命令输出）。
 - **计划留在 helper 里**：GUI 只拿到不含秘密的 `PlanView`，按 id 执行；需要确认词的计划在 helper 中再校验一次。护栏全部在 helper 侧的 `ops::plan` 中执行，GUI 无法绕过。
 - FIDO2 / PKCS#11 / TPM2+PIN 需要终端交互。helper 在伪终端里运行这些命令，自动回答 PIN 提示（输出中的 PIN 会被打码），把“请触摸安全密钥”等输出实时转发给 GUI；出现无法回答的密码提示时立即报错，不会卡住。

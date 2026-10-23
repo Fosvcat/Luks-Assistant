@@ -118,8 +118,8 @@ pub fn run(args: Vec<String>) -> Result<(), String> {
             .collect()
     });
     wire(&ui);
-    ui.set_header("luks-assistant".into());
-    ui.set_modal_title("luks-assistant".into());
+    ui.set_header("Luks Assistant".into());
+    ui.set_modal_title("Luks Assistant".into());
     ui.set_message("正在请求管理员权限…".into());
     ui.set_message_closable(false);
     ui.set_modal(6);

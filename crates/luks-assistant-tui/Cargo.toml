@@ -1,6 +1,6 @@
 [package]
 name = "luks-assistant-tui"
-description = "Developer-oriented terminal UI for managing LUKS2 key slots"
+description = "Terminal UI of Luks Assistant"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,7 +12,7 @@ authors.workspace = true
 path = "src/lib.rs"
 
 [[bin]]
-name = "luks-assistant-tui"
+name = "Luks-Assistant-TUI"
 path = "src/main.rs"
 
 [dependencies]

@@ -1,6 +1,6 @@
 [package]
 name = "luks-assistant-sysinfo"
-description = "System, firmware, TPM and boot-chain probing for luks-assistant"
+description = "System, firmware, TPM and boot-chain probing for Luks Assistant"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

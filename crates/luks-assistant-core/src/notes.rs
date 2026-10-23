@@ -1,7 +1,7 @@
 //! Per-slot notes ("备注").
 //!
 //! The LUKS2 header cannot tell a typed passphrase from a key file — both
-//! are plain `luks2` key slots — so luks-assistant lets the user label slots and
+//! are plain `luks2` key slots — so Luks Assistant lets the user label slots and
 //! records the kind of key for slots it creates itself.
 //!
 //! Notes live either in the header (default; travels with the disk) or in
@@ -22,6 +22,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 pub const TOKEN_TYPE: &str = "luks-assistant-notes";
+
+/// Is `kind` the type of the notes token?
+pub fn is_notes_token(kind: &str) -> bool {
+    kind == TOKEN_TYPE
+}
 pub const MAX_NOTE_CHARS: usize = 64;
 /// Bytes kept free in the JSON area when writing notes.
 const JSON_HEADROOM: usize = 1024;
@@ -122,7 +127,7 @@ impl Notes {
         let (header_token, header_set) = header
             .tokens
             .values()
-            .find(|t| t.kind == TOKEN_TYPE)
+            .find(|t| is_notes_token(&t.kind))
             .map(|t| {
                 (
                     Some(t.id),

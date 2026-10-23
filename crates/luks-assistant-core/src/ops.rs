@@ -354,7 +354,7 @@ impl<'a> Builder<'a> {
         cmd.args(self.ctx.extra_kdf_args.iter().cloned())
     }
 
-    /// Start with a header backup into luks-assistant's state directory.
+    /// Start with a header backup into Luks Assistant's state directory.
     fn backup(&mut self, tag: &str) {
         let dir = self.ctx.paths.backups_dir(self.ov.uuid());
         let file = unique_backup_path(&dir, tag);
@@ -1043,8 +1043,8 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                     t.keyslots
                 )));
             }
-            if t.kind == notes::TOKEN_TYPE {
-                return Err(Error::Blocked("这是 luks-assistant 的备注令牌".into()));
+            if notes::is_notes_token(&t.kind) {
+                return Err(Error::Blocked("这是 Luks Assistant 的备注令牌".into()));
             }
             let mut b = Builder::new(ctx, ov, format!("删除孤立令牌 {token}（{}）", t.kind));
             b.backup(&format!("remove-token{token}"));
@@ -1320,7 +1320,9 @@ impl Lock {
             .open(ctx.paths.lock_file())?;
         // SAFETY: valid descriptor owned by `f`.
         if unsafe { libc::flock(f.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
-            return Err(Error::Blocked("另一个 luks-assistant 实例正在执行操作".into()));
+            return Err(Error::Blocked(
+                "另一个 Luks Assistant 实例正在执行操作".into(),
+            ));
         }
         Ok(Lock(f))
     }

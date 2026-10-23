@@ -423,7 +423,7 @@ impl App {
             },
             Submit::Request(req) => {
                 if self.needs_root() {
-                    state.error = Some("需要 root：sudo luks-assistant-tui".into());
+                    state.error = Some("需要 root：sudo Luks-Assistant-TUI".into());
                     self.modal = Some(Modal::Form(state));
                     return;
                 }
@@ -481,7 +481,7 @@ impl App {
 
     fn backup_selected(&mut self) {
         if !self.sys.is_root && self.devices.iter().any(|d| !d.is_file) {
-            return self.message("备份", "需要 root：sudo luks-assistant-tui");
+            return self.message("备份", "需要 root：sudo Luks-Assistant-TUI");
         }
         let mut plans = Vec::new();
         let mut errors = Vec::new();
@@ -1032,7 +1032,7 @@ struct TuiHooks<'a> {
 impl Hooks for TuiHooks<'_> {
     fn suspend(&mut self) {
         crate::term::leave();
-        println!("\n=== luks-assistant：请按提示操作（PIN / 触摸安全密钥）===\n");
+        println!("\n=== Luks Assistant：请按提示操作（PIN / 触摸安全密钥）===\n");
     }
 
     fn resume(&mut self) {

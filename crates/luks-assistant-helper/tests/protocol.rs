@@ -72,7 +72,7 @@ fn plan_execute_and_guards_over_the_wire() {
     fmt.stdin.take().unwrap().write_all(b"first").unwrap();
     assert!(fmt.wait().unwrap().success());
 
-    let mut child = Command::new(env!("CARGO_BIN_EXE_luks-assistant-helper"))
+    let mut child = Command::new(env!("CARGO_BIN_EXE_Luks-Assistant-Helper"))
         .arg("--etc-dir")
         .arg(dir.path().join("etc"))
         .arg("--state-dir")

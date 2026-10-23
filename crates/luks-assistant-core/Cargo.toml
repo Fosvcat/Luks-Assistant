@@ -1,6 +1,6 @@
 [package]
 name = "luks-assistant-core"
-description = "LUKS2 key slot model, safety guards and operations for luks-assistant"
+description = "LUKS2 key slot model, safety guards and operations for Luks Assistant"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -1,5 +1,5 @@
-//! Terminal UI for LUKS2 key slots. Used as `luks-assistant-tui`, and by the
-//! `luks-assistant` GUI binary when started from a terminal or without a display.
+//! Terminal UI for LUKS2 key slots. Used as `Luks-Assistant-TUI`, and by the
+//! `Luks-Assistant-GUI` binary when started from a terminal or without a display.
 
 mod app;
 mod form;
@@ -13,7 +13,7 @@ use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use std::path::PathBuf;
 
 const USAGE: &str = "\
-用法: luks-assistant-tui [选项] [设备或镜像文件]
+用法: Luks-Assistant-TUI [选项] [设备或镜像文件]
 
   不带参数时列出 lsblk 找到的所有 LUKS 设备。
 
@@ -37,7 +37,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
         std::process::exit(0);
     }
     if args.iter().any(|a| a == "-V" || a == "--version") {
-        println!("luks-assistant {}", env!("CARGO_PKG_VERSION"));
+        println!("Luks Assistant {}", env!("CARGO_PKG_VERSION"));
         std::process::exit(0);
     }
     let dump = take_flag(&mut args, "--dump");

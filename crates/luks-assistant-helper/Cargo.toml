@@ -1,12 +1,16 @@
 [package]
 name = "luks-assistant-helper"
-description = "Privileged backend of the luks-assistant GUI, started through pkexec"
+description = "Privileged backend of the Luks Assistant GUI, started through pkexec"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 authors.workspace = true
+
+[[bin]]
+name = "Luks-Assistant-Helper"
+path = "src/main.rs"
 
 [dependencies]
 luks-assistant-core.workspace = true

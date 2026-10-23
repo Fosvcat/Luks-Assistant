@@ -77,6 +77,7 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "release=$release" >> "$GITHUB_OUTPUT"
 
+  # TUI and helper: static musl binaries, run on any distribution.
   build-static:
     needs: prepare
     if: needs.prepare.outputs.release == 'true'
@@ -97,24 +98,16 @@ jobs:
           targets: ${{ matrix.target }}
       - run: sudo apt-get update && sudo apt-get install -y musl-tools
       - name: Build
-        run: cargo build --release --locked --target ${{ matrix.target }} -p luks-assistant-tui
-      - name: Package
-        run: |
-          name=luks-assistant-tui-$TAG-${{ matrix.arch }}-linux-static
-          mkdir -p dist/$name
-          cp target/${{ matrix.target }}/release/luks-assistant-tui dist/$name/
-          cp LICENSE README.md dist/$name/
-          tar -C dist -czf dist/$name.tar.gz $name
-      # Attestations are unavailable for user-owned private repositories.
-      - uses: actions/attest-build-provenance@v2
-        if: ${{ !github.event.repository.private }}
-        with:
-          subject-path: dist/*.tar.gz
+        run: cargo build --release --locked --target ${{ matrix.target }} -p luks-assistant-tui -p luks-assistant-helper
+      - run: |
+          mkdir -p out
+          cp target/${{ matrix.target }}/release/Luks-Assistant-TUI target/${{ matrix.target }}/release/Luks-Assistant-Helper out/
       - uses: actions/upload-artifact@v4
         with:
           name: static-${{ matrix.arch }}
-          path: dist/*.tar.gz
+          path: out/*
 
+  # GUI: glibc build on Ubuntu 22.04 (glibc >= 2.35).
   build-gui:
     needs: prepare
     if: needs.prepare.outputs.release == 'true'
@@ -125,7 +118,6 @@ jobs:
         include:
           - { arch: x86_64, runner: ubuntu-22.04 }
           - { arch: aarch64, runner: ubuntu-22.04-arm }
-    # Ubuntu 22.04 keeps the glibc requirement low (2.35).
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v5
@@ -134,36 +126,44 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: sudo apt-get update && sudo apt-get install -y libfontconfig1-dev libxkbcommon-dev
       - name: Build
-        run: cargo build --release --locked -p luks-assistant-gui -p luks-assistant-helper -p luks-assistant-tui
-      - name: Package
+        run: cargo build --release --locked -p luks-assistant-gui
+      - run: mkdir -p out && cp target/release/Luks-Assistant-GUI out/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.arch }}
+          path: out/*
+
+  release:
+    needs: [prepare, build-static, build-gui]
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Package Luks-Assistant-<arch>.tar.gz
         run: |
-          name=luks-assistant-$TAG-${{ matrix.arch }}-linux
-          mkdir -p dist/$name
-          cp target/release/luks-assistant target/release/luks-assistant-helper target/release/luks-assistant-tui dist/$name/
-          cp packaging/install.sh packaging/luks-assistant.desktop packaging/io.github.fosvcat.luks-assistant.policy.in dist/$name/
-          cp LICENSE README.md dist/$name/
-          tar -C dist -czf dist/$name.tar.gz $name
+          mkdir -p dist
+          for arch in x86_64 aarch64; do
+            dir=staging/Luks-Assistant-$arch
+            mkdir -p "$dir"
+            cp artifacts/gui-$arch/Luks-Assistant-GUI artifacts/static-$arch/Luks-Assistant-TUI \
+               artifacts/static-$arch/Luks-Assistant-Helper "$dir/"
+            chmod 755 "$dir"/Luks-Assistant-*
+            cp packaging/install.sh packaging/Luks-Assistant.desktop \
+               packaging/io.github.fosvcat.luks-assistant.policy.in LICENSE README.md "$dir/"
+            tar -C staging -czf dist/Luks-Assistant-$arch.tar.gz Luks-Assistant-$arch
+          done
+          cd dist && sha256sum *.tar.gz > SHA256SUMS && cat SHA256SUMS
+      # Attestations are unavailable for user-owned private repositories.
       - uses: actions/attest-build-provenance@v2
         if: ${{ !github.event.repository.private }}
         with:
           subject-path: dist/*.tar.gz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gui-${{ matrix.arch }}
-          path: dist/*.tar.gz
-
-  release:
-    needs: [prepare, build-static, build-gui]
-    env:
-      TAG: ${{ needs.prepare.outputs.tag }}
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
-          merge-multiple: true
-      - name: Checksums
-        run: cd dist && sha256sum *.tar.gz > SHA256SUMS && cat SHA256SUMS
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -172,5 +172,5 @@ jobs:
             gh release upload "$TAG" dist/* --clobber -R "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" dist/* -R "$GITHUB_REPOSITORY" \
-              --title "luks-assistant $TAG" --generate-notes
+              --title "Luks Assistant $TAG" --generate-notes
           fi

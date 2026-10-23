@@ -1,4 +1,4 @@
-//! `luks-assistant` — graphical frontend. Started from a terminal, over SSH or
+//! `Luks-Assistant-GUI` — graphical frontend. Started from a terminal, over SSH or
 //! without a display it runs the terminal UI instead; `--gui` / `--tui`
 //! force a mode.
 
@@ -9,13 +9,13 @@ mod view;
 slint::include_modules!();
 
 const USAGE: &str = "\
-用法: luks-assistant [--gui | --tui] [设备或镜像文件...]
+用法: Luks-Assistant-GUI [--gui | --tui] [设备或镜像文件...]
 
   桌面环境中启动时打开图形界面；在终端中或没有图形环境时打开终端界面。
 
   --gui        强制图形界面（通过 pkexec 获取管理员权限）
   --tui        强制终端界面
-  其它选项见 luks-assistant --tui --help
+  其它选项见 Luks-Assistant-GUI --tui --help
 ";
 
 fn isatty(fd: i32) -> bool {
@@ -52,7 +52,7 @@ fn main() {
         luks_assistant_tui::main_with_args(rest);
     }
     if !has_display() {
-        eprintln!("没有图形环境（WAYLAND_DISPLAY / DISPLAY 未设置），请使用 luks-assistant --tui");
+        eprintln!("没有图形环境（WAYLAND_DISPLAY / DISPLAY 未设置），请使用 Luks-Assistant-TUI");
         std::process::exit(1);
     }
     if let Err(e) = app::run(rest) {

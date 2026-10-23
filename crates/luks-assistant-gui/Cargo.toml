@@ -1,6 +1,6 @@
 [package]
 name = "luks-assistant-gui"
-description = "Graphical frontend of luks-assistant (falls back to the TUI in a terminal)"
+description = "Graphical frontend of Luks Assistant (falls back to the TUI in a terminal)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,7 +9,7 @@ repository.workspace = true
 authors.workspace = true
 
 [[bin]]
-name = "luks-assistant"
+name = "Luks-Assistant-GUI"
 path = "src/main.rs"
 
 [features]

@@ -1,4 +1,4 @@
-//! Protocol between the unprivileged GUI and `luks-assistant-helper` (root).
+//! Protocol between the unprivileged GUI and `Luks-Assistant-Helper` (root).
 //!
 //! The GUI starts the helper with `pkexec` and talks to it over the
 //! helper's stdin/stdout: one JSON object per line. Every [`Call`] gets

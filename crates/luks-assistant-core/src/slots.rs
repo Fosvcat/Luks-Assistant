@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SlotKind {
     Empty,
-    /// Plain key slot known (from a luks-assistant note) to hold a typed passphrase.
+    /// Plain key slot known (from a Luks Assistant note) to hold a typed passphrase.
     Passphrase,
     /// Plain key slot known to hold a key file.
     Keyfile,
@@ -25,11 +25,11 @@ pub enum SlotKind {
     Tpm2,
     Fido2,
     Pkcs11,
-    /// A token type luks-assistant does not manage (clevis, ...).
+    /// A token type Luks Assistant does not manage (clevis, ...).
     OtherToken(String),
     /// Slot used by an online re-encryption.
     Reencrypt,
-    /// LUKS1 key slot (read-only support).
+    /// LUKS1 key slot (shown only; LUKS1 is not supported).
     Luks1,
 }
 
@@ -189,7 +189,7 @@ pub fn classify(header: &Header, ks: &Keyslot, note: Option<&SlotNote>) -> SlotK
     let mut kind = None;
     for t in header
         .tokens_for(ks.id)
-        .filter(|t| t.kind != notes::TOKEN_TYPE)
+        .filter(|t| !notes::is_notes_token(&t.kind))
     {
         let k = match t.kind.as_str() {
             "systemd-tpm2" => SlotKind::Tpm2,
@@ -244,13 +244,13 @@ impl Overview {
             let kind = classify(&header, ks, note.as_ref());
             let bound: Vec<&Token> = header
                 .tokens_for(id)
-                .filter(|t| t.kind != notes::TOKEN_TYPE)
+                .filter(|t| !notes::is_notes_token(&t.kind))
                 .collect();
             let tpm2 = bound.iter().find_map(|t| Tpm2Token::from_token(t));
             let tpm2_status = tpm2.as_ref().map(|t| {
-                let vals = pcr_values
-                    .entry(t.bank.clone())
-                    .or_insert_with(|| luks_assistant_sysinfo::tpm::read_pcrs(&t.bank, &ctx.tpm2_device));
+                let vals = pcr_values.entry(t.bank.clone()).or_insert_with(|| {
+                    luks_assistant_sysinfo::tpm::read_pcrs(&t.bank, &ctx.tpm2_device)
+                });
                 pcr::evaluate(t, vals.as_ref().ok(), &snapshots)
             });
             slots.push(Slot {
@@ -307,7 +307,7 @@ impl Overview {
 
     pub fn read_only_reason(&self) -> Option<String> {
         if !self.header.is_luks2() {
-            return Some("LUKS1 设备只读".into());
+            return Some("不支持 LUKS1，仅支持 LUKS2".into());
         }
         if !self.header.config.requirements.is_empty() {
             return Some(format!(

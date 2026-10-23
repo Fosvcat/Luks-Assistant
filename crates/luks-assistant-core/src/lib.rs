@@ -1,4 +1,4 @@
-//! Core of luks-assistant: reads LUKS2 headers, builds a 32-slot model, keeps slot
+//! Core of Luks Assistant: reads LUKS2 headers, builds a 32-slot model, keeps slot
 //! notes, evaluates TPM2 policies against the current PCR values, and plans
 //! and executes key-slot operations behind a set of safety guards.
 //!

@@ -1,4 +1,4 @@
-//! luks-assistant-helper — the privileged half of the luks-assistant GUI.
+//! Luks-Assistant-Helper — the privileged half of the Luks Assistant GUI.
 //!
 //! Started by the GUI through `pkexec` (or directly when the GUI already
 //! runs as root). Reads one JSON [`Call`] per line on stdin and answers on
@@ -23,7 +23,8 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-const USAGE: &str = "luks-assistant-helper — 由 luks-assistant 图形界面通过 pkexec 启动，不需要手动运行
+const USAGE: &str =
+    "Luks-Assistant-Helper — 由 Luks Assistant 图形界面通过 pkexec 启动，不需要手动运行
 
   --tpm2-device <dev>   TPM 设备或 TCTI（开发用）
   --etc-dir <dir>       备注与配置目录（开发用）
@@ -222,7 +223,9 @@ impl Helper {
                 }
                 Err(Error::Invalid(format!("{} 验证失败 {last}", kind.label())))
             }
-            Method::Backups { uuid } => json(luks_assistant_core::backup::list(&self.ctx.paths, &uuid)),
+            Method::Backups { uuid } => {
+                json(luks_assistant_core::backup::list(&self.ctx.paths, &uuid))
+            }
             Method::SetBackupDir { dir } => {
                 config::set_backup_dir(&mut self.ctx.paths, dir)?;
                 json(self.ctx.paths.clone())
@@ -237,7 +240,10 @@ fn main() {
         // SAFETY (set_var): single-threaded at this point.
         match a.as_str() {
             "--tpm2-device" => unsafe {
-                std::env::set_var("LUKS_ASSISTANT_TPM2_DEVICE", args.next().unwrap_or_default())
+                std::env::set_var(
+                    "LUKS_ASSISTANT_TPM2_DEVICE",
+                    args.next().unwrap_or_default(),
+                )
             },
             "--etc-dir" => unsafe {
                 std::env::set_var("LUKS_ASSISTANT_ETC_DIR", args.next().unwrap_or_default())
@@ -257,7 +263,7 @@ fn main() {
         }
     }
     if !luks_assistant_sysinfo::is_root() {
-        eprintln!("luks-assistant-helper 需要 root 权限");
+        eprintln!("Luks-Assistant-Helper 需要 root 权限");
         std::process::exit(1);
     }
     let out = Out {

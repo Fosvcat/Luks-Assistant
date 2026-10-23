@@ -1,15 +1,17 @@
-# luks-assistant
+# Luks Assistant
 
-**luks-assistant** 用来管理 LUKS2 的 32 个密钥槽：密码、密钥文件、恢复密钥、TPM2（可选 PCR）、FIDO2 安全密钥、PKCS#11 智能卡，以及槽位备注、优先级、头部备份/恢复、元数据体检等。
+**Luks Assistant** 用来管理 LUKS2 的 32 个密钥槽：密码、密钥文件、恢复密钥、TPM2（可选 PCR）、FIDO2 安全密钥、PKCS#11 智能卡，以及槽位备注、优先级、头部备份/恢复、元数据体检等。
 
 底层只调用各发行版都有的 `cryptsetup` 和 `systemd-cryptenroll`，因此适用于 Arch、Fedora/RHEL、Debian/Ubuntu 三大系列。
 
-> *luks-assistant manages LUKS2 key slots (passphrases, key files, recovery keys, TPM2 with PCR selection, FIDO2, PKCS#11) on top of cryptsetup and systemd-cryptenroll. The current frontend is a developer-oriented TUI; a KDE/Qt-style GUI with a polkit-authorized backend is planned.*
+> **仅支持 LUKS2，不支持老旧的 LUKS1。** LUKS1 卷会被识别出来并标为不支持，Luks Assistant 不会对它做任何修改。
 
-- **图形界面** `luks-assistant`：普通用户运行，通过 `pkexec` 启动 root 后端 `luks-assistant-helper`
-- **终端界面** `luks-assistant-tui`：`sudo` 运行，适合服务器和 SSH
+> *Luks Assistant manages LUKS2 key slots (passphrases, key files, recovery keys, TPM2 with PCR selection, FIDO2, PKCS#11) on top of cryptsetup and systemd-cryptenroll, with a graphical and a terminal frontend. LUKS2 only; LUKS1 is not supported.*
 
-`luks-assistant` 在桌面中启动时打开图形界面；在终端中或没有图形环境时自动进入终端界面（`--gui` / `--tui` 可强制）。
+- **图形界面** `Luks-Assistant-GUI`：普通用户运行，通过 `pkexec` 启动 root 后端 `Luks-Assistant-Helper`
+- **终端界面** `Luks-Assistant-TUI`：`sudo` 运行，适合服务器和 SSH
+
+`Luks-Assistant-GUI` 在桌面中启动时打开图形界面；在终端中或没有图形环境时自动进入终端界面（`--gui` / `--tui` 可强制）。
 
 ## 功能
 
@@ -18,7 +20,7 @@
 - **恢复密钥**：生成 / 重新生成（只显示一次）
 - **TPM2**：自选 PCR（显示每个 PCR 的当前值、含义、何时会变）、可选 PIN、**一键重新录入**（先录入新槽位，成功后才擦除旧槽位）
 - **PCR 漂移检测**：在本地重新计算 systemd 的 TPM2 策略哈希并与令牌比较，不接触 TPM 就能判断“现在能否自动解锁”；配合自动保存的 PCR 快照，还能指出**具体是哪个 PCR 变了**
-- **FIDO2 / PKCS#11**：录入、重新录入（暂时切到终端完成 PIN 与触摸）
+- **FIDO2 / PKCS#11**：录入、重新录入（图形界面中直接输入 PIN，终端界面中按提示操作；需要触摸安全密钥）
 - **槽位备注**：默认存入 LUKS2 头部（随硬盘走），也可存在本机 `/etc/luks-assistant/`
 - **元数据体检**：孤立令牌、过期备注、只剩一个密码槽位、TPM 策略失配等，部分可一键修复
 - **开机检查**（只读）：initramfs 钩子、crypttab、内核参数、令牌插件、安全启动等，判断开机时 TPM2/FIDO2 解锁是否可用
@@ -39,13 +41,22 @@
 
 ## 安装
 
-从 [Releases](https://github.com/Fosvcat/LUKS_ASSISTANT/releases) 下载：
+从 [Releases](https://github.com/Fosvcat/Luks-Assistant/releases) 下载对应架构的安装包：
 
-- `luks-assistant-<版本>-<架构>-linux.tar.gz`：图形界面 + 终端界面 + 后端（glibc ≥ 2.35）
-- `luks-assistant-tui-<版本>-<架构>-linux-static.tar.gz`：只有终端界面，静态链接，任何发行版可用
+- `Luks-Assistant-x86_64.tar.gz`
+- `Luks-Assistant-aarch64.tar.gz`
+
+每个安装包都同时包含：
+
+| 文件 | 说明 |
+|---|---|
+| `Luks-Assistant-GUI` | 图形界面（glibc ≥ 2.35） |
+| `Luks-Assistant-TUI` | 终端界面（静态链接，任何发行版可用） |
+| `Luks-Assistant-Helper` | 图形界面使用的 root 后端（静态链接） |
+| `install.sh` 等 | 安装脚本、polkit 策略、桌面启动项 |
 
 ```sh
-tar xf luks-assistant-v0.x.y-x86_64-linux.tar.gz && cd luks-assistant-v0.x.y-x86_64-linux
+tar xf Luks-Assistant-x86_64.tar.gz && cd Luks-Assistant-x86_64
 sudo ./install.sh                # 安装到 /usr/local，含 polkit 策略和桌面启动项
 sudo ./install.sh --uninstall
 ```
@@ -59,8 +70,8 @@ sudo ./install.sh --uninstall
 ```sh
 cargo build --release
 sudo packaging/install.sh                        # 安装 target/release 中的二进制
-sudo ./target/release/luks-assistant-tui /dev/nvme0n1p2 # 直接运行终端界面
-./target/release/luks-assistant-tui --dump disk.img     # 以 JSON 输出槽位模型
+sudo ./target/release/Luks-Assistant-TUI /dev/nvme0n1p2 # 直接运行终端界面
+./target/release/Luks-Assistant-TUI --dump disk.img     # 以 JSON 输出槽位模型
 ```
 
 `cargo build --release -p luks-assistant-gui --features qt` 使用 Qt 后端和原生 Qt 样式（KDE 外观，需要 Qt 6 开发包）。
@@ -80,7 +91,7 @@ sudo ./target/release/luks-assistant-tui /dev/nvme0n1p2 # 直接运行终端界�
 
 ## 槽位备注是怎么存的
 
-LUKS2 头部无法区分“键盘输入的密码”和“密钥文件”，两者都是普通的 `luks2` 槽位，所以 luks-assistant 提供备注，并为它自己创建的槽位记录类型。
+LUKS2 头部无法区分“键盘输入的密码”和“密钥文件”，两者都是普通的 `luks2` 槽位，所以 Luks Assistant 提供备注，并为它自己创建的槽位记录类型。
 
 - **存入头部**（默认）：所有备注放在**一个** `luks-assistant-notes` 令牌里，该令牌不绑定任何槽位（`"keyslots": []`）。如果绑定了槽位，`systemd-cryptenroll --wipe-slot` 擦除其中一个槽位时，会连带擦除共享同一令牌的其它槽位。每条备注都记录所属槽位 KDF salt 的指纹；槽位被其它工具删除或改写后，备注会自动失效，并在体检中提示清理。
 - **存在本机**：`/etc/luks-assistant/notes/<UUID>.json`（0600）。
@@ -92,10 +103,10 @@ LUKS2 头部无法区分“键盘输入的密码”和“密钥文件”，两�
 crates/
 ├── luks-assistant-sysinfo  只读的系统探测：发行版、工具版本与功能、UEFI/安全启动、TPM、PCR、FIDO2/PKCS#11、开机检查
 ├── luks-assistant-core     头部解析、32 槽位模型、备注、PCR 策略计算、安全护栏、表单、操作计划与执行、通信协议
-├── luks-assistant-tui      ratatui 终端界面（库 + luks-assistant-tui 二进制）
-├── luks-assistant-helper   root 后端，由图形界面通过 pkexec 启动
-└── luks-assistant-gui      Slint 图形界面（luks-assistant 二进制，终端中自动转为 TUI）
-packaging/           polkit 策略、桌面启动项、安装脚本
+├── luks-assistant-tui      ratatui 终端界面（库 + Luks-Assistant-TUI 二进制）
+├── luks-assistant-helper   root 后端 Luks-Assistant-Helper，由图形界面通过 pkexec 启动
+└── luks-assistant-gui      Slint 图形界面（Luks-Assistant-GUI 二进制，终端中自动转为 TUI）
+packaging/                  polkit 策略、桌面启动项、安装脚本
 ```
 
 开发与测试（包括用 swtpm 虚拟 TPM 跑端到端测试）见 [CONTRIBUTING.md](CONTRIBUTING.md)。

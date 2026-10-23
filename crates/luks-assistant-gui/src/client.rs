@@ -1,4 +1,4 @@
-//! Talks to `luks-assistant-helper` over its stdin/stdout.
+//! Talks to `Luks-Assistant-Helper` over its stdin/stdout.
 
 use luks_assistant_core::proto::{Call, Event, Method, Reply, ReplyBody};
 use serde::de::DeserializeOwned;
@@ -22,14 +22,14 @@ pub fn find_helper() -> Option<PathBuf> {
     }
     let sibling = std::env::current_exe()
         .ok()
-        .and_then(|e| e.parent().map(|d| d.join("luks-assistant-helper")));
+        .and_then(|e| e.parent().map(|d| d.join("Luks-Assistant-Helper")));
     sibling
         .into_iter()
         .chain(
             [
-                "/usr/libexec/luks-assistant-helper",
-                "/usr/local/libexec/luks-assistant-helper",
-                "/usr/lib/luks-assistant/luks-assistant-helper",
+                "/usr/libexec/Luks-Assistant-Helper",
+                "/usr/local/libexec/Luks-Assistant-Helper",
+                "/usr/lib/luks-assistant/Luks-Assistant-Helper",
             ]
             .into_iter()
             .map(PathBuf::from),
@@ -40,7 +40,7 @@ pub fn find_helper() -> Option<PathBuf> {
 impl Helper {
     /// Start the helper, through pkexec unless we already are root.
     pub fn start() -> Result<Helper, String> {
-        let path = find_helper().ok_or("找不到 luks-assistant-helper")?;
+        let path = find_helper().ok_or("找不到 Luks-Assistant-Helper")?;
         let path = path.canonicalize().unwrap_or(path);
         let mut cmd = if luks_assistant_sysinfo::is_root() {
             Command::new(&path)

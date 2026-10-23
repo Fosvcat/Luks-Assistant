@@ -3,8 +3,8 @@
  "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
  "http://www.freedesktop.org/standards/PolicyKit/1/policyconfig.dtd">
 <policyconfig>
-  <vendor>luks-assistant</vendor>
-  <vendor_url>https://github.com/Fosvcat/LUKS_ASSISTANT</vendor_url>
+  <vendor>Luks Assistant</vendor>
+  <vendor_url>https://github.com/Fosvcat/Luks-Assistant</vendor_url>
   <action id="io.github.fosvcat.luks-assistant.helper">
     <description>Manage LUKS2 key slots</description>
     <description xml:lang="zh_CN">管理 LUKS2 密钥槽</description>
@@ -16,6 +16,6 @@
       <allow_inactive>auth_admin</allow_inactive>
       <allow_active>auth_admin_keep</allow_active>
     </defaults>
-    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/luks-assistant-helper</annotate>
+    <annotate key="org.freedesktop.policykit.exec.path">@LIBEXECDIR@/Luks-Assistant-Helper</annotate>
   </action>
 </policyconfig>

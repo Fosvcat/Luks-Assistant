@@ -140,7 +140,7 @@ fn draw_top(f: &mut Frame, app: &App, area: Rect) {
         v.map(|v| v.to_string()).unwrap_or_else(|| "-".into())
     };
     let line = Line::from(vec![
-        " luks-assistant ".black().on_cyan().bold(),
+        " Luks Assistant ".black().on_cyan().bold(),
         format!(
             " {} · 内核 {} · systemd {} · cryptsetup {} · {} · 安全启动 {} ",
             s.os.pretty_name,
