@@ -214,6 +214,51 @@ impl BlockTree {
             .map(|(_, n)| n)
             .find(|n| n.path == path)
     }
+
+    /// Like [`BlockTree::find`], including loop devices.
+    fn find_any(&self, path: &str) -> Option<&BlockNode> {
+        fn walk<'a>(n: &'a BlockNode, path: &str) -> Option<&'a BlockNode> {
+            if n.path == path {
+                return Some(n);
+            }
+            n.children.iter().find_map(|c| walk(c, path))
+        }
+        self.roots.iter().find_map(|r| walk(r, path))
+    }
+}
+
+/// The LUKS device at `path`: from lsblk for a block device; for an image
+/// file, the mapping is found through the loop device it is attached to.
+pub fn resolve(ctx: &Ctx, path: &Path) -> LuksDevice {
+    let tree = block_tree(ctx).unwrap_or_default();
+    if let Some(d) = tree.luks_devices().into_iter().find(|d| d.path == path) {
+        return d;
+    }
+    let mut dev = LuksDevice::from_path(path);
+    if !dev.is_file {
+        return dev;
+    }
+    // "/dev/loop0: []: (/path/to/file)"
+    let Ok(out) = ctx
+        .runner
+        .run(&Cmd::new("losetup").arg("-j").arg(path.to_string_lossy()))
+    else {
+        return dev;
+    };
+    for line in out.stdout_lossy().lines() {
+        let Some(mapping) = line
+            .split(':')
+            .next()
+            .and_then(|l| tree.find_any(l.trim()))
+            .and_then(BlockNode::mapping)
+        else {
+            continue;
+        };
+        dev.mapping = Some(basename(&mapping.path).to_owned());
+        collect_mounts(mapping, &mut dev.mountpoints);
+        break;
+    }
+    dev
 }
 
 fn collect_mounts(n: &BlockNode, out: &mut Vec<String>) {

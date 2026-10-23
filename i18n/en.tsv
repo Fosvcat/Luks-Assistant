@@ -55,7 +55,6 @@ GRUB 读取的内核、initramfs 等文件	Kernel, initramfs and other files GRU
 GRUB 读取的文件	Files GRUB reads
 JSON 元数据: {}	JSON metadata: {}
 JSON 头部导出 (cryptsetup ≥ 2.4)	JSON header dump (cryptsetup ≥ 2.4)
-LUKS 卷 %1/%2	LUKS volumes %1/%2
 LUKS1 密钥	LUKS1 key
 LUKS{} · {} · 已用 {}/32	LUKS{} · {} · {}/32 used
 Luks Assistant 不修改其令牌。	Luks Assistant does not change its tokens.
@@ -83,13 +82,13 @@ PCR 编号必须在 0-23 之间	PCR numbers must be between 0 and 23
 PCR 编号超出范围: {}	PCR number out of range: {}
 PIN 不能为空	The PIN cannot be empty
 PKCS#11 智能卡	PKCS#11 smart cards
+Qt（原生）	Qt (native)
 SRTM / 固件代码	SRTM / firmware code
 TPM 2.0 设备	TPM 2.0 device
 TPM2 + PIN 需要 systemd ≥ 251	TPM2 + PIN needs systemd ≥ 251
 TPM2 签名 PCR 策略 (≥ 252)	TPM2 signed PCR policies (≥ 252)
 TRIM 会暴露已用空间和文件系统类型	TRIM reveals used space and the file system type
 TRIM 穿透已经是{}状态	TRIM pass-through is already {}
-TRIM：头部 %1 · 设备 %2	TRIM: header %1 · device %2
 Tab/1-6 切换  F5 刷新  q 退出	Tab/1-6 pages  F5 refresh  q quit
 UKI 内容	UKI contents
 UKI 参数 / 凭据	UKI arguments / credentials
@@ -135,7 +134,6 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 {}: 无法解析	{}: cannot parse
 {}=<已隐藏> 	{}=<hidden> 
 {}。	{}.
-{}（{}{}）	{} ({}{})
 {}（未包含该设备 UUID）	{} (does not contain this device's UUID)
 {}（槽位 {}）	{} (slot {})
 {}：encrypt 钩子写法，不支持令牌	{}: encrypt hook syntax, no token support
@@ -160,7 +158,6 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 主板 UEFI 固件核心代码	Core UEFI firmware code of the mainboard
 主板固件的配置和策略	Mainboard firmware configuration and policies
 主题	Theme
-亮色	Light
 从 {} 恢复 LUKS 头部	Restore the LUKS header from {}
 从未备份	Never backed up
 令牌	Token
@@ -223,6 +220,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 动态度量 (Intel TXT / AMD SKINIT)	Dynamic measurement (Intel TXT / AMD SKINIT)
 卷	Volume
 卷未解锁，无法写入 TRIM 标志	The volume is locked; the TRIM flag cannot be written
+卷没有解锁	The volume is not unlocked
 卷：	Volume:
 反选	Invert
 发行版	Distribution
@@ -273,6 +271,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 失败	failed
 头部 JSON 区空间不足（约 {} / {} 字节）	Not enough space in the header JSON area (about {} / {} bytes)
 头部 TRIM 标志与预期不符	The TRIM flag in the header is not as expected
+头部备注	Header note
 头部有强制要求 {}，只读	The header has mandatory requirements {}; read-only
 头部未加密，备注对任何人可见	The header is not encrypted; anyone can read the notes
 头部管理	Headers
@@ -320,7 +319,10 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 已添加 fido2 模块（未添加 tpm2-tss）	fido2 module added (tpm2-tss not added)
 已添加 tpm2-tss 模块{}	tpm2-tss module added{}
 已生成 {}	Created {}
+已经解锁（{}）	Already unlocked ({})
+已解锁 {} → {}	Unlocked {} → {}
 已选 PCR {}	Selected PCRs {}
+已锁定	Locked
 已阻止：{}	Blocked: {}
 平台电源状态	Platform power state
 应用专用	Application specific
@@ -398,9 +400,9 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 日志	Log
 旧密码	old password
 显卡、网卡等外部设备固件	Firmware of graphics, network and other expansion cards
+显示所有的 PCR 度量	Show all PCR measurements
 普通	Normal
 智能卡 PIN	Smart card PIN
-暗色	Dark
 更换或更新外部设备固件	Replacing or updating expansion card firmware
 更改扩展镜像	Changing extension images
 更新 BIOS/UEFI、CPU 微码	Updating BIOS/UEFI or CPU microcode
@@ -429,6 +431,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 未识别	not recognized
 未选择 PCR：任何能访问这颗 TPM 的系统都能解锁	No PCRs selected: any system with access to this TPM can unlock
 未选择任何卷	No volume selected
+本机备注	Local note
 条目 {} 已配置: {}	Entry {} is configured: {}
 条目 {} 未指定 tpm2-device= / fido2-device=（通常会自动尝试令牌）	Entry {} sets no tpm2-device= / fido2-device= (tokens are usually tried anyway)
 检测到 GRUB_ENABLE_CRYPTODISK=y：GRUB 2.12 之前不支持 Argon2，若 GRUB 用此槽位解锁将无法启动	GRUB_ENABLE_CRYPTODISK=y found: GRUB before 2.12 cannot use Argon2, so booting fails if GRUB unlocks with this slot
@@ -491,8 +494,9 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 清理过期备注	Clean up stale notes
 清空	Clear
 版本	Version
-版本 %1	Version %1
 状态	Status
+状态：已解锁	Status: unlocked
+状态：锁定	Status: locked
 现有密码	existing password
 生成 {} 字节随机密钥文件 {}	Create a {}-byte random key file {}
 生成密钥文件	Generate key file
@@ -532,6 +536,8 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 覆盖	Override
 解密映射	Mapping
 解析失败: {}	Parse error: {}
+解锁	Unlock
+解锁失败：{}	Unlocking failed: {}
 触摸	touch
 警告	Warning
 计划 {} 不存在或已执行	Plan {} does not exist or has already run
@@ -564,6 +570,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 运行时加载的程序和库	Programs and libraries loaded at run time
 运行期间持续变化	Keeps changing at run time
 这是 Luks Assistant 的备注令牌	This is the Luks Assistant notes token
+这是当前系统所在的卷，不能锁定	This volume holds the running system and cannot be locked
 这是最后一个密码/密钥文件/恢复密钥槽位，不能删除	This is the last password/key file/recovery key slot; it cannot be deleted
 这是最后一个未被忽略的密码槽位，开机时将无法用密码解锁	This is the last password slot that is not ignored; the password would no longer unlock at boot
 这是最后一个槽位，不能删除	This is the last slot; it cannot be deleted
@@ -571,12 +578,14 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 通常未使用	Usually unused
 通常由其它工具创建。	Usually created by another tool.
 重加密	Re-encryption
+重新启动 Luks Assistant 后完全生效	Takes full effect after restarting Luks Assistant
 重新录入 FIDO2	Re-enroll FIDO2
 重新录入 FIDO2 安全密钥	Re-enroll the FIDO2 security key
 重新录入 PKCS#11	Re-enroll PKCS#11
 重新录入 TPM2	Re-enroll TPM2
 重新录入 TPM2（替换槽位 {}，PCR {}）	Re-enroll TPM2 (replacing slot {}, PCR {})
 重新生成恢复密钥	Regenerate recovery key
+锁定	Lock
 问题	Problem
 问题与警告	Problems and warnings
 需要 PIN	Require PIN

@@ -413,6 +413,8 @@ impl App {
         };
         match submit {
             Submit::Verify(m) => self.verify(m),
+            // only the GUI offers an unlock form
+            Submit::Unlock(_) => {}
             Submit::SetBackupDir(d) => match config::set_backup_dir(&mut self.ctx.paths, d) {
                 Ok(()) => self.status = t!("备份位置: {}", self.ctx.paths.backup_root.display()),
                 Err(e) => {

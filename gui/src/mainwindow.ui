@@ -33,24 +33,19 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="volumeCountLabel">
+           <widget class="QLabel" name="lockStateLabel">
             <property name="text"><string/></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="lockButton">
+            <property name="text"><string>解锁</string></property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="verifyButton">
             <property name="text"><string>验证</string></property>
             <property name="toolTip"><string>验证密码、密钥文件或硬件令牌，不做任何修改</string></property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="trimLabel">
-            <property name="text"><string/></property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="trimButton">
-            <property name="text"><string>TRIM…</string></property>
            </widget>
           </item>
          </layout>
@@ -114,6 +109,7 @@
           <property name="title"><string>PCR (sha256)</string></property>
           <layout class="QVBoxLayout" name="pcrGroupLayout">
            <item><widget class="QTreeWidget" name="pcrTree"><property name="columnCount"><number>3</number></property></widget></item>
+           <item><widget class="QCheckBox" name="showAllPcrs"><property name="text"><string>显示所有的 PCR 度量</string></property></widget></item>
           </layout>
          </widget>
         </item>
@@ -206,8 +202,8 @@
             <item row="1" column="1">
              <widget class="QComboBox" name="themeCombo">
               <item><property name="text"><string>跟随系统</string></property></item>
-              <item><property name="text"><string>亮色</string></property></item>
-              <item><property name="text"><string>暗色</string></property></item>
+              <item><property name="text"><string>Qt（原生）</string></property></item>
+              <item><property name="text"><string notr="true">GTK</string></property></item>
              </widget>
             </item>
            </layout>

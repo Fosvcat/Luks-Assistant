@@ -5,7 +5,7 @@
 //! stdout; see `luks_assistant_core::proto`. Every write still goes through
 //! `ops::plan` and its guards, and plans never leave this process.
 
-use luks_assistant_core::device::{self, LuksDevice};
+use luks_assistant_core::device;
 use luks_assistant_core::exec::{Cmd, CmdOutput, Runner, SystemRunner, run_in_pty};
 use luks_assistant_core::forms::{self, Env, Form, Submit, VerifyMethod};
 use luks_assistant_core::health;
@@ -110,11 +110,7 @@ fn json<T: Serialize>(v: T) -> Result<serde_json::Value> {
 
 impl Helper {
     fn overview(&self, path: &Path) -> Result<Overview> {
-        let dev = device::discover(&self.ctx)
-            .ok()
-            .and_then(|d| d.into_iter().find(|d| d.path == path))
-            .unwrap_or_else(|| LuksDevice::from_path(path));
-        Overview::load(&self.ctx, dev)
+        Overview::load(&self.ctx, device::resolve(&self.ctx, path))
     }
 
     fn store(&mut self, plan: Plan) -> PlanView {
@@ -161,6 +157,46 @@ impl Helper {
         Err(Error::Invalid(tx!("{} 验证失败：{}", kind.label(), last)))
     }
 
+    /// Open the volume; the result is reported like a verification.
+    fn unlock(&self, path: &Path, method: VerifyMethod) -> Result<Text> {
+        let ov = self.overview(path)?;
+        let name = ops::mapping_name(&ov);
+        match method {
+            VerifyMethod::Credential(c) => {
+                let out = self.ctx.runner.run(&ops::unlock_cmd(&ov, &c)?)?;
+                if !out.success() {
+                    let why = match out.code {
+                        2 => tx!("密码或密钥文件不正确"),
+                        _ => ops::token_failure(&out),
+                    };
+                    return Err(Error::Invalid(tx!("解锁失败：{}", why)));
+                }
+            }
+            VerifyMethod::Token { kind, pin } => {
+                let tries = ops::token_unlock_cmds(&ov, kind, pin.as_ref())?;
+                if tries.is_empty() {
+                    return Err(Error::Invalid(tx!("没有 {} 令牌", kind.label())));
+                }
+                let mut last = Text::plain("");
+                let mut done = false;
+                for t in tries {
+                    match self.ctx.runner.run(&t.cmd) {
+                        Ok(o) if o.success() => {
+                            done = true;
+                            break;
+                        }
+                        Ok(o) => last = ops::token_failure(&o),
+                        Err(e) => last = e.text(),
+                    }
+                }
+                if !done {
+                    return Err(Error::Invalid(tx!("解锁失败：{}", last)));
+                }
+            }
+        }
+        Ok(tx!("已解锁 {} → {}", path.display(), name))
+    }
+
     fn submit(&mut self, path: &Path, form: &Form) -> Result<SubmitReply> {
         let submit = forms::submit(form).map_err(|e| Error::Invalid(e.into()))?;
         Ok(match submit {
@@ -204,6 +240,10 @@ impl Helper {
                     Err(e) => message(false, e.text()),
                 }
             }
+            Submit::Unlock(method) => match self.unlock(path, method) {
+                Ok(t) => message(true, t),
+                Err(e) => message(false, e.text()),
+            },
             Submit::SetBackupDir(dir) => {
                 config::set_backup_dir(&mut self.ctx.paths, dir)?;
                 SubmitReply::Paths(self.ctx.paths.clone())
@@ -300,6 +340,14 @@ impl Helper {
             }
             Method::VerifyToken { path, kind, pin } => {
                 json(self.verify_token(&path, kind, pin.as_ref())?)
+            }
+            Method::Lock { path } => {
+                let ov = self.overview(&path)?;
+                self.ctx
+                    .runner
+                    .run(&ops::lock_cmd(&ov)?)?
+                    .check("cryptsetup close")?;
+                json(serde_json::Value::Null)
             }
             Method::SetBackupDir { dir } => {
                 config::set_backup_dir(&mut self.ctx.paths, dir)?;

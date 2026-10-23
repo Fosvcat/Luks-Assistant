@@ -162,6 +162,16 @@ impl Notes {
         }
     }
 
+    /// The valid note for `slot` in one store.
+    pub fn at(&self, header: &Header, slot: u32, location: Location) -> Option<&Note> {
+        let ks = header.keyslots.get(&slot)?;
+        let set = match location {
+            Location::Header => &self.header,
+            Location::Local => &self.local,
+        };
+        set.get(slot).filter(|n| n.fp == fingerprint(ks))
+    }
+
     /// The valid note for `slot`, preferring the header store.
     pub fn for_slot(&self, header: &Header, slot: u32) -> Option<SlotNote> {
         let ks = header.keyslots.get(&slot)?;

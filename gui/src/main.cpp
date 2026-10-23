@@ -7,6 +7,7 @@
 
 #include <QApplication>
 #include <QFileInfo>
+#include <QIcon>
 
 #include <cstdio>
 #include <cstdlib>
@@ -121,13 +122,17 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    AppSettings::prepareTheme(); // the platform theme is chosen when Qt starts
     QApplication app(argc, argv);
     QApplication::setApplicationName(QStringLiteral("Luks Assistant"));
     QApplication::setApplicationVersion(QStringLiteral(LUKS_ASSISTANT_VERSION));
     QApplication::setDesktopFileName(QStringLiteral("Luks-Assistant"));
 
+    QIcon icon(QStringLiteral(":/icons/luks-assistant-128.png"));
+    icon.addFile(QStringLiteral(":/icons/luks-assistant.png"));
+    QApplication::setWindowIcon(icon); // X11; Wayland takes it from the desktop entry
+    AppSettings::applyStyle();
     AppSettings::applyLanguage();
-    AppSettings::applyTheme();
 
     QStringList devices;
     for (const std::string &a : rest)

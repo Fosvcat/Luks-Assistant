@@ -15,7 +15,7 @@ class MainWindow;
 
 class FormDialog;
 class ProgressDialog;
-class QPushButton;
+class QToolButton;
 class QTreeWidget;
 class QTreeWidgetItem;
 
@@ -58,6 +58,9 @@ private:
     void updateBackupButtons();
     void backupVolumes(const QStringList &paths);
     void restoreVolume(const QString &path);
+    void toggleLock();
+    void updateLockState();
+    QList<int> visiblePcrs() const;
     void saveBackupDir();
     void openBackupDir();
     void exportLog();
@@ -69,7 +72,7 @@ private:
 
     Ui::MainWindow *ui;
     HelperClient *m_helper;
-    QPushButton *m_refresh;
+    QToolButton *m_refresh;
     QStringList m_extra;
     QString m_path;
     int m_selected = 0;

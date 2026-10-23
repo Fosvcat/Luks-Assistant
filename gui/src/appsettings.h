@@ -1,4 +1,4 @@
-// Language and theme chosen on the About page, kept in
+// Settings from the About and System pages, kept in
 // ~/.config/Luks-Assistant/Luks-Assistant.conf.
 #pragma once
 
@@ -7,7 +7,9 @@
 namespace AppSettings {
 
 enum class Language { System, English, Chinese };
-enum class Theme { System, Light, Dark };
+/// How widgets are drawn: as the desktop does, as native Qt (Breeze when
+/// installed, otherwise Fusion), or through Qt's GTK platform theme.
+enum class Theme { System, Qt, Gtk };
 
 Language language();
 void setLanguage(Language language);
@@ -20,7 +22,13 @@ QString effectiveLanguage();
 /// Install the translators for the chosen language; widgets receive
 /// QEvent::LanguageChange.
 void applyLanguage();
-/// Apply the chosen palette (the platform's own for Theme::System).
-void applyTheme();
+/// Choose the platform theme for the chosen Theme; call before QApplication.
+void prepareTheme();
+/// Set the widget style for the chosen Theme; call after QApplication.
+void applyStyle();
+
+/// Show all 24 PCRs instead of the preferred ones.
+bool showAllPcrs();
+void setShowAllPcrs(bool all);
 
 } // namespace AppSettings

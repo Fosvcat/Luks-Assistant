@@ -33,6 +33,10 @@ pub struct Call {
 #[serde(tag = "method", content = "params", rename_all = "snake_case")]
 pub enum Method {
     Hello,
+    /// Close the volume's mapping → null
+    Lock {
+        path: PathBuf,
+    },
     /// Language of everything the helper returns: "zh" or "en" → null
     SetLanguage {
         lang: String,

@@ -28,11 +28,15 @@ add_executable(Luks-Assistant-GUI
     src/dialogs.h
 )
 
-# English catalog shared with the Rust crates.
+# English catalog shared with the Rust crates, and the application icon.
 qt_add_resources(Luks-Assistant-GUI i18n
     PREFIX /i18n
     BASE ../i18n
     FILES ../i18n/en.tsv)
+qt_add_resources(Luks-Assistant-GUI icons
+    PREFIX /icons
+    BASE ../packaging/icons
+    FILES ../packaging/icons/luks-assistant.png ../packaging/icons/luks-assistant-128.png)
 
 target_compile_definitions(Luks-Assistant-GUI PRIVATE
     LUKS_ASSISTANT_VERSION="${PROJECT_VERSION}")

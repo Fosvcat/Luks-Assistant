@@ -48,6 +48,9 @@ pub struct Field {
     pub hint: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub show_if: Option<ShowIf>,
+    /// Editable only while the toggle field with this key is on.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enabled_by: Option<String>,
 }
 
 impl Field {
@@ -58,6 +61,7 @@ impl Field {
             value,
             hint: None,
             show_if: None,
+            enabled_by: None,
         }
     }
     pub fn text(key: &str, label: &str, init: &str) -> Self {
@@ -109,6 +113,10 @@ impl Field {
         });
         self
     }
+    pub fn enabled_by(mut self, toggle: &str) -> Self {
+        self.enabled_by = Some(toggle.to_owned());
+        self
+    }
     pub fn is_input(&self) -> bool {
         !matches!(self.value, Value::Label | Value::Separator)
     }
@@ -119,16 +127,26 @@ pub enum FormKind {
     AddPassphrase,
     AddKeyfile,
     GenerateKeyfile,
-    Recovery { replace: Option<u32> },
-    Tpm2 { replace: Option<u32> },
-    Fido2 { replace: Option<u32> },
-    Pkcs11 { replace: Option<u32> },
+    Recovery {
+        replace: Option<u32>,
+    },
+    Tpm2 {
+        replace: Option<u32>,
+    },
+    Fido2 {
+        replace: Option<u32>,
+    },
+    Pkcs11 {
+        replace: Option<u32>,
+    },
     Change(u32),
     ConvertKdf(u32),
     Note(u32),
     Priority(u32),
     Remove(u32),
     Verify,
+    /// Same fields as `Verify`, but opens the volume.
+    Unlock,
     Discards,
     Restore,
     BackupDir,
@@ -151,6 +169,14 @@ impl Form {
             .iter_mut()
             .find(|f| f.key == key)
             .map(|f| &mut f.value)
+    }
+
+    /// Can field `i` be edited, given the current toggles?
+    pub fn enabled(&self, i: usize) -> bool {
+        match self.fields.get(i).and_then(|f| f.enabled_by.as_deref()) {
+            Some(t) => self.toggle(t),
+            None => true,
+        }
     }
 
     /// Is field `i` shown, given the current choices?
@@ -196,6 +222,7 @@ pub enum Submit {
     Request(Request),
     /// Check a credential or token without changing anything.
     Verify(VerifyMethod),
+    Unlock(VerifyMethod),
     SetBackupDir(Option<PathBuf>),
 }
 
@@ -273,7 +300,7 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
     let ov = env.ov;
     if !matches!(
         kind,
-        FormKind::Verify | FormKind::BackupDir | FormKind::Restore
+        FormKind::Verify | FormKind::Unlock | FormKind::BackupDir | FormKind::Restore
     ) {
         if let Some(r) = ov.read_only_reason() {
             return Err(r);
@@ -340,8 +367,8 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
                     t!("需要 PIN"),
                     old.is_some_and(|t| t.pin),
                 ));
-                f.push(Field::secret("pin", "PIN"));
-                f.push(Field::secret("pin2", t!("确认 PIN")));
+                f.push(Field::secret("pin", "PIN").enabled_by("use_pin"));
+                f.push(Field::secret("pin2", t!("确认 PIN")).enabled_by("use_pin"));
             }
             let (t, l) = slot_note(ov, *replace);
             f.extend(note_fields(&t, l));
@@ -461,7 +488,12 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
                 auth_fields(t!("其它槽位的密码或恢复密钥")),
             )
         }
-        FormKind::Verify => {
+        FormKind::Verify | FormKind::Unlock => {
+            if kind == FormKind::Unlock {
+                if let Some(m) = &ov.device.mapping {
+                    return Err(t!("已经解锁（{}）", m));
+                }
+            }
             let mut methods = vec![t!("密码 / 恢复密钥"), t!("密钥文件")];
             for k in [TokenKind::Tpm2, TokenKind::Fido2, TokenKind::Pkcs11] {
                 if ov.header.tokens.values().any(|t| t.kind == k.token_type()) {
@@ -481,7 +513,15 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
                         .show_if("method", &tokens),
                 );
             }
-            (t!("验证").into(), f)
+            (
+                if kind == FormKind::Unlock {
+                    t!("解锁")
+                } else {
+                    t!("验证")
+                }
+                .into(),
+                f,
+            )
         }
         FormKind::Discards => {
             if ov.device.mapping.is_none() {
@@ -699,15 +739,15 @@ pub fn submit(form: &Form) -> Result<Submit, String> {
                 (!d.is_empty()).then(|| PathBuf::from(d)),
             ));
         }
-        FormKind::Verify => {
+        FormKind::Verify | FormKind::Unlock => {
             let method = match form.get("method") {
                 Some(Value::Choice { options, index }) => options[*index].clone(),
                 _ => String::new(),
             };
-            let kind = [TokenKind::Tpm2, TokenKind::Fido2, TokenKind::Pkcs11]
+            let token = [TokenKind::Tpm2, TokenKind::Fido2, TokenKind::Pkcs11]
                 .into_iter()
                 .find(|k| k.label() == method);
-            return Ok(Submit::Verify(match kind {
+            let method = match token {
                 Some(kind) => VerifyMethod::Token {
                     kind,
                     pin: token_pin(form),
@@ -726,7 +766,12 @@ pub fn submit(form: &Form) -> Result<Submit, String> {
                     }
                     VerifyMethod::Credential(Credential::Passphrase(Secret::from(p)))
                 }
-            }));
+            };
+            return Ok(if form.kind == FormKind::Unlock {
+                Submit::Unlock(method)
+            } else {
+                Submit::Verify(method)
+            });
         }
     };
     Ok(Submit::Request(r))
@@ -887,6 +932,33 @@ mod tests {
         // nothing follows the credential: no trailing gap
         let f = build(FormKind::Remove(0), &env(&ov, &caps, &paths)).unwrap();
         assert_ne!(f.fields.last().unwrap().value, Value::Separator);
+    }
+
+    #[test]
+    fn pin_fields_follow_toggle_and_unlock_mirrors_verify() {
+        let ov = sample_overview();
+        let caps = Caps {
+            cryptenroll: true,
+            tpm2_pin: true,
+            ..Caps::default()
+        };
+        let paths = Paths::under(std::path::Path::new("/x"));
+        let mut f = build(FormKind::Tpm2 { replace: None }, &env(&ov, &caps, &paths)).unwrap();
+        let pin = f.fields.iter().position(|x| x.key == "pin").unwrap();
+        assert!(!f.enabled(pin));
+        if let Some(Value::Toggle(on)) = f.get_mut("use_pin") {
+            *on = true;
+        }
+        assert!(f.enabled(pin));
+
+        let mut u = build(FormKind::Unlock, &env(&ov, &caps, &paths)).unwrap();
+        if let Some(Value::Secret(s)) = u.get_mut(AUTH_PW) {
+            *s = "pw".into();
+        }
+        assert!(matches!(
+            submit(&u).unwrap(),
+            Submit::Unlock(VerifyMethod::Credential(Credential::Passphrase(_)))
+        ));
     }
 
     #[test]

@@ -52,6 +52,9 @@ const fn p(
     }
 }
 
+/// The PCRs worth binding a disk to; the others are only shown on request.
+pub const PREFERRED: [u8; 8] = [0, 1, 7, 8, 9, 11, 12, 14];
+
 pub const PCRS: [PcrInfo; 24] = [
     p(
         0,

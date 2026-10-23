@@ -18,9 +18,13 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPainter>
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QStyle>
+#include <QStyledItemDelegate>
+#include <QSysInfo>
+#include <QToolButton>
 #include <QTreeWidget>
 #include <QUrl>
 
@@ -46,10 +50,10 @@ QIcon themed(std::initializer_list<const char *> names, QStyle::StandardPixmap f
     return style->standardIcon(fallback);
 }
 
-QIcon kindIcon(const QString &kind, const QString &state, const QStyle *style)
+// Hardware tokens use symbolic (monochrome) icons; a slot whose PCRs changed
+// says so in its text, the icon stays the same.
+QIcon kindIcon(const QString &kind, const QStyle *style)
 {
-    if (state == QLatin1String("bad"))
-        return themed({"dialog-warning"}, QStyle::SP_MessageBoxWarning, style);
     if (kind == QLatin1String("passphrase") || kind == QLatin1String("secret") || kind == QLatin1String("luks1"))
         return themed({"dialog-password", "password-copy"}, QStyle::SP_DialogYesButton, style);
     if (kind == QLatin1String("keyfile"))
@@ -57,11 +61,12 @@ QIcon kindIcon(const QString &kind, const QString &state, const QStyle *style)
     if (kind == QLatin1String("recovery"))
         return themed({"document-save", "media-floppy"}, QStyle::SP_DialogSaveButton, style);
     if (kind == QLatin1String("tpm2"))
-        return themed({"cpu", "security-high"}, QStyle::SP_ComputerIcon, style);
+        return themed({"cpu-symbolic", "cpu"}, QStyle::SP_ComputerIcon, style);
     if (kind == QLatin1String("fido2"))
-        return themed({"drive-removable-media-usb", "media-flash"}, QStyle::SP_DriveFDIcon, style);
+        return themed({"drive-removable-media-usb-pendrive-symbolic", "drive-removable-media-usb"},
+                      QStyle::SP_DriveFDIcon, style);
     if (kind == QLatin1String("pkcs11"))
-        return themed({"auth-sim", "media-flash-smart-media"}, QStyle::SP_DriveCDIcon, style);
+        return themed({"auth-smartcard-symbolic", "auth-sim"}, QStyle::SP_DriveCDIcon, style);
     if (kind == QLatin1String("empty"))
         return {};
     return themed({"emblem-system"}, QStyle::SP_FileDialogInfoView, style);
@@ -80,9 +85,50 @@ QIcon statusIcon(const QString &status, const QStyle *style)
     return style->standardIcon(QStyle::SP_MessageBoxInformation);
 }
 
-QIcon appIcon(const QStyle *style)
+/// Icon of an action button: the token kinds have one, the rest none.
+QIcon formIcon(const QJsonValue &form, const QStyle *style)
 {
-    return themed({"drive-harddisk"}, QStyle::SP_DriveHDIcon, style);
+    const QString kind = form.isObject() && !form.toObject().isEmpty() ? form.toObject().keys().first() : QString();
+    if (kind == QLatin1String("Tpm2"))
+        return kindIcon(S("tpm2"), style);
+    if (kind == QLatin1String("Fido2"))
+        return kindIcon(S("fido2"), style);
+    if (kind == QLatin1String("Pkcs11"))
+        return kindIcon(S("pkcs11"), style);
+    return {};
+}
+
+/// Slot cells with square selection and hover marks whatever the style draws
+/// (Breeze rounds them), and no separate focus frame.
+class SquareCellDelegate : public QStyledItemDelegate
+{
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    void paint(QPainter *p, const QStyleOptionViewItem &option, const QModelIndex &index) const override
+    {
+        QStyleOptionViewItem opt(option);
+        initStyleOption(&opt, index);
+        const bool selected = opt.state & QStyle::State_Selected;
+        if (selected) {
+            p->fillRect(opt.rect, opt.palette.brush(QPalette::Active, QPalette::Highlight));
+            opt.palette.setColor(QPalette::Text, opt.palette.color(QPalette::Active, QPalette::HighlightedText));
+        } else if (opt.state & QStyle::State_MouseOver) {
+            QColor hover = opt.palette.color(QPalette::Active, QPalette::Highlight);
+            hover.setAlpha(40);
+            p->fillRect(opt.rect, hover);
+        }
+        opt.state &= ~(QStyle::State_Selected | QStyle::State_HasFocus | QStyle::State_MouseOver);
+        opt.backgroundBrush = Qt::NoBrush;
+        const QWidget *w = opt.widget;
+        (w ? w->style() : QApplication::style())->drawControl(QStyle::CE_ItemViewItem, &opt, p, w);
+    }
+};
+
+QString arch()
+{
+    const QString a = QSysInfo::buildCpuArchitecture();
+    return a == QLatin1String("arm64") ? S("aarch64") : a;
 }
 
 void clearLayout(QLayout *layout)
@@ -103,12 +149,11 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , m_helper(new HelperClient(this))
-    , m_refresh(new QPushButton)
+    , m_refresh(new QToolButton)
     , m_extra(extraDevices)
 {
     ui->setupUi(this);
-    setWindowIcon(appIcon(style()));
-    ui->appIcon->setPixmap(appIcon(style()).pixmap(96, 96));
+    ui->appIcon->setPixmap(QPixmap(S(":/icons/luks-assistant.png")));
     QFont nameFont = ui->appName->font();
     nameFont.setPointSizeF(nameFont.pointSizeF() * 1.6);
     nameFont.setBold(true);
@@ -116,7 +161,9 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
 
     // Tabs on top, refresh at their right.
     m_refresh->setIcon(QIcon::fromTheme(S("view-refresh")));
-    m_refresh->setFlat(true);
+    m_refresh->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    m_refresh->setAutoRaise(true);
+    m_refresh->setFocusPolicy(Qt::NoFocus); // no focus mark left behind after a click
     ui->tabs->setCornerWidget(m_refresh, Qt::TopRightCorner);
     ui->tabs->setDocumentMode(true);
 
@@ -139,8 +186,10 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
     ui->slotsLayout->setStretchFactor(ui->detailGroup, 1);
     ui->detailGroupLayout->addStretch();
     table->setIconSize(QSize(22, 22));
+    table->setItemDelegate(new SquareCellDelegate(table));
+    table->setMouseTracking(true);
 
-    ui->diskTree->setColumnCount(5);
+    ui->diskTree->setColumnCount(6);
     ui->pcrTree->setRootIsDecorated(false);
     ui->issueTree->setRootIsDecorated(false);
     ui->issueTree->setWordWrap(true);
@@ -157,8 +206,8 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
         return i->text(1).isEmpty() ? i->text(0) : tr("%1：%2").arg(i->text(0), i->text(1));
     });
     installCopyMenu(ui->diskTree, tr("复制"), [](const QTreeWidgetItem *i) {
-        QStringList parts{i->data(0, Qt::UserRole).toString(), i->text(1), i->text(2),
-                          i->text(3).isEmpty() ? QString() : S("TRIM ") + i->text(3), i->text(4)};
+        QStringList parts{i->data(0, Qt::UserRole).toString(), i->text(1), i->text(2), i->text(3),
+                          i->text(4).isEmpty() ? QString() : S("TRIM ") + i->text(4), i->text(5)};
         parts.removeAll(QString());
         return parts.join(S("  "));
     });
@@ -171,7 +220,7 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
         return tr("%1：%2").arg(i->text(1), i->data(2, Qt::UserRole).toString());
     });
 
-    connect(m_refresh, &QPushButton::clicked, this, &MainWindow::refreshAll);
+    connect(m_refresh, &QToolButton::clicked, this, &MainWindow::refreshAll);
     connect(ui->diskCombo, qOverload<int>(&QComboBox::activated), this, [this](int index) {
         const QString path = ui->diskCombo->itemData(index).toString();
         if (path.isEmpty() || path == m_path)
@@ -193,7 +242,12 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
     });
     connect(table, &QWidget::customContextMenuRequested, this, &MainWindow::slotContextMenu);
     connect(ui->verifyButton, &QPushButton::clicked, this, [this] { openForm(S("Verify")); });
-    connect(ui->trimButton, &QPushButton::clicked, this, [this] { openForm(S("Discards")); });
+    connect(ui->lockButton, &QPushButton::clicked, this, &MainWindow::toggleLock);
+    ui->showAllPcrs->setChecked(AppSettings::showAllPcrs());
+    connect(ui->showAllPcrs, &QCheckBox::toggled, this, [this](bool all) {
+        AppSettings::setShowAllPcrs(all);
+        fillSystem();
+    });
 
     // Header management
     auto setChecks = [this](const std::function<Qt::CheckState(Qt::CheckState)> &f) {
@@ -274,12 +328,13 @@ void MainWindow::retranslate()
 {
     m_refresh->setText(tr("刷新"));
     ui->systemTree->setHeaderLabels({tr("项目"), tr("值")});
-    ui->diskTree->setHeaderLabels({tr("名称"), tr("大小"), tr("加密"), S("TRIM"), tr("挂载点")});
+    ui->diskTree->setHeaderLabels({tr("名称"), tr("大小"), tr("加密"), tr("类型"), S("TRIM"), tr("挂载点")});
     ui->pcrTree->setHeaderLabels({S("PCR"), tr("当前值"), tr("用途")});
     ui->issueTree->setHeaderLabels({tr("级别"), tr("问题"), tr("说明")});
     ui->bootTree->setHeaderLabels({tr("状态"), tr("项目"), tr("详情")});
     ui->backupTree->setHeaderLabels({tr("卷"), S("UUID"), tr("最后备份"), tr("数量"), tr("文件")});
-    ui->appVersion->setText(tr("版本 %1").arg(QStringLiteral(LUKS_ASSISTANT_VERSION)));
+    ui->appVersion->setText(S("%1 %2").arg(QStringLiteral(LUKS_ASSISTANT_VERSION), arch()));
+    updateLockState();
     ui->appLink->setText(S("<a href=\"%1\">%1</a>").arg(QString::fromLatin1(RepoUrl)));
 }
 
@@ -382,9 +437,6 @@ void MainWindow::loadBackups()
 
 void MainWindow::fillSystem()
 {
-    ui->volumeCountLabel->setText(tr("LUKS 卷 %1/%2")
-                                      .arg(m_system.value(S("luks_volumes")).toInt())
-                                      .arg(m_system.value(S("total_volumes")).toInt()));
     ui->backupDirEdit->setText(str(m_system, "backup_root"));
     ui->backupDirEdit->setPlaceholderText(str(m_system, "default_backup_root"));
 
@@ -438,9 +490,14 @@ void MainWindow::fillSystem()
         const QJsonObject d = v.toObject();
         const int depth = d.value(S("depth")).toInt();
         parents.resize(depth);
+        // TRIM: "—" for spinning disks, ✓/✗ otherwise.
         const QJsonValue trim = d.value(S("trim"));
-        const QStringList cols = {str(d, "name"), str(d, "size"), str(d, "encryption"),
-                                  trim.isNull() ? QString() : (trim.toBool() ? S("✓") : S("✗")), str(d, "mount")};
+        const QString media = str(d, "media");
+        const QString trimText = media == QLatin1String("HDD") ? S("—")
+                                 : trim.isNull()               ? QString()
+                                 : trim.toBool()               ? S("✓")
+                                                               : S("✗");
+        const QStringList cols = {str(d, "name"), str(d, "size"), str(d, "encryption"), media, trimText, str(d, "mount")};
         auto *item = depth == 0 || parents.isEmpty() ? new QTreeWidgetItem(disks, cols)
                                                      : new QTreeWidgetItem(parents.last(), cols);
         item->setData(0, Qt::UserRole, str(d, "path"));
@@ -450,17 +507,20 @@ void MainWindow::fillSystem()
         parents.append(item);
     }
     disks->expandAll();
-    for (int c = 0; c < 4; ++c)
+    for (int c = 0; c < 5; ++c)
         disks->resizeColumnToContents(c);
 
     QSet<int> bound;
     for (const QJsonValue &p : arr(m_device, "bound_pcrs"))
         bound.insert(p.toInt());
+    const QList<int> shown = visiblePcrs();
     auto *pcrs = ui->pcrTree;
     pcrs->clear();
     for (const QJsonValue &v : arr(m_system, "pcrs")) {
         const QJsonObject p = v.toObject();
         const int index = p.value(S("index")).toInt();
+        if (!shown.contains(index))
+            continue;
         const QString value = str(p, "value");
         auto *item = new QTreeWidgetItem(pcrs, {QString::number(index), value.isEmpty() ? S("—") : value.left(16) + S("…"), str(p, "name")});
         item->setData(1, Qt::UserRole, value);
@@ -472,7 +532,7 @@ void MainWindow::fillSystem()
                 f.setBold(true);
                 item->setFont(c, f);
             }
-            item->setIcon(0, kindIcon(S("tpm2"), QString(), style()));
+            item->setIcon(0, kindIcon(S("tpm2"), style()));
         }
     }
     pcrs->resizeColumnToContents(0);
@@ -528,7 +588,7 @@ void MainWindow::fillSlots()
         text += S("  ") + (empty ? tr("空闲") : str(s, "kind_label"));
         if (!str(s, "subtitle").isEmpty())
             text += QLatin1Char('\n') + str(s, "subtitle");
-        auto *item = new QTableWidgetItem(kindIcon(kind, str(s, "state"), style()), text);
+        auto *item = new QTableWidgetItem(kindIcon(kind, style()), text);
         if (empty)
             item->setForeground(dim);
         if (str(s, "state") == QLatin1String("bad"))
@@ -541,14 +601,55 @@ void MainWindow::fillSlots()
     }
     table->setCurrentCell(m_selected / 8, m_selected % 8);
 
-    const bool loaded = !slotList.isEmpty();
-    ui->verifyButton->setEnabled(loaded);
-    const QJsonValue trimDevice = m_device.value(S("trim_device"));
-    ui->trimLabel->setText(loaded ? tr("TRIM：头部 %1 · 设备 %2")
-                                        .arg(m_device.value(S("trim_header")).toBool() ? tr("开") : tr("关"),
-                                             trimDevice.isNull() ? S("?") : (trimDevice.toBool() ? tr("支持") : tr("不支持")))
-                                  : QString());
-    ui->trimButton->setVisible(loaded && m_device.value(S("unlocked")).toBool());
+    ui->verifyButton->setEnabled(!slotList.isEmpty());
+    updateLockState();
+}
+
+void MainWindow::updateLockState()
+{
+    const bool loaded = !arr(m_device, "slots").isEmpty();
+    const bool unlocked = m_device.value(S("unlocked")).toBool();
+    ui->lockStateLabel->setText(!loaded ? QString() : unlocked ? tr("状态：已解锁") : tr("状态：锁定"));
+    ui->lockButton->setText(unlocked ? tr("锁定") : tr("解锁"));
+    ui->lockButton->setIcon(unlocked ? themed({"object-locked-symbolic", "changes-prevent-symbolic", "object-locked"},
+                                              QStyle::SP_DialogCloseButton, style())
+                                     : themed({"object-unlocked-symbolic", "changes-allow-symbolic", "object-unlocked"},
+                                              QStyle::SP_DialogOpenButton, style()));
+    // the running system's own volume cannot be locked
+    ui->lockButton->setEnabled(loaded && !(unlocked && m_device.value(S("system_disk")).toBool()));
+}
+
+QList<int> MainWindow::visiblePcrs() const
+{
+    QList<int> list;
+    if (AppSettings::showAllPcrs() || arr(m_system, "preferred_pcrs").isEmpty()) {
+        for (int i = 0; i < 24; ++i)
+            list << i;
+    } else {
+        for (const QJsonValue &v : arr(m_system, "preferred_pcrs"))
+            list << v.toInt();
+    }
+    return list;
+}
+
+void MainWindow::toggleLock()
+{
+    if (m_path.isEmpty())
+        return;
+    if (!m_device.value(S("unlocked")).toBool())
+        return openForm(S("Unlock"));
+    const QString path = m_path;
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    m_helper->call(S("lock"), QJsonObject{{S("path"), path}}, [this, path](const QJsonValue &, const QString &err) {
+        QApplication::restoreOverrideCursor();
+        if (!err.isEmpty()) {
+            log(S("Lock failed: ") + path);
+            return showError(tr("锁定"), err);
+        }
+        log(S("Locked ") + path);
+        statusBar()->showMessage(tr("已锁定"), 4000);
+        refreshAll();
+    });
 }
 
 void MainWindow::fillDetail()
@@ -578,8 +679,8 @@ void MainWindow::fillDetail()
     }
     for (const QJsonValue &a : arr(s, "actions")) {
         const QJsonObject action = a.toObject();
-        auto *b = new QPushButton(str(action, "label"));
         const QJsonValue form = action.value(S("form"));
+        auto *b = new QPushButton(formIcon(form, style()), str(action, "label"));
         connect(b, &QPushButton::clicked, this, [this, form] { openForm(form); });
         ui->actionsLayout->addWidget(b);
     }
@@ -682,7 +783,7 @@ void MainWindow::openForm(const QJsonValue &kind, const QString &forPath)
                        QApplication::restoreOverrideCursor();
                        if (!err.isEmpty())
                            return showError(tr("无法执行"), err);
-                       auto *dialog = new FormDialog(ok.toObject(), this);
+                       auto *dialog = new FormDialog(ok.toObject(), visiblePcrs(), this);
                        dialog->setAttribute(Qt::WA_DeleteOnClose);
                        connect(dialog, &FormDialog::submitRequested, this, [this, dialog, path] { submitForm(dialog, path); });
                        auto updateNotes = [this, dialog] {
@@ -721,9 +822,18 @@ void MainWindow::submitForm(FormDialog *dialog, const QString &path)
                            return d->setError(err);
                        const QJsonObject reply = ok.toObject();
                        const QString kind = str(reply, "kind");
+                       const bool unlock = d->form().value(S("kind")) == QLatin1String("Unlock");
                        d->accept();
                        if (kind == QLatin1String("plan")) {
                            confirm(QJsonArray{reply});
+                       } else if (kind == QLatin1String("message") && unlock) {
+                           // success needs no dialog: the state shows it
+                           log(str(reply, "log"));
+                           if (!reply.value(S("ok")).toBool())
+                               QMessageBox::warning(this, tr("解锁"), str(reply, "text"));
+                           else
+                               statusBar()->showMessage(str(reply, "text"), 4000);
+                           refreshAll();
                        } else if (kind == QLatin1String("message")) {
                            const QString text = str(reply, "text");
                            if (reply.value(S("ok")).toBool())
@@ -943,5 +1053,7 @@ void MainWindow::changeLanguage(int index)
 void MainWindow::changeTheme(int index)
 {
     AppSettings::setTheme(static_cast<AppSettings::Theme>(index));
-    AppSettings::applyTheme();
+    AppSettings::applyStyle();
+    // the platform theme (colours, fonts, dialogs) is chosen at start-up
+    statusBar()->showMessage(tr("重新启动 Luks Assistant 后完全生效"), 8000);
 }

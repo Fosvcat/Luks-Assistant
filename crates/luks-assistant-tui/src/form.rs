@@ -32,7 +32,9 @@ impl FormState {
     }
 
     fn focusable(&self, i: usize) -> bool {
-        self.form.fields.get(i).is_some_and(|x| x.is_input()) && self.form.visible(i)
+        self.form.fields.get(i).is_some_and(|x| x.is_input())
+            && self.form.visible(i)
+            && self.form.enabled(i)
     }
 
     fn move_focus(&mut self, dir: isize) {

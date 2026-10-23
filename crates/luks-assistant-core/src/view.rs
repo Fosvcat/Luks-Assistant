@@ -6,6 +6,7 @@ use crate::ctx::Ctx;
 use crate::device::{self, LuksDevice};
 use crate::forms::{self, FormKind};
 use crate::health::{Issue, Severity};
+use crate::notes::Location;
 use crate::ops::Request;
 use crate::pcr::{self, TpmStatus};
 use crate::slots::{Overview, Slot, SlotKind};
@@ -41,6 +42,8 @@ pub struct DiskRow {
     pub fstype: String,
     pub encryption: String,
     pub trim: Option<bool>,
+    /// "SSD", "HDD" or "" (unknown).
+    pub media: String,
     pub mount: String,
     pub model: String,
     pub luks: bool,
@@ -78,6 +81,8 @@ pub struct SystemView {
     pub luks_volumes: usize,
     pub total_volumes: usize,
     pub pcrs: Vec<PcrRow>,
+    /// PCRs shown unless the user asks for all of them.
+    pub preferred_pcrs: Vec<u8>,
     pub pcr_error: Option<String>,
     pub picker: Vec<PickEntry>,
     pub backup_root: String,
@@ -125,6 +130,10 @@ pub struct DeviceView {
     pub trim_header: bool,
     pub trim_device: Option<bool>,
     pub unlocked: bool,
+    /// Name of the dm-crypt mapping when unlocked.
+    pub mapping: String,
+    /// Holds the running system's root file system: cannot be locked.
+    pub system_disk: bool,
     pub read_only: Option<String>,
     pub issues: Vec<IssueView>,
     pub bound_pcrs: Vec<u8>,
@@ -212,6 +221,12 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
             fstype: n.fstype.clone().unwrap_or_default(),
             encryption: n.encryption(),
             trim: n.trim(),
+            media: match n.rota {
+                Some(true) => "HDD",
+                Some(false) => "SSD",
+                None => "",
+            }
+            .into(),
             mount: n.mountpoints.join(" "),
             model: n.model.clone().unwrap_or_default(),
             luks: n.is_luks(),
@@ -274,6 +289,7 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
         luks_volumes: luks + extra.len(),
         total_volumes: total + extra.len(),
         pcrs,
+        preferred_pcrs: pcr::PREFERRED.to_vec(),
         pcr_error,
         picker,
         backup_root: ctx.paths.backup_root.to_string_lossy().into_owned(),
@@ -345,7 +361,7 @@ fn kind_id(k: &SlotKind) -> &'static str {
     }
 }
 
-fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
+fn slot_view(ov: &Overview, s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
     let subtitle = match (&s.note, &s.tpm2_status) {
         (_, Some(TpmStatus::Mismatch { .. })) => t!("⚠ PCR 已变化").to_owned(),
         (Some(n), _) if !n.note.text.is_empty() => n.note.text.clone(),
@@ -381,25 +397,19 @@ fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
                     .join(", "),
             ));
         }
-        details.push(row(
-            t!("备注"),
-            match &s.note {
-                Some(n) => t!(
-                    "{}（{}{}）",
-                    if n.note.text.is_empty() {
-                        "—"
-                    } else {
-                        &n.note.text
-                    },
-                    n.location.label(),
-                    n.note
-                        .kind
-                        .map(|k| t!("，{}", k.label()))
-                        .unwrap_or_default()
-                ),
-                None => "—".into(),
-            },
-        ));
+        // Both stores, so it is clear where a note lives.
+        for (label, loc) in [
+            (t!("头部备注"), Location::Header),
+            (t!("本机备注"), Location::Local),
+        ] {
+            let text = ov
+                .notes
+                .at(&ov.header, s.id, loc)
+                .map(|n| n.text.as_str())
+                .filter(|t| !t.is_empty())
+                .unwrap_or("—");
+            details.push(row(label, text));
+        }
         if let Some(t) = &s.tpm2 {
             details.push(row("TPM2", t.describe()));
             if let Some(st) = &s.tpm2_status {
@@ -473,10 +483,16 @@ pub fn device_view(ctx: &Ctx, ov: &Overview, issues: &[Issue]) -> DeviceView {
             ov.header.json_used,
             ov.header.config.json_size
         ),
-        slots: ov.slots.iter().map(|s| slot_view(s, &ctx.caps)).collect(),
+        slots: ov
+            .slots
+            .iter()
+            .map(|s| slot_view(ov, s, &ctx.caps))
+            .collect(),
         trim_header: ov.header.allows_discards(),
         trim_device: node.and_then(|n| n.mapping().and_then(|m| m.trim()).or(n.trim())),
         unlocked: ov.device.mapping.is_some(),
+        mapping: ov.device.mapping.clone().unwrap_or_default(),
+        system_disk: ov.device.holds_root(),
         read_only: ov.read_only_reason(),
         issues: issues.iter().map(issue_view).collect(),
         bound_pcrs: ov

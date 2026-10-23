@@ -517,21 +517,41 @@ pub struct TokenTest {
 /// terminal frontend hands over its terminal, the helper answers `pin`
 /// on a pseudo-terminal.
 pub fn token_tests(ov: &Overview, kind: TokenKind, pin: Option<&Secret>) -> Vec<TokenTest> {
+    token_cmds(ov, kind, pin, None)
+}
+
+/// Like [`token_tests`], but each command really opens the volume as `name`.
+pub fn token_unlocks(
+    ov: &Overview,
+    kind: TokenKind,
+    pin: Option<&Secret>,
+    name: &str,
+) -> Vec<TokenTest> {
+    token_cmds(ov, kind, pin, Some(name))
+}
+
+fn token_cmds(
+    ov: &Overview,
+    kind: TokenKind,
+    pin: Option<&Secret>,
+    open_as: Option<&str>,
+) -> Vec<TokenTest> {
     ov.header
         .tokens
         .values()
         .filter(|t| t.kind == kind.token_type() && !t.keyslots.is_empty())
         .map(|t| {
-            let mut cmd = Cmd::new("cryptsetup")
-                .args([
-                    "open",
-                    "--test-passphrase",
-                    "--token-only",
-                    "-v",
-                    "--token-id",
-                ])
+            let mut cmd = Cmd::new("cryptsetup").arg("open");
+            if open_as.is_none() {
+                cmd = cmd.arg("--test-passphrase");
+            }
+            cmd = cmd
+                .args(["--token-only", "-v", "--token-id"])
                 .arg(t.id.to_string())
                 .arg(ov.device.path.to_string_lossy());
+            if let Some(name) = open_as {
+                cmd = cmd.arg(name);
+            }
             let may_prompt = match kind {
                 TokenKind::Tpm2 => Tpm2Token::from_token(t).is_some_and(|x| x.pin),
                 _ => true,
@@ -549,6 +569,49 @@ pub fn token_tests(ov: &Overview, kind: TokenKind, pin: Option<&Secret>) -> Vec<
             }
         })
         .collect()
+}
+
+/// Name for a new mapping of the volume (systemd's `luks-<UUID>`).
+pub fn mapping_name(ov: &Overview) -> String {
+    format!("luks-{}", ov.header.uuid)
+}
+
+fn check_unlockable(ov: &Overview) -> Result<()> {
+    if let Some(m) = &ov.device.mapping {
+        return Err(Error::Invalid(tx!("已经解锁（{}）", m)));
+    }
+    Ok(())
+}
+
+/// `cryptsetup open` with a password or key file.
+pub fn unlock_cmd(ov: &Overview, cred: &Credential) -> Result<Cmd> {
+    check_unlockable(ov)?;
+    let cmd = Cmd::new("cryptsetup")
+        .arg("open")
+        .arg(ov.device.path.to_string_lossy())
+        .arg(mapping_name(ov));
+    Ok(cred.cryptsetup(cmd, tx!("密码")))
+}
+
+/// Token unlocks for [`token_unlocks`], after the same checks as [`unlock_cmd`].
+pub fn token_unlock_cmds(
+    ov: &Overview,
+    kind: TokenKind,
+    pin: Option<&Secret>,
+) -> Result<Vec<TokenTest>> {
+    check_unlockable(ov)?;
+    Ok(token_unlocks(ov, kind, pin, &mapping_name(ov)))
+}
+
+/// `cryptsetup close`. The volume of the running system cannot be locked.
+pub fn lock_cmd(ov: &Overview) -> Result<Cmd> {
+    let Some(m) = &ov.device.mapping else {
+        return Err(Error::Invalid(tx!("卷没有解锁")));
+    };
+    if ov.device.holds_root() {
+        return Err(Error::Blocked(tx!("这是当前系统所在的卷，不能锁定")));
+    }
+    Ok(Cmd::new("cryptsetup").arg("close").arg(m))
 }
 
 /// Why a token test failed, from cryptsetup's messages.
@@ -1773,6 +1836,31 @@ mod tests {
             .to_string(),
             "No usable token is available."
         );
+    }
+
+    #[test]
+    fn unlock_and_lock_commands() {
+        let mut ov = sample_overview();
+        let pw = Credential::Passphrase(Secret::from_text("x"));
+        let open = unlock_cmd(&ov, &pw).unwrap().display();
+        assert!(
+            open.starts_with(&format!(
+                "cryptsetup open /dev/test luks-{} --key-file",
+                ov.header.uuid
+            )),
+            "{open}"
+        );
+        assert!(lock_cmd(&ov).is_err()); // not unlocked
+
+        ov.device.mapping = Some("cryptdata".into());
+        assert!(unlock_cmd(&ov, &pw).is_err()); // already unlocked
+        assert_eq!(
+            lock_cmd(&ov).unwrap().display(),
+            "cryptsetup close cryptdata"
+        );
+
+        ov.device.mountpoints = vec!["/".into()];
+        assert!(matches!(lock_cmd(&ov), Err(Error::Blocked(_)))); // the running system
     }
 
     #[test]

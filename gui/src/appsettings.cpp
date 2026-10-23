@@ -2,11 +2,12 @@
 
 #include <QApplication>
 #include <QFile>
+#include <QFileInfo>
 #include <QHash>
 #include <QLibraryInfo>
 #include <QLocale>
-#include <QPalette>
 #include <QSettings>
+#include <QStyleFactory>
 #include <QTranslator>
 
 namespace {
@@ -67,38 +68,25 @@ private:
     QHash<QString, QString> m_map;
 };
 
-QPalette makePalette(bool dark)
+bool hasPlatformTheme(const char *file)
 {
-    const QColor window = dark ? QColor(0x2a, 0x2e, 0x32) : QColor(0xef, 0xf0, 0xf1);
-    const QColor text = dark ? QColor(0xfc, 0xfc, 0xfc) : QColor(0x23, 0x26, 0x27);
-    const QColor base = dark ? QColor(0x1b, 0x1e, 0x20) : QColor(0xfc, 0xfc, 0xfc);
-    const QColor alternate = dark ? QColor(0x23, 0x26, 0x29) : QColor(0xf3, 0xf4, 0xf5);
-    const QColor button = dark ? QColor(0x31, 0x36, 0x3b) : QColor(0xef, 0xf0, 0xf1);
-    const QColor disabled = dark ? QColor(0x6e, 0x71, 0x75) : QColor(0xa0, 0xa2, 0xa4);
-    const QColor highlight(0x3d, 0xae, 0xe9);
+    return QFileInfo::exists(QLibraryInfo::path(QLibraryInfo::PluginsPath) + QStringLiteral("/platformthemes/")
+                             + QLatin1String(file));
+}
 
-    QPalette p(button, window);
-    p.setColor(QPalette::WindowText, text);
-    p.setColor(QPalette::Text, text);
-    p.setColor(QPalette::ButtonText, text);
-    p.setColor(QPalette::Base, base);
-    p.setColor(QPalette::AlternateBase, alternate);
-    p.setColor(QPalette::ToolTipBase, dark ? button : QColor(0xf7, 0xf7, 0xf7));
-    p.setColor(QPalette::ToolTipText, text);
-    p.setColor(QPalette::PlaceholderText, disabled);
-    p.setColor(QPalette::BrightText, Qt::white);
-    p.setColor(QPalette::Highlight, highlight);
-    p.setColor(QPalette::HighlightedText, QColor(0xfc, 0xfc, 0xfc));
-    p.setColor(QPalette::Link, dark ? QColor(0x1d, 0x99, 0xf3) : QColor(0x29, 0x80, 0xb9));
-    for (QPalette::ColorRole role : {QPalette::WindowText, QPalette::Text, QPalette::ButtonText})
-        p.setColor(QPalette::Disabled, role, disabled);
-    p.setColor(QPalette::Disabled, QPalette::Highlight, dark ? QColor(0x47, 0x4d, 0x54) : QColor(0xc6, 0xc8, 0xca));
-    return p;
+/// First installed style of `names`.
+QString firstStyle(std::initializer_list<const char *> names)
+{
+    const QStringList keys = QStyleFactory::keys();
+    for (const char *n : names)
+        for (const QString &k : keys)
+            if (k.compare(QLatin1String(n), Qt::CaseInsensitive) == 0)
+                return k;
+    return QStringLiteral("Fusion");
 }
 
 QTranslator *s_qt = nullptr;
 QTranslator *s_catalog = nullptr;
-bool s_paletteSet = false;
 
 } // namespace
 
@@ -120,14 +108,24 @@ void setLanguage(Language language)
 Theme theme()
 {
     const QString v = settings().value(QStringLiteral("theme")).toString();
-    return v == QLatin1String("light") ? Theme::Light : v == QLatin1String("dark") ? Theme::Dark : Theme::System;
+    return v == QLatin1String("qt") ? Theme::Qt : v == QLatin1String("gtk") ? Theme::Gtk : Theme::System;
 }
 
 void setTheme(Theme theme)
 {
-    settings().setValue(QStringLiteral("theme"), theme == Theme::Light  ? QStringLiteral("light")
-                                                 : theme == Theme::Dark ? QStringLiteral("dark")
-                                                                        : QStringLiteral("system"));
+    settings().setValue(QStringLiteral("theme"), theme == Theme::Qt    ? QStringLiteral("qt")
+                                                 : theme == Theme::Gtk ? QStringLiteral("gtk")
+                                                                       : QStringLiteral("system"));
+}
+
+bool showAllPcrs()
+{
+    return settings().value(QStringLiteral("showAllPcrs"), false).toBool();
+}
+
+void setShowAllPcrs(bool all)
+{
+    settings().setValue(QStringLiteral("showAllPcrs"), all);
 }
 
 QString effectiveLanguage()
@@ -165,19 +163,37 @@ void applyLanguage()
     }
 }
 
-void applyTheme()
+void prepareTheme()
 {
-    const Theme t = theme();
-    if (t == Theme::System) {
-        // An unresolved palette falls back to the platform's (KDE colour
-        // scheme, GTK theme, …).
-        if (s_paletteSet)
-            QApplication::setPalette(QPalette());
-        s_paletteSet = false;
+    switch (theme()) {
+    case Theme::System:
+        return;
+    case Theme::Qt:
+        // KDE's platform theme where installed, otherwise Qt's own defaults.
+        if (hasPlatformTheme("KDEPlasmaPlatformTheme6.so"))
+            qputenv("QT_QPA_PLATFORMTHEME", "kde");
+        else
+            qunsetenv("QT_QPA_PLATFORMTHEME");
+        return;
+    case Theme::Gtk:
+        if (hasPlatformTheme("libqgtk3.so"))
+            qputenv("QT_QPA_PLATFORMTHEME", "gtk3");
         return;
     }
-    QApplication::setPalette(makePalette(t == Theme::Dark));
-    s_paletteSet = true;
+}
+
+void applyStyle()
+{
+    switch (theme()) {
+    case Theme::System:
+        return;
+    case Theme::Qt:
+        QApplication::setStyle(firstStyle({"Breeze"}));
+        return;
+    case Theme::Gtk:
+        QApplication::setStyle(firstStyle({"Adwaita", "adwaita"}));
+        return;
+    }
 }
 
 } // namespace AppSettings

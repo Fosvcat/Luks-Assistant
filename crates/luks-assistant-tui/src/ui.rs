@@ -1033,6 +1033,7 @@ fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
             continue;
         }
         let focused = i == state.focus;
+        let disabled = !form.enabled(i);
         let lab = Span::styled(
             format!(
                 "{}{}",
@@ -1041,6 +1042,8 @@ fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
             ),
             if focused {
                 Style::new().cyan().bold()
+            } else if disabled {
+                Style::new().dark_gray()
             } else {
                 Style::new()
             },

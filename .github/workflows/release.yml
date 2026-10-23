@@ -165,6 +165,7 @@ jobs:
             chmod 755 "$dir"/Luks-Assistant-*
             cp packaging/install.sh packaging/Luks-Assistant.desktop \
                packaging/io.github.fosvcat.luks-assistant.policy.in LICENSE README.md "$dir/"
+            cp -r packaging/icons "$dir/icons"
             tar -C staging -czf dist/Luks-Assistant-$arch.tar.gz Luks-Assistant-$arch
           done
           cd dist && sha256sum *.tar.gz > SHA256SUMS && cat SHA256SUMS

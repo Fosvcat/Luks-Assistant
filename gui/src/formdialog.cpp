@@ -41,15 +41,17 @@ QLabel *hintLabel(const QString &text)
 
 } // namespace
 
-FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
+FormDialog::FormDialog(const QJsonObject &form, const QList<int> &offeredPcrs, QWidget *parent)
     : QDialog(parent)
     , m_form(form)
 {
     setWindowTitle(form.value(QStringLiteral("title")).toString());
     setModal(true);
-    setMinimumWidth(560);
 
     auto *outer = new QVBoxLayout(this);
+    // Grow when rows, notes or errors appear instead of squeezing them.
+    outer->setSizeConstraint(QLayout::SetMinimumSize);
+    outer->addItem(new QSpacerItem(540, 0, QSizePolicy::Fixed, QSizePolicy::Minimum)); // minimum width
     auto *layout = new QFormLayout;
     layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
     outer->addLayout(layout);
@@ -66,6 +68,7 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
         const QJsonValue inner = value.toObject().value(w.type);
         const QJsonObject showIf = f.value(QStringLiteral("show_if")).toObject();
         w.showKey = showIf.value(QStringLiteral("key")).toString();
+        w.enabledBy = f.value(QStringLiteral("enabled_by")).toString();
         for (const QJsonValue &i : showIf.value(QStringLiteral("any_of")).toArray())
             w.showIndexes << i.toInt();
         auto addRow = [&](QWidget *field) {
@@ -111,6 +114,7 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
         } else if (w.type == QLatin1String("Toggle")) {
             w.check = new QCheckBox(label);
             w.check->setChecked(inner.toBool());
+            connect(w.check, &QCheckBox::toggled, this, &FormDialog::updateEnabled);
             layout->addRow(QString(), w.check);
             w.rows << w.check;
             addHint();
@@ -128,12 +132,17 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
             auto *grid = new QGridLayout(box);
             grid->setContentsMargins(0, 0, 0, 0);
             const QJsonArray set = inner.toArray();
-            for (int i = 0; i < 24; ++i) {
+            w.pcrs.fill(nullptr, 24);
+            int n = 0;
+            for (int i : offeredPcrs) {
+                if (i < 0 || i >= 24)
+                    continue;
                 auto *cb = new QCheckBox(QString::number(i));
                 cb->setChecked(set.at(i).toBool());
                 connect(cb, &QCheckBox::toggled, this, &FormDialog::pcrsChanged);
-                grid->addWidget(cb, i / 8, i % 8);
-                w.pcrs.push_back(cb);
+                grid->addWidget(cb, n / 8, n % 8);
+                w.pcrs[i] = cb;
+                ++n;
             }
             addRow(box);
         } else if (w.type == QLatin1String("Separator")) {
@@ -162,9 +171,10 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
 
     outer->addStretch();
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-    // Most forms lead to a plan to confirm; these two act at once.
+    // Most forms lead to a plan to confirm; these act at once.
     const QJsonValue kind = form.value(QStringLiteral("kind"));
     m_buttons->button(QDialogButtonBox::Ok)->setText(kind == QLatin1String("Verify")      ? tr("验证")
+                                                     : kind == QLatin1String("Unlock")    ? tr("解锁")
                                                      : kind == QLatin1String("BackupDir") ? tr("保存")
                                                                                           : tr("下一步"));
     m_buttons->button(QDialogButtonBox::Cancel)->setText(tr("取消"));
@@ -172,6 +182,28 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     outer->addWidget(m_buttons);
     updateVisibility();
+    updateEnabled();
+    // Start typing in the first text field shown (the password, usually).
+    for (const FieldWidgets &w : m_widgets) {
+        if (w.line && !w.rows.isEmpty() && !w.rows.first()->isHidden() && w.line->isEnabled()) {
+            w.line->setFocus();
+            break;
+        }
+    }
+}
+
+void FormDialog::updateEnabled()
+{
+    for (const FieldWidgets &w : m_widgets) {
+        if (w.enabledBy.isEmpty())
+            continue;
+        bool on = false;
+        for (const FieldWidgets &t : m_widgets)
+            if (t.check && t.key == w.enabledBy)
+                on = t.check->isChecked();
+        for (QWidget *r : w.rows)
+            r->setEnabled(on);
+    }
 }
 
 void FormDialog::updateVisibility()
@@ -211,7 +243,7 @@ QJsonObject FormDialog::form() const
         } else if (!w.pcrs.isEmpty()) {
             QJsonArray set;
             for (QCheckBox *cb : w.pcrs)
-                set.append(cb->isChecked());
+                set.append(cb && cb->isChecked());
             value = QJsonObject{{w.type, set}};
         }
         f.insert(QStringLiteral("value"), value);
@@ -226,7 +258,7 @@ QList<int> FormDialog::selectedPcrs() const
     QList<int> out;
     for (const FieldWidgets &w : m_widgets)
         for (int i = 0; i < w.pcrs.size(); ++i)
-            if (w.pcrs.at(i)->isChecked())
+            if (w.pcrs.at(i) && w.pcrs.at(i)->isChecked())
                 out << i;
     return out;
 }
