@@ -1,5 +1,6 @@
 //! Distribution and kernel information.
 
+use crate::t;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -16,11 +17,11 @@ pub enum Family {
 impl Family {
     pub fn label(self) -> &'static str {
         match self {
-            Family::Arch => "Arch 系",
-            Family::Fedora => "Fedora/RHEL 系",
-            Family::Debian => "Debian/Ubuntu 系",
-            Family::Suse => "openSUSE 系",
-            Family::Other => "其它",
+            Family::Arch => t!("Arch 系"),
+            Family::Fedora => t!("Fedora/RHEL 系"),
+            Family::Debian => t!("Debian/Ubuntu 系"),
+            Family::Suse => t!("openSUSE 系"),
+            Family::Other => t!("其它"),
         }
     }
 }

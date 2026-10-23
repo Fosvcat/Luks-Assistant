@@ -37,6 +37,50 @@ ConfirmDialog::ConfirmDialog(const QJsonArray &plans, QWidget *parent)
 {
     setModal(true);
     resize(860, 560);
+
+    m_layout = new QVBoxLayout(this);
+    auto *top = new QHBoxLayout;
+    m_icon = new QLabel;
+    m_icon->setAlignment(Qt::AlignTop);
+    top->addWidget(m_icon);
+    auto *intro = new QLabel(tr("将执行以下步骤。命令为等效命令，其中的密码已隐藏。"));
+    intro->setWordWrap(true);
+    top->addWidget(intro, 1);
+    m_layout->addLayout(top);
+
+    m_browser = new QTextBrowser;
+    m_layout->addWidget(m_browser, 1);
+
+    m_confirmRow = new QWidget;
+    auto *row = new QHBoxLayout(m_confirmRow);
+    row->setContentsMargins(0, 0, 0, 0);
+    m_confirmLabel = new QLabel;
+    row->addWidget(m_confirmLabel);
+    m_confirm = new QLineEdit;
+    row->addWidget(m_confirm, 1);
+    m_layout->addWidget(m_confirmRow);
+
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Cancel);
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("取消"));
+    m_run = buttons->addButton(tr("执行"), QDialogButtonBox::AcceptRole);
+    m_run->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
+    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    connect(m_confirm, &QLineEdit::textChanged, this, &ConfirmDialog::updateRun);
+    m_layout->addWidget(buttons);
+
+    setPlans(plans);
+}
+
+void ConfirmDialog::insertWidget(QWidget *widget)
+{
+    m_layout->insertWidget(1, widget);
+}
+
+void ConfirmDialog::setPlans(const QJsonArray &plans)
+{
+    m_plans = plans;
+    m_word.clear();
     QString worst = QStringLiteral("Normal");
     QString html;
     for (const QJsonValue &pv : plans) {
@@ -67,51 +111,36 @@ ConfirmDialog::ConfirmDialog(const QJsonArray &plans, QWidget *parent)
         }
         html += QStringLiteral("</ol>");
     }
-
-    const QString title = plans.size() == 1 ? plans.first().toObject().value(QStringLiteral("title")).toString()
-                                            : tr("%1 项操作").arg(plans.size());
-    setWindowTitle(title);
-
-    auto *outer = new QVBoxLayout(this);
-    auto *top = new QHBoxLayout;
-    top->addWidget(iconLabel(worst == QLatin1String("Normal") ? QStyle::SP_MessageBoxQuestion
-                                                              : QStyle::SP_MessageBoxWarning,
-                             this));
-    auto *intro = new QLabel(tr("将执行以下步骤。命令为等效命令，其中的密码已隐藏。"));
-    intro->setWordWrap(true);
-    top->addWidget(intro, 1);
-    outer->addLayout(top);
-
-    auto *browser = new QTextBrowser;
-    browser->setHtml(html);
-    outer->addWidget(browser, 1);
-
-    if (!m_word.isEmpty()) {
-        auto *row = new QHBoxLayout;
-        row->addWidget(new QLabel(tr("输入 <b>%1</b> 以确认：").arg(esc(m_word))));
-        m_confirm = new QLineEdit;
-        row->addWidget(m_confirm, 1);
-        outer->addLayout(row);
-    }
-
-    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Cancel);
-    buttons->button(QDialogButtonBox::Cancel)->setText(tr("取消"));
-    m_run = buttons->addButton(tr("执行"), QDialogButtonBox::AcceptRole);
-    m_run->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
-    connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
-    connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
-    outer->addWidget(buttons);
-    if (m_confirm) {
-        m_run->setEnabled(false);
-        connect(m_confirm, &QLineEdit::textChanged, this,
-                [this](const QString &t) { m_run->setEnabled(t.trimmed() == m_word); });
+    m_browser->setHtml(html);
+    setWindowTitle(plans.size() == 1 ? plans.first().toObject().value(QStringLiteral("title")).toString()
+                                     : tr("%1 项操作").arg(plans.size()));
+    const int size = style()->pixelMetric(QStyle::PM_MessageBoxIconSize);
+    m_icon->setPixmap(style()
+                          ->standardIcon(worst == QLatin1String("Normal") ? QStyle::SP_MessageBoxQuestion
+                                                                          : QStyle::SP_MessageBoxWarning)
+                          .pixmap(size, size));
+    m_confirmLabel->setText(tr("输入 <b>%1</b> 以确认：").arg(esc(m_word)));
+    m_confirmRow->setVisible(!m_word.isEmpty());
+    m_confirm->clear();
+    updateRun();
+    if (!m_word.isEmpty())
         m_confirm->setFocus();
-    }
+}
+
+void ConfirmDialog::setMessage(const QString &text)
+{
+    setPlans({});
+    m_browser->setPlainText(text);
+}
+
+void ConfirmDialog::updateRun()
+{
+    m_run->setEnabled(!m_plans.isEmpty() && (m_word.isEmpty() || m_confirm->text().trimmed() == m_word));
 }
 
 QString ConfirmDialog::confirmText() const
 {
-    return m_confirm ? m_confirm->text().trimmed() : QString();
+    return m_word.isEmpty() ? QString() : m_confirm->text().trimmed();
 }
 
 ProgressDialog::ProgressDialog(const QString &title, QWidget *parent)
@@ -202,6 +231,14 @@ QString reportsText(const QJsonArray &reports)
         if (!error.isEmpty())
             lines << QObject::tr("  错误: %1").arg(error);
     }
+    return lines.join(QLatin1Char('\n'));
+}
+
+QString reportsLog(const QJsonArray &reports)
+{
+    QStringList lines;
+    for (const QJsonValue &r : reports)
+        lines << r.toObject().value(QStringLiteral("log")).toString().trimmed();
     return lines.join(QLatin1Char('\n'));
 }
 

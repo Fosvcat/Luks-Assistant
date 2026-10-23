@@ -5,8 +5,10 @@ use crate::ctx::Ctx;
 use crate::device::LuksDevice;
 use crate::error::Result;
 use crate::header::{self, Header, Keyslot, Token};
+use crate::i18n::Text;
 use crate::notes::{self, KeyKind, Notes, SlotNote};
 use crate::pcr::{self, Snapshots, Tpm2Token, TpmStatus};
+use crate::{t, tx};
 use luks_assistant_sysinfo::tpm::PcrValues;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
@@ -34,20 +36,24 @@ pub enum SlotKind {
 }
 
 impl SlotKind {
-    pub fn label(&self) -> String {
+    pub fn text(&self) -> Text {
         match self {
-            SlotKind::Empty => "空".into(),
-            SlotKind::Passphrase => "密码".into(),
-            SlotKind::Keyfile => "密钥文件".into(),
-            SlotKind::Secret => "密码/密钥文件".into(),
-            SlotKind::Recovery => "恢复密钥".into(),
-            SlotKind::Tpm2 => "TPM2".into(),
-            SlotKind::Fido2 => "FIDO2".into(),
-            SlotKind::Pkcs11 => "PKCS#11".into(),
-            SlotKind::OtherToken(t) => format!("令牌:{t}"),
-            SlotKind::Reencrypt => "重加密".into(),
-            SlotKind::Luks1 => "LUKS1 密钥".into(),
+            SlotKind::Empty => tx!("空"),
+            SlotKind::Passphrase => tx!("密码"),
+            SlotKind::Keyfile => tx!("密钥文件"),
+            SlotKind::Secret => tx!("密码/密钥文件"),
+            SlotKind::Recovery => tx!("恢复密钥"),
+            SlotKind::Tpm2 => Text::plain("TPM2"),
+            SlotKind::Fido2 => Text::plain("FIDO2"),
+            SlotKind::Pkcs11 => Text::plain("PKCS#11"),
+            SlotKind::OtherToken(t) => tx!("令牌:{}", t),
+            SlotKind::Reencrypt => tx!("重加密"),
+            SlotKind::Luks1 => tx!("LUKS1 密钥"),
         }
+    }
+
+    pub fn label(&self) -> String {
+        self.text().to_string()
     }
 
     /// Something the user knows or keeps as a backup (passphrase, key file,
@@ -113,16 +119,16 @@ impl Fido2Token {
         };
         let parts: Vec<String> = [
             flag(self.client_pin, "PIN"),
-            flag(self.user_presence, "触摸"),
-            flag(self.user_verification, "用户验证"),
+            flag(self.user_presence, t!("触摸")),
+            flag(self.user_verification, t!("用户验证")),
         ]
         .into_iter()
         .flatten()
         .collect();
         if parts.is_empty() {
-            "无额外要求".into()
+            t!("无额外要求").into()
         } else {
-            format!("需要 {}", parts.join(" + "))
+            t!("需要 {}", parts.join(" + "))
         }
     }
 }
@@ -149,7 +155,7 @@ impl Slot {
     /// One-line summary for lists and detail panes.
     pub fn summary(&self) -> String {
         match &self.kind {
-            SlotKind::Empty => "空闲".into(),
+            SlotKind::Empty => t!("空闲").into(),
             SlotKind::Tpm2 => self.tpm2.as_ref().map(|t| t.describe()).unwrap_or_default(),
             SlotKind::Fido2 => self
                 .fido2
@@ -307,12 +313,12 @@ impl Overview {
 
     pub fn read_only_reason(&self) -> Option<String> {
         if !self.header.is_luks2() {
-            return Some("不支持 LUKS1，仅支持 LUKS2".into());
+            return Some(t!("不支持 LUKS1，仅支持 LUKS2").into());
         }
         if !self.header.config.requirements.is_empty() {
-            return Some(format!(
-                "头部有强制要求 {:?}，只读",
-                self.header.config.requirements
+            return Some(t!(
+                "头部有强制要求 {}，只读",
+                format!("{:?}", self.header.config.requirements)
             ));
         }
         None

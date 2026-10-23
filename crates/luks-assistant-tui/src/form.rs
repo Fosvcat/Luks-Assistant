@@ -25,10 +25,14 @@ impl FormState {
             pcr_cursor: 7,
             error: None,
         };
-        if !f.form.fields.first().is_some_and(|x| x.is_input()) {
+        if !f.focusable(0) {
             f.move_focus(1);
         }
         f
+    }
+
+    fn focusable(&self, i: usize) -> bool {
+        self.form.fields.get(i).is_some_and(|x| x.is_input()) && self.form.visible(i)
     }
 
     fn move_focus(&mut self, dir: isize) {
@@ -36,7 +40,7 @@ impl FormState {
         let mut i = self.focus as isize;
         for _ in 0..n {
             i = (i + dir).rem_euclid(n);
-            if self.form.fields[i as usize].is_input() {
+            if self.focusable(i as usize) {
                 self.focus = i as usize;
                 return;
             }
@@ -45,7 +49,9 @@ impl FormState {
 
     pub fn on_paste(&mut self, s: &str) {
         if let Some(f) = self.form.fields.get_mut(self.focus) {
-            if let Value::Text(t) | Value::Secret(t) = &mut f.value {
+            if let Value::Text(t) | Value::Secret(t) | Value::File(t) | Value::SaveFile(t) =
+                &mut f.value
+            {
                 t.push_str(s.trim_end_matches(['\n', '\r']));
             }
         }
@@ -71,7 +77,8 @@ impl FormState {
             return FormEvent::None;
         };
         match &mut field.value {
-            Value::Text(s) | Value::Secret(s) => match k.code {
+            Value::Text(s) | Value::Secret(s) | Value::File(s) | Value::SaveFile(s) => match k.code
+            {
                 KeyCode::Char('u') if k.modifiers.contains(KeyModifiers::CONTROL) => s.clear(),
                 KeyCode::Char(c) => s.push(c),
                 KeyCode::Backspace => {
@@ -95,7 +102,7 @@ impl FormState {
                 KeyCode::Char(' ') => set[*cur] = !set[*cur],
                 _ => {}
             },
-            Value::Label => {}
+            Value::Label | Value::Separator => {}
         }
         FormEvent::None
     }

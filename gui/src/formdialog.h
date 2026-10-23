@@ -34,12 +34,20 @@ signals:
 
 private:
     struct FieldWidgets {
-        QString type; // Text, Secret, Toggle, Choice, Pcrs, Label
+        QString key;
+        QString type; // Text, Secret, File, SaveFile, Toggle, Choice, Pcrs, Label, Separator
         QLineEdit *line = nullptr;
         QCheckBox *check = nullptr;
         QComboBox *combo = nullptr;
         QVector<QCheckBox *> pcrs;
+        // Everything that makes up the field's rows, hidden together.
+        QVector<QWidget *> rows;
+        // Shown only while the choice field showKey has one of showIndexes.
+        QString showKey;
+        QList<int> showIndexes;
     };
+
+    void updateVisibility();
 
     QJsonObject m_form;
     QVector<FieldWidgets> m_widgets;

@@ -9,6 +9,7 @@ use luks_assistant_core::device::{self, LuksDevice};
 use luks_assistant_core::exec::{Cmd, CmdOutput, Runner, SystemRunner, run_in_pty};
 use luks_assistant_core::forms::{self, Env, Form, Submit, VerifyMethod};
 use luks_assistant_core::health;
+use luks_assistant_core::i18n::{self, Lang, Text};
 use luks_assistant_core::ops::{self, Plan, Request, TokenKind};
 use luks_assistant_core::proto::{
     self, Call, DeviceReply, Event, Hello, Method, OverviewReply, PlanView, Reply, ReplyBody,
@@ -16,6 +17,7 @@ use luks_assistant_core::proto::{
 };
 use luks_assistant_core::slots::Overview;
 use luks_assistant_core::{Ctx, Error, Result, Secret, config, view};
+use luks_assistant_core::{t, tx};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::{BufRead, Write};
@@ -24,13 +26,15 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-const USAGE: &str =
-    "Luks-Assistant-Helper — 由 Luks Assistant 图形界面通过 pkexec 启动，不需要手动运行
+// Not translated: the helper is started by the GUI, not by people.
+const USAGE: &str = "\
+Luks-Assistant-Helper: the privileged backend of the Luks Assistant GUI,
+started through pkexec; not meant to be run by hand.
 
-  --tpm2-device <dev>   TPM 设备或 TCTI（开发用）
-  --etc-dir <dir>       备注与配置目录（开发用）
-  --state-dir <dir>     状态目录（开发用）
-  --fast-kdf            新槽位使用弱 PBKDF2（仅测试）
+  --tpm2-device <dev>   TPM device or TCTI (development)
+  --etc-dir <dir>       notes and configuration directory (development)
+  --state-dir <dir>     state directory (development)
+  --fast-kdf            weak PBKDF2 for new slots (tests only)
 ";
 
 /// Shared writer so that events from inside a running command and final
@@ -139,9 +143,9 @@ impl Helper {
         let ov = self.overview(path)?;
         let tests = ops::token_tests(&ov, kind, pin);
         if tests.is_empty() {
-            return Err(Error::Invalid(format!("没有 {} 令牌", kind.label())));
+            return Err(Error::Invalid(tx!("没有 {} 令牌", kind.label())));
         }
-        let mut last = String::new();
+        let mut last = Text::plain("");
         for t in tests {
             match self.ctx.runner.run(&t.cmd) {
                 Ok(o) if o.success() => {
@@ -151,14 +155,14 @@ impl Helper {
                     });
                 }
                 Ok(o) => last = ops::token_failure(&o),
-                Err(e) => last = e.to_string(),
+                Err(e) => last = e.text(),
             }
         }
-        Err(Error::Invalid(format!("{} 验证失败：{last}", kind.label())))
+        Err(Error::Invalid(tx!("{} 验证失败：{}", kind.label(), last)))
     }
 
     fn submit(&mut self, path: &Path, form: &Form) -> Result<SubmitReply> {
-        let submit = forms::submit(form).map_err(Error::Invalid)?;
+        let submit = forms::submit(form).map_err(|e| Error::Invalid(e.into()))?;
         Ok(match submit {
             Submit::Request(request) => {
                 let ov = self.overview(path)?;
@@ -171,38 +175,33 @@ impl Helper {
                         let kind = self
                             .overview(path)
                             .ok()
-                            .and_then(|o| o.slot(slot).map(|s| s.kind.label()))
-                            .unwrap_or_default();
-                        SubmitReply::Message {
-                            ok: true,
-                            text: format!("槽位 {slot}（{kind}）验证成功"),
-                        }
+                            .and_then(|o| o.slot(slot).map(|s| s.kind.text()))
+                            .unwrap_or_else(|| Text::plain("?"));
+                        message(true, tx!("槽位 {}（{}）验证成功", slot, kind))
                     }
-                    Err(e) => SubmitReply::Message {
-                        ok: false,
-                        text: e.to_string(),
-                    },
+                    Err(e) => message(false, e.text()),
                 }
             }
             Submit::Verify(VerifyMethod::Token { kind, pin }) => {
                 match self.verify_token(path, kind, pin.as_ref()) {
-                    Ok(v) => SubmitReply::Message {
-                        ok: true,
-                        text: format!(
-                            "槽位 {}（{} 令牌 {}）验证成功",
-                            v.slots
-                                .iter()
-                                .map(u32::to_string)
-                                .collect::<Vec<_>>()
-                                .join(", "),
-                            kind.label(),
-                            v.token
-                        ),
-                    },
-                    Err(e) => SubmitReply::Message {
-                        ok: false,
-                        text: e.to_string(),
-                    },
+                    Ok(v) => {
+                        let slots = v
+                            .slots
+                            .iter()
+                            .map(u32::to_string)
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        message(
+                            true,
+                            tx!(
+                                "槽位 {}（{} 令牌 {}）验证成功",
+                                slots,
+                                kind.label(),
+                                v.token
+                            ),
+                        )
+                    }
+                    Err(e) => message(false, e.text()),
                 }
             }
             Submit::SetBackupDir(dir) => {
@@ -221,6 +220,10 @@ impl Helper {
                 caps: self.ctx.caps.clone(),
                 tpm2_device: self.ctx.tpm2_device.clone(),
             }),
+            Method::SetLanguage { lang } => {
+                i18n::set_lang(Lang::from_code(&lang).unwrap_or(Lang::Zh));
+                Ok(serde_json::Value::Null)
+            }
             Method::SystemView { extra } => json(view::system_view(&self.ctx, &extra)),
             Method::DeviceView { path } => {
                 let mut ov = self.overview(&path)?;
@@ -241,7 +244,7 @@ impl Helper {
                     paths: &self.ctx.paths,
                     ask_pins: true,
                 };
-                json(forms::build(kind, &env).map_err(Error::Invalid)?)
+                json(forms::build(kind, &env).map_err(|e| Error::Invalid(e.into()))?)
             }
             Method::SubmitForm { path, form } => json(self.submit(&path, &form)?),
             Method::PcrNotes { pcrs } => {
@@ -276,9 +279,9 @@ impl Helper {
                     let p = self
                         .plans
                         .get(id)
-                        .ok_or_else(|| Error::Invalid(format!("计划 {id} 不存在或已执行")))?;
+                        .ok_or_else(|| Error::Invalid(tx!("计划 {} 不存在或已执行", id)))?;
                     if p.confirm_word.as_ref().is_some_and(|w| w != confirm.trim()) {
-                        return Err(Error::Blocked("确认文字不正确".into()));
+                        return Err(Error::Blocked(tx!("确认文字不正确")));
                     }
                 }
                 let taken: Vec<Plan> = plans
@@ -306,6 +309,14 @@ impl Helper {
     }
 }
 
+fn message(ok: bool, text: Text) -> SubmitReply {
+    SubmitReply::Message {
+        ok,
+        text: text.to_string(),
+        log: text.en(),
+    }
+}
+
 fn main() {
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
@@ -329,13 +340,13 @@ fn main() {
                 return;
             }
             other => {
-                eprintln!("未知参数: {other}\n{USAGE}");
+                eprintln!("unknown argument: {other}\n{USAGE}");
                 std::process::exit(2);
             }
         }
     }
     if !luks_assistant_sysinfo::is_root() {
-        eprintln!("Luks-Assistant-Helper 需要 root 权限");
+        eprintln!("{}", t!("Luks-Assistant-Helper 需要 root 权限"));
         std::process::exit(1);
     }
     let out = Out {
@@ -361,7 +372,7 @@ fn main() {
             Err(e) => {
                 out.send(&Reply {
                     id: 0,
-                    body: ReplyBody::Err(format!("无效请求: {e}")),
+                    body: ReplyBody::Err(t!("无效请求: {}", e)),
                 });
                 continue;
             }

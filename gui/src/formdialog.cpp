@@ -3,8 +3,11 @@
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
+#include <QFileDialog>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QGridLayout>
+#include <QHBoxLayout>
 #include <QJsonArray>
 #include <QLabel>
 #include <QLineEdit>
@@ -14,8 +17,9 @@
 namespace {
 
 // Rust serializes the field value as an externally tagged enum:
-// {"Text": ".."}, {"Secret": ".."}, {"Toggle": true},
-// {"Choice": {"options": [..], "index": 0}}, {"Pcrs": [false, ..]}, "Label".
+// {"Text": ".."}, {"Secret": ".."}, {"File": ".."}, {"SaveFile": ".."},
+// {"Toggle": true}, {"Choice": {"options": [..], "index": 0}},
+// {"Pcrs": [false, ..]}, "Label", "Separator".
 QString valueType(const QJsonValue &v)
 {
     if (v.isString())
@@ -57,8 +61,26 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
         const QString hint = f.value(QStringLiteral("hint")).toString();
         const QJsonValue value = f.value(QStringLiteral("value"));
         FieldWidgets w;
+        w.key = f.value(QStringLiteral("key")).toString();
         w.type = valueType(value);
         const QJsonValue inner = value.toObject().value(w.type);
+        const QJsonObject showIf = f.value(QStringLiteral("show_if")).toObject();
+        w.showKey = showIf.value(QStringLiteral("key")).toString();
+        for (const QJsonValue &i : showIf.value(QStringLiteral("any_of")).toArray())
+            w.showIndexes << i.toInt();
+        auto addRow = [&](QWidget *field) {
+            auto *l = new QLabel(label);
+            l->setBuddy(field);
+            layout->addRow(l, field);
+            w.rows << l << field;
+        };
+        auto addHint = [&] {
+            if (hint.isEmpty())
+                return;
+            QLabel *h = hintLabel(hint);
+            layout->addRow(QString(), h);
+            w.rows << h;
+        };
 
         if (w.type == QLatin1String("Text") || w.type == QLatin1String("Secret")) {
             w.line = new QLineEdit(inner.toString());
@@ -66,22 +88,41 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
                 w.line->setEchoMode(QLineEdit::Password);
             w.line->setPlaceholderText(hint);
             w.line->setToolTip(hint);
-            layout->addRow(label, w.line);
+            addRow(w.line);
+        } else if (w.type == QLatin1String("File") || w.type == QLatin1String("SaveFile")) {
+            auto *box = new QWidget;
+            auto *row = new QHBoxLayout(box);
+            row->setContentsMargins(0, 0, 0, 0);
+            w.line = new QLineEdit(inner.toString());
+            w.line->setPlaceholderText(hint);
+            auto *browse = new QPushButton(tr("浏览…"));
+            row->addWidget(w.line, 1);
+            row->addWidget(browse);
+            const bool save = w.type == QLatin1String("SaveFile");
+            QLineEdit *line = w.line;
+            connect(browse, &QPushButton::clicked, this, [this, line, save, label] {
+                const QString start = line->text().isEmpty() ? QStringLiteral("/") : line->text();
+                const QString path = save ? QFileDialog::getSaveFileName(this, label, start)
+                                          : QFileDialog::getOpenFileName(this, label, QFileInfo(start).path());
+                if (!path.isEmpty())
+                    line->setText(path);
+            });
+            addRow(box);
         } else if (w.type == QLatin1String("Toggle")) {
             w.check = new QCheckBox(label);
             w.check->setChecked(inner.toBool());
             layout->addRow(QString(), w.check);
-            if (!hint.isEmpty())
-                layout->addRow(QString(), hintLabel(hint));
+            w.rows << w.check;
+            addHint();
         } else if (w.type == QLatin1String("Choice")) {
             w.combo = new QComboBox;
             const QJsonObject c = inner.toObject();
             for (const QJsonValue &o : c.value(QStringLiteral("options")).toArray())
                 w.combo->addItem(o.toString());
             w.combo->setCurrentIndex(c.value(QStringLiteral("index")).toInt());
-            layout->addRow(label, w.combo);
-            if (!hint.isEmpty())
-                layout->addRow(QString(), hintLabel(hint));
+            connect(w.combo, &QComboBox::currentIndexChanged, this, &FormDialog::updateVisibility);
+            addRow(w.combo);
+            addHint();
         } else if (w.type == QLatin1String("Pcrs")) {
             auto *box = new QWidget;
             auto *grid = new QGridLayout(box);
@@ -94,9 +135,16 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
                 grid->addWidget(cb, i / 8, i % 8);
                 w.pcrs.push_back(cb);
             }
-            layout->addRow(label, box);
+            addRow(box);
+        } else if (w.type == QLatin1String("Separator")) {
+            auto *gap = new QWidget;
+            gap->setFixedHeight(fontMetrics().height());
+            layout->addRow(gap);
+            w.rows << gap;
         } else {
-            layout->addRow(hintLabel(label));
+            QLabel *l = hintLabel(label);
+            layout->addRow(l);
+            w.rows << l;
         }
         m_widgets.push_back(w);
     }
@@ -123,6 +171,25 @@ FormDialog::FormDialog(const QJsonObject &form, QWidget *parent)
     connect(m_buttons, &QDialogButtonBox::accepted, this, &FormDialog::submitRequested);
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     outer->addWidget(m_buttons);
+    updateVisibility();
+}
+
+void FormDialog::updateVisibility()
+{
+    for (const FieldWidgets &w : m_widgets) {
+        if (w.showKey.isEmpty())
+            continue;
+        int index = -1;
+        for (const FieldWidgets &c : m_widgets)
+            if (c.combo && c.key == w.showKey)
+                index = c.combo->currentIndex();
+        const bool shown = w.showIndexes.contains(index);
+        for (QWidget *r : w.rows)
+            r->setVisible(shown);
+    }
+    // Let the layout drop the hidden rows before shrinking to fit.
+    layout()->activate();
+    adjustSize();
 }
 
 QJsonObject FormDialog::form() const

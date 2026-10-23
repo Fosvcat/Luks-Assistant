@@ -3,6 +3,7 @@
 use crate::ctx::Ctx;
 use crate::error::{Error, Result};
 use crate::exec::Cmd;
+use crate::t;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
@@ -108,11 +109,11 @@ impl BlockNode {
                 .map(|v| format!("LUKS{v}"))
                 .unwrap_or_else(|| "LUKS".into());
             match self.mapping() {
-                Some(m) => format!("{v} 已解锁 → {}", basename(&m.path)),
-                None => format!("{v} 未解锁"),
+                Some(m) => t!("{} 已解锁 → {}", v, basename(&m.path)),
+                None => t!("{} 未解锁", v),
             }
         } else if self.kind == "crypt" {
-            "解密映射".into()
+            t!("解密映射").into()
         } else {
             "—".into()
         }
@@ -284,7 +285,8 @@ fn node(v: &Value) -> BlockNode {
 }
 
 pub fn parse_tree(json: &str) -> Result<BlockTree> {
-    let v: Value = serde_json::from_str(json).map_err(|e| Error::Parse(format!("lsblk: {e}")))?;
+    let v: Value =
+        serde_json::from_str(json).map_err(|e| Error::Parse(format!("lsblk: {e}").into()))?;
     Ok(BlockTree {
         roots: v
             .get("blockdevices")

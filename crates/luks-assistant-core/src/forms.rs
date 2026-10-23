@@ -8,6 +8,7 @@ use crate::notes::Location;
 use crate::ops::{Credential, KdfChoice, NoteInput, Request, TokenKind};
 use crate::secret::Secret;
 use crate::slots::{Overview, Slot, SlotKind};
+use crate::t;
 use luks_assistant_sysinfo::tools::Caps;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -22,8 +23,21 @@ pub enum Value {
         index: usize,
     },
     Pcrs([bool; 24]),
+    /// Path of an existing file; the GUI adds a file picker.
+    File(String),
+    /// Path of a file to create; the GUI adds a save dialog.
+    SaveFile(String),
     /// Read-only line.
     Label,
+    /// Blank space between groups of fields.
+    Separator,
+}
+
+/// Show a field only while the choice field `key` has one of `any_of` selected.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ShowIf {
+    pub key: String,
+    pub any_of: Vec<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -32,70 +46,71 @@ pub struct Field {
     pub label: String,
     pub value: Value,
     pub hint: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub show_if: Option<ShowIf>,
 }
 
 impl Field {
-    pub fn text(key: &str, label: &str, init: &str) -> Self {
+    fn new(key: &str, label: &str, value: Value) -> Self {
         Field {
             key: key.to_owned(),
             label: label.into(),
-            value: Value::Text(init.into()),
+            value,
             hint: None,
+            show_if: None,
         }
+    }
+    pub fn text(key: &str, label: &str, init: &str) -> Self {
+        Field::new(key, label, Value::Text(init.into()))
     }
     pub fn secret(key: &str, label: &str) -> Self {
-        Field {
-            key: key.to_owned(),
-            label: label.into(),
-            value: Value::Secret(String::new()),
-            hint: None,
-        }
+        Field::new(key, label, Value::Secret(String::new()))
+    }
+    pub fn file(key: &str, label: &str, init: &str) -> Self {
+        Field::new(key, label, Value::File(init.into()))
+    }
+    pub fn save_file(key: &str, label: &str, init: &str) -> Self {
+        Field::new(key, label, Value::SaveFile(init.into()))
     }
     pub fn toggle(key: &str, label: &str, init: bool) -> Self {
-        Field {
-            key: key.to_owned(),
-            label: label.into(),
-            value: Value::Toggle(init),
-            hint: None,
-        }
+        Field::new(key, label, Value::Toggle(init))
     }
     pub fn choice(key: &str, label: &str, options: &[&str], index: usize) -> Self {
-        Field {
-            key: key.to_owned(),
-            label: label.into(),
-            value: Value::Choice {
+        Field::new(
+            key,
+            label,
+            Value::Choice {
                 options: options.iter().map(|s| s.to_string()).collect(),
                 index,
             },
-            hint: None,
-        }
+        )
     }
     pub fn pcrs(key: &str, label: &str, selected: &[u8]) -> Self {
         let mut set = [false; 24];
         for &p in selected.iter().filter(|p| **p < 24) {
             set[p as usize] = true;
         }
-        Field {
-            key: key.to_owned(),
-            label: label.into(),
-            value: Value::Pcrs(set),
-            hint: None,
-        }
+        Field::new(key, label, Value::Pcrs(set))
     }
     pub fn label(text: &str) -> Self {
-        Field {
-            key: String::new(),
-            label: text.into(),
-            value: Value::Label,
-            hint: None,
-        }
+        Field::new("", text, Value::Label)
+    }
+    pub fn separator() -> Self {
+        Field::new("", "", Value::Separator)
     }
     pub fn hint(mut self, h: &str) -> Self {
         self.hint = Some(h.into());
         self
     }
+    pub fn show_if(mut self, key: &str, any_of: &[usize]) -> Self {
+        self.show_if = Some(ShowIf {
+            key: key.to_owned(),
+            any_of: any_of.to_vec(),
+        });
+        self
+    }
     pub fn is_input(&self) -> bool {
-        !matches!(self.value, Value::Label)
+        !matches!(self.value, Value::Label | Value::Separator)
     }
 }
 
@@ -138,9 +153,19 @@ impl Form {
             .map(|f| &mut f.value)
     }
 
+    /// Is field `i` shown, given the current choices?
+    pub fn visible(&self, i: usize) -> bool {
+        match self.fields.get(i).and_then(|f| f.show_if.as_ref()) {
+            Some(c) => c.any_of.contains(&self.choice(&c.key)),
+            None => true,
+        }
+    }
+
     pub fn text(&self, key: &str) -> String {
         match self.get(key) {
-            Some(Value::Text(s)) | Some(Value::Secret(s)) => s.clone(),
+            Some(Value::Text(s) | Value::Secret(s) | Value::File(s) | Value::SaveFile(s)) => {
+                s.clone()
+            }
             _ => String::new(),
         }
     }
@@ -192,22 +217,34 @@ pub struct Env<'a> {
     pub ask_pins: bool,
 }
 
+const AUTH_METHOD: &str = "auth_method";
 const AUTH_PW: &str = "auth_pw";
 const AUTH_KF: &str = "auth_kf";
 
-fn auth_fields(label: &str) -> Vec<Field> {
+/// Existing credential: method, then password or key file, then a gap
+/// before the operation's own settings. `hint` says whose password.
+fn auth_fields(hint: &str) -> Vec<Field> {
     vec![
-        Field::secret(AUTH_PW, label).hint("任一槽位的密码或恢复密钥"),
-        Field::text(AUTH_KF, "或 密钥文件", ""),
+        Field::choice(
+            AUTH_METHOD,
+            t!("验证方式"),
+            &[t!("密码"), t!("密钥文件")],
+            0,
+        ),
+        Field::secret(AUTH_PW, t!("密码"))
+            .hint(hint)
+            .show_if(AUTH_METHOD, &[0]),
+        Field::file(AUTH_KF, t!("密钥文件"), "").show_if(AUTH_METHOD, &[1]),
+        Field::separator(),
     ]
 }
 
 fn note_fields(text: &str, loc: Location) -> Vec<Field> {
     vec![
-        Field::text("note", "备注", text).hint("最多 64 字"),
+        Field::text("note", t!("备注"), text).hint(t!("最多 64 字")),
         Field::choice(
             "note_loc",
-            "备注位置",
+            t!("备注位置"),
             &[Location::Header.label(), Location::Local.label()],
             usize::from(loc == Location::Local),
         ),
@@ -215,7 +252,7 @@ fn note_fields(text: &str, loc: Location) -> Vec<Field> {
 }
 
 fn kdf_field() -> Field {
-    Field::choice("kdf", "PBKDF", &["argon2id", "pbkdf2（兼容 GRUB）"], 0)
+    Field::choice("kdf", "PBKDF", &["argon2id", t!("pbkdf2（兼容 GRUB）")], 0)
 }
 
 fn slot_note(ov: &Overview, id: Option<u32>) -> (String, Location) {
@@ -223,6 +260,10 @@ fn slot_note(ov: &Overview, id: Option<u32>) -> (String, Location) {
         .and_then(|s| s.note.as_ref())
         .map(|n| (n.note.text.clone(), n.location))
         .unwrap_or((String::new(), Location::Header))
+}
+
+fn any_slot() -> &'static str {
+    t!("任一槽位的密码或恢复密钥")
 }
 
 /// Build the form for `kind`. Fails when the operation is impossible from
@@ -239,45 +280,45 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
         }
     }
     let (title, fields): (String, Vec<Field>) = match &kind {
-        FormKind::AddPassphrase => ("添加密码".into(), {
-            let mut f = auth_fields("现有密码");
-            f.push(Field::secret("new", "新密码"));
-            f.push(Field::secret("new2", "确认新密码"));
-            f.push(Field::text("slot", "槽位", "").hint("留空自动选择"));
+        FormKind::AddPassphrase => (t!("添加密码").into(), {
+            let mut f = auth_fields(any_slot());
+            f.push(Field::secret("new", t!("新密码")));
+            f.push(Field::secret("new2", t!("确认新密码")));
+            f.push(Field::text("slot", t!("槽位"), "").hint(t!("留空自动选择")));
             f.push(kdf_field());
             f.extend(note_fields("", Location::Header));
             f
         }),
-        FormKind::AddKeyfile => ("添加密钥文件".into(), {
-            let mut f = auth_fields("现有密码");
-            f.push(Field::text("path", "密钥文件", ""));
-            f.push(Field::text("slot", "槽位", "").hint("留空自动选择"));
+        FormKind::AddKeyfile => (t!("添加密钥文件").into(), {
+            let mut f = auth_fields(any_slot());
+            f.push(Field::file("path", t!("密钥文件"), ""));
+            f.push(Field::text("slot", t!("槽位"), "").hint(t!("留空自动选择")));
             f.push(kdf_field());
             f.extend(note_fields("", Location::Header));
             f
         }),
-        FormKind::GenerateKeyfile => ("生成密钥文件".into(), {
+        FormKind::GenerateKeyfile => (t!("生成密钥文件").into(), {
             let short: String = ov.header.uuid.chars().take(8).collect();
-            let mut f = auth_fields("现有密码");
-            f.push(Field::text(
+            let mut f = auth_fields(any_slot());
+            f.push(Field::save_file(
                 "path",
-                "保存到",
+                t!("保存到"),
                 &format!("/root/luks-{short}.key"),
             ));
-            f.push(Field::text("size", "大小（字节）", "4096"));
-            f.push(Field::text("slot", "槽位", "").hint("留空自动选择"));
+            f.push(Field::text("size", t!("大小（字节）"), "4096"));
+            f.push(Field::text("slot", t!("槽位"), "").hint(t!("留空自动选择")));
             f.extend(note_fields("", Location::Header));
             f
         }),
         FormKind::Recovery { replace } => {
             let (t, l) = slot_note(ov, *replace);
-            let mut f = auth_fields("现有密码");
+            let mut f = auth_fields(any_slot());
             f.extend(note_fields(&t, l));
             (
                 if replace.is_some() {
-                    "重新生成恢复密钥"
+                    t!("重新生成恢复密钥")
                 } else {
-                    "生成恢复密钥"
+                    t!("生成恢复密钥")
                 }
                 .into(),
                 f,
@@ -285,30 +326,30 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
         }
         FormKind::Tpm2 { replace } => {
             if !env.caps.cryptenroll {
-                return Err("需要 systemd-cryptenroll".into());
+                return Err(t!("需要 systemd-cryptenroll").into());
             }
             let old = replace
                 .and_then(|r| ov.slot(r))
                 .and_then(|s| s.tpm2.as_ref());
             let pcrs = old.map(|t| t.pcrs.clone()).unwrap_or_else(|| vec![7]);
-            let mut f = auth_fields("现有密码");
+            let mut f = auth_fields(any_slot());
             f.push(Field::pcrs("pcrs", "PCR", &pcrs));
             if env.caps.tpm2_pin {
                 f.push(Field::toggle(
                     "use_pin",
-                    "需要 PIN",
+                    t!("需要 PIN"),
                     old.is_some_and(|t| t.pin),
                 ));
                 f.push(Field::secret("pin", "PIN"));
-                f.push(Field::secret("pin2", "确认 PIN"));
+                f.push(Field::secret("pin2", t!("确认 PIN")));
             }
             let (t, l) = slot_note(ov, *replace);
             f.extend(note_fields(&t, l));
             (
                 if replace.is_some() {
-                    "重新录入 TPM2"
+                    t!("重新录入 TPM2")
                 } else {
-                    "录入 TPM2"
+                    t!("录入 TPM2")
                 }
                 .into(),
                 f,
@@ -316,29 +357,32 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
         }
         FormKind::Fido2 { replace } => {
             if !env.caps.cryptenroll {
-                return Err("需要 systemd-cryptenroll".into());
+                return Err(t!("需要 systemd-cryptenroll").into());
             }
             let old = replace
                 .and_then(|r| ov.slot(r))
                 .and_then(|s| s.fido2.as_ref());
-            let mut f = auth_fields("现有密码");
+            let mut f = auth_fields(any_slot());
             if env.ask_pins {
-                f.push(Field::secret("token_pin", "安全密钥 PIN").hint("密钥未设置 PIN 时留空"));
+                f.push(
+                    Field::secret("token_pin", t!("安全密钥 PIN"))
+                        .hint(t!("密钥未设置 PIN 时留空")),
+                );
             }
             if env.caps.fido2_options {
                 f.push(Field::toggle(
                     "pin",
-                    "需要 PIN",
+                    t!("需要 PIN"),
                     old.and_then(|o| o.client_pin).unwrap_or(true),
                 ));
                 f.push(Field::toggle(
                     "up",
-                    "需要触摸",
+                    t!("需要触摸"),
                     old.and_then(|o| o.user_presence).unwrap_or(true),
                 ));
                 f.push(Field::toggle(
                     "uv",
-                    "需要用户验证",
+                    t!("需要用户验证"),
                     old.and_then(|o| o.user_verification).unwrap_or(false),
                 ));
             }
@@ -346,9 +390,9 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
             f.extend(note_fields(&t, l));
             (
                 if replace.is_some() {
-                    "重新录入 FIDO2"
+                    t!("重新录入 FIDO2")
                 } else {
-                    "录入 FIDO2"
+                    t!("录入 FIDO2")
                 }
                 .into(),
                 f,
@@ -356,45 +400,39 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
         }
         FormKind::Pkcs11 { replace } => {
             if !env.caps.cryptenroll {
-                return Err("需要 systemd-cryptenroll".into());
+                return Err(t!("需要 systemd-cryptenroll").into());
             }
-            let mut f = auth_fields("现有密码");
+            let mut f = auth_fields(any_slot());
             if env.ask_pins {
-                f.push(Field::secret("token_pin", "智能卡 PIN"));
+                f.push(Field::secret("token_pin", t!("智能卡 PIN")));
             }
-            f.push(Field::text("uri", "令牌 URI", "auto"));
+            f.push(Field::text("uri", t!("令牌 URI"), "auto"));
             let (t, l) = slot_note(ov, *replace);
             f.extend(note_fields(&t, l));
             (
                 if replace.is_some() {
-                    "重新录入 PKCS#11"
+                    t!("重新录入 PKCS#11")
                 } else {
-                    "录入 PKCS#11"
+                    t!("录入 PKCS#11")
                 }
                 .into(),
                 f,
             )
         }
-        FormKind::Change(id) => (
-            format!("修改槽位 {id} 的密码"),
-            vec![
-                Field::secret(AUTH_PW, "当前密码"),
-                Field::text(AUTH_KF, "或 当前密钥文件", ""),
-                Field::secret("new", "新密码"),
-                Field::secret("new2", "确认新密码"),
-                kdf_field(),
-            ],
-        ),
+        FormKind::Change(id) => (t!("修改槽位 {} 的密码", id), {
+            let mut f = auth_fields(t!("该槽位当前的密码"));
+            f.push(Field::secret("new", t!("新密码")));
+            f.push(Field::secret("new2", t!("确认新密码")));
+            f.push(kdf_field());
+            f
+        }),
         FormKind::ConvertKdf(id) => (
-            format!("槽位 {id} 转换为 Argon2id"),
-            vec![
-                Field::secret(AUTH_PW, "该槽位的密码"),
-                Field::text(AUTH_KF, "或 密钥文件", ""),
-            ],
+            t!("槽位 {} 转换为 Argon2id", id),
+            auth_fields(t!("该槽位的密码")),
         ),
         FormKind::Note(id) => {
             let (t, l) = slot_note(ov, Some(*id));
-            (format!("槽位 {id} 的备注"), note_fields(&t, l))
+            (t!("槽位 {} 的备注", id), note_fields(&t, l))
         }
         FormKind::Priority(id) => {
             let cur = ov
@@ -407,51 +445,63 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
                 .position(|p| *p == cur)
                 .unwrap_or(1);
             (
-                format!("槽位 {id} 的优先级"),
+                t!("槽位 {} 的优先级", id),
                 vec![Field::choice(
                     "prio",
-                    "优先级",
-                    &["忽略", "普通", "优先"],
+                    t!("优先级"),
+                    &[t!("忽略"), t!("普通"), t!("优先")],
                     idx,
                 )],
             )
         }
         FormKind::Remove(id) => {
             guard::check_removal(ov, *id, None).map_err(|e| e.to_string())?;
-            (format!("删除槽位 {id}"), auth_fields("其它槽位的密码"))
+            (
+                t!("删除槽位 {}", id),
+                auth_fields(t!("其它槽位的密码或恢复密钥")),
+            )
         }
         FormKind::Verify => {
-            let mut methods = vec!["密码 / 恢复密钥", "密钥文件"];
+            let mut methods = vec![t!("密码 / 恢复密钥"), t!("密钥文件")];
             for k in [TokenKind::Tpm2, TokenKind::Fido2, TokenKind::Pkcs11] {
                 if ov.header.tokens.values().any(|t| t.kind == k.token_type()) {
                     methods.push(k.label());
                 }
             }
+            let tokens: Vec<usize> = (2..methods.len()).collect();
             let mut f = vec![
-                Field::choice("method", "方式", &methods, 0),
-                Field::secret(AUTH_PW, "密码"),
-                Field::text(AUTH_KF, "密钥文件", ""),
+                Field::choice("method", t!("验证方式"), &methods, 0),
+                Field::secret(AUTH_PW, t!("密码")).show_if("method", &[0]),
+                Field::file(AUTH_KF, t!("密钥文件"), "").show_if("method", &[1]),
             ];
-            if env.ask_pins {
-                f.push(Field::secret("token_pin", "令牌 PIN").hint("TPM2+PIN / FIDO2 / PKCS#11"));
+            if env.ask_pins && !tokens.is_empty() {
+                f.push(
+                    Field::secret("token_pin", t!("令牌 PIN"))
+                        .hint("TPM2+PIN / FIDO2 / PKCS#11")
+                        .show_if("method", &tokens),
+                );
             }
-            ("验证".into(), f)
+            (t!("验证").into(), f)
         }
         FormKind::Discards => {
             if ov.device.mapping.is_none() {
-                return Err("卷未解锁，无法写入 TRIM 标志".into());
+                return Err(t!("卷未解锁，无法写入 TRIM 标志").into());
             }
             let on = ov.header.allows_discards();
-            let mut f = vec![Field::label(&format!(
-                "当前：{}",
-                if on { "已开启" } else { "已关闭" }
-            ))];
-            f.extend(auth_fields("现有密码"));
+            // The label's key records the current state for `submit`.
+            let mut f = vec![Field {
+                key: if on { "discards_on" } else { "discards_off" }.into(),
+                ..Field::label(&t!(
+                    "当前：{}",
+                    if on { t!("已开启") } else { t!("已关闭") }
+                ))
+            }];
+            f.extend(auth_fields(any_slot()));
             (
                 if on {
-                    "关闭 TRIM 穿透"
+                    t!("关闭 TRIM 穿透")
                 } else {
-                    "开启 TRIM 穿透"
+                    t!("开启 TRIM 穿透")
                 }
                 .into(),
                 f,
@@ -464,19 +514,22 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
                 .map(|f| f.path.to_string_lossy().into_owned())
                 .unwrap_or_default();
             (
-                "恢复头部".into(),
-                vec![Field::text("path", "备份文件", &latest)],
+                t!("恢复头部").into(),
+                vec![Field::file("path", t!("备份文件"), &latest)],
             )
         }
         FormKind::BackupDir => (
-            "备份位置".into(),
+            t!("备份位置").into(),
             vec![
-                Field::text("dir", "目录", &env.paths.backup_root.to_string_lossy()).hint(
-                    &format!("留空 = {}", env.paths.default_backup_root().display()),
-                ),
+                Field::text("dir", t!("目录"), &env.paths.backup_root.to_string_lossy())
+                    .hint(&t!("留空 = {}", env.paths.default_backup_root().display())),
             ],
         ),
     };
+    let mut fields = fields;
+    if fields.last().is_some_and(|f| f.value == Value::Separator) {
+        fields.pop();
+    }
     Ok(Form {
         title,
         kind,
@@ -485,13 +538,16 @@ pub fn build(kind: FormKind, env: &Env) -> Result<Form, String> {
 }
 
 fn cred(form: &Form) -> Result<Credential, String> {
-    let path = form.text(AUTH_KF);
-    if !path.trim().is_empty() {
+    if form.choice(AUTH_METHOD) == 1 {
+        let path = form.text(AUTH_KF);
+        if path.trim().is_empty() {
+            return Err(t!("请选择密钥文件").into());
+        }
         return Ok(Credential::Keyfile(PathBuf::from(path.trim())));
     }
     let p = form.text(AUTH_PW);
     if p.is_empty() {
-        return Err("请输入密码或密钥文件".into());
+        return Err(t!("请输入密码").into());
     }
     Ok(Credential::Passphrase(Secret::from(p)))
 }
@@ -511,7 +567,7 @@ fn note_input(form: &Form) -> Option<NoteInput> {
 fn new_secret(form: &Form, a: &str, b: &str) -> Result<Secret, String> {
     let (x, y) = (form.text(a), form.text(b));
     if x != y {
-        return Err("两次输入不一致".into());
+        return Err(t!("两次输入不一致").into());
     }
     Ok(Secret::from(x))
 }
@@ -522,7 +578,9 @@ fn slot_field(form: &Form) -> Result<Option<u32>, String> {
     if s.is_empty() {
         return Ok(None);
     }
-    s.parse().map(Some).map_err(|_| "槽位必须是数字".to_owned())
+    s.parse()
+        .map(Some)
+        .map_err(|_| t!("槽位必须是数字").to_owned())
 }
 
 fn kdf(form: &Form) -> KdfChoice {
@@ -562,7 +620,7 @@ pub fn submit(form: &Form) -> Result<Submit, String> {
                 form.text("size")
                     .trim()
                     .parse()
-                    .map_err(|_| "大小必须是数字")?,
+                    .map_err(|_| t!("大小必须是数字"))?,
             ),
             slot: slot_field(form)?,
             kdf: KdfChoice::Default,
@@ -628,10 +686,7 @@ pub fn submit(form: &Form) -> Result<Submit, String> {
             auth: cred(form)?,
         },
         FormKind::Discards => Request::SetDiscards {
-            enable: !form
-                .fields
-                .first()
-                .is_some_and(|f| f.label.contains("已开启")),
+            enable: form.get("discards_on").is_none(),
             auth: cred(form)?,
         },
         FormKind::Restore => Request::RestoreHeader {
@@ -660,14 +715,14 @@ pub fn submit(form: &Form) -> Result<Submit, String> {
                 None if form.choice("method") == 1 => {
                     let p = form.text(AUTH_KF);
                     if p.trim().is_empty() {
-                        return Err("请输入密钥文件路径".into());
+                        return Err(t!("请选择密钥文件").into());
                     }
                     VerifyMethod::Credential(Credential::Keyfile(PathBuf::from(p.trim())))
                 }
                 None => {
                     let p = form.text(AUTH_PW);
                     if p.is_empty() {
-                        return Err("请输入密码".into());
+                        return Err(t!("请输入密码").into());
                     }
                     VerifyMethod::Credential(Credential::Passphrase(Secret::from(p)))
                 }
@@ -686,43 +741,52 @@ pub fn slot_actions(s: &Slot, caps: &Caps) -> Vec<(String, FormKind)> {
     let mut v: Vec<(String, FormKind)> = Vec::new();
     match &s.kind {
         k if k.is_plain() => {
-            v.push(("修改密码".into(), FormKind::Change(id)));
+            v.push((t!("修改密码").into(), FormKind::Change(id)));
             if s.keyslot.as_ref().is_some_and(|k| k.kdf.kind == "pbkdf2") {
-                v.push(("转换为 Argon2id".into(), FormKind::ConvertKdf(id)));
+                v.push((t!("转换为 Argon2id").into(), FormKind::ConvertKdf(id)));
             }
         }
         SlotKind::Recovery => v.push((
-            "重新生成恢复密钥".into(),
+            t!("重新生成恢复密钥").into(),
             FormKind::Recovery { replace: Some(id) },
         )),
-        SlotKind::Tpm2 => v.push(("重新录入 TPM2".into(), FormKind::Tpm2 { replace: Some(id) })),
+        SlotKind::Tpm2 => v.push((
+            t!("重新录入 TPM2").into(),
+            FormKind::Tpm2 { replace: Some(id) },
+        )),
         SlotKind::Fido2 => v.push((
-            "重新录入 FIDO2".into(),
+            t!("重新录入 FIDO2").into(),
             FormKind::Fido2 { replace: Some(id) },
         )),
         SlotKind::Pkcs11 => v.push((
-            "重新录入 PKCS#11".into(),
+            t!("重新录入 PKCS#11").into(),
             FormKind::Pkcs11 { replace: Some(id) },
         )),
         _ => {}
     }
-    v.push(("编辑备注".into(), FormKind::Note(id)));
-    v.push(("设置优先级".into(), FormKind::Priority(id)));
-    v.push(("删除槽位".into(), FormKind::Remove(id)));
+    v.push((t!("编辑备注").into(), FormKind::Note(id)));
+    v.push((t!("设置优先级").into(), FormKind::Priority(id)));
+    v.push((t!("删除槽位").into(), FormKind::Remove(id)));
     v
 }
 
 pub fn add_actions(caps: &Caps) -> Vec<(String, FormKind)> {
     let mut v = vec![
-        ("添加密码".to_owned(), FormKind::AddPassphrase),
-        ("添加密钥文件".to_owned(), FormKind::AddKeyfile),
-        ("生成密钥文件".to_owned(), FormKind::GenerateKeyfile),
+        (t!("添加密码").to_owned(), FormKind::AddPassphrase),
+        (t!("添加密钥文件").to_owned(), FormKind::AddKeyfile),
+        (t!("生成密钥文件").to_owned(), FormKind::GenerateKeyfile),
     ];
     if caps.cryptenroll {
-        v.push(("生成恢复密钥".into(), FormKind::Recovery { replace: None }));
-        v.push(("录入 TPM2".into(), FormKind::Tpm2 { replace: None }));
-        v.push(("录入 FIDO2".into(), FormKind::Fido2 { replace: None }));
-        v.push(("录入 PKCS#11".into(), FormKind::Pkcs11 { replace: None }));
+        v.push((
+            t!("生成恢复密钥").into(),
+            FormKind::Recovery { replace: None },
+        ));
+        v.push((t!("录入 TPM2").into(), FormKind::Tpm2 { replace: None }));
+        v.push((t!("录入 FIDO2").into(), FormKind::Fido2 { replace: None }));
+        v.push((
+            t!("录入 PKCS#11").into(),
+            FormKind::Pkcs11 { replace: None },
+        ));
     }
     v
 }
@@ -768,7 +832,7 @@ mod tests {
             ("note", "备用"),
         ] {
             match f.get_mut(k).unwrap() {
-                Value::Text(s) | Value::Secret(s) => *s = v.into(),
+                Value::Text(s) | Value::Secret(s) | Value::File(s) => *s = v.into(),
                 _ => unreachable!(),
             }
         }
@@ -783,6 +847,46 @@ mod tests {
             s.push('x');
         }
         assert!(submit(&f).is_err());
+    }
+
+    #[test]
+    fn auth_method_switches_fields() {
+        let ov = sample_overview();
+        let caps = Caps::default();
+        let paths = Paths::under(std::path::Path::new("/x"));
+        let mut f = build(
+            FormKind::Recovery { replace: None },
+            &env(&ov, &caps, &paths),
+        )
+        .unwrap();
+        let pos = |f: &Form, k: &str| f.fields.iter().position(|x| x.key == k).unwrap();
+        let (pw, kf) = (pos(&f, AUTH_PW), pos(&f, AUTH_KF));
+        assert!(f.visible(pw) && !f.visible(kf));
+        assert_eq!(f.fields[kf + 1].value, Value::Separator);
+        assert_eq!(submit(&f).unwrap_err(), "请输入密码");
+
+        if let Some(Value::Choice { index, .. }) = f.get_mut(AUTH_METHOD) {
+            *index = 1;
+        }
+        assert!(!f.visible(pw) && f.visible(kf));
+        if let Some(Value::Secret(s)) = f.get_mut(AUTH_PW) {
+            *s = "ignored".into();
+        }
+        assert_eq!(submit(&f).unwrap_err(), "请选择密钥文件");
+        if let Some(Value::File(s)) = f.get_mut(AUTH_KF) {
+            *s = "/k.key".into();
+        }
+        match submit(&f).unwrap() {
+            Submit::Request(Request::AddRecoveryKey {
+                auth: Credential::Keyfile(p),
+                ..
+            }) => assert_eq!(p, PathBuf::from("/k.key")),
+            other => panic!("{other:?}"),
+        }
+
+        // nothing follows the credential: no trailing gap
+        let f = build(FormKind::Remove(0), &env(&ov, &caps, &paths)).unwrap();
+        assert_ne!(f.fields.last().unwrap().value, Value::Separator);
     }
 
     #[test]

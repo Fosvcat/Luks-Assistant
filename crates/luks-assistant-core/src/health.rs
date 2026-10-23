@@ -4,6 +4,7 @@ use crate::notes::{self, Location};
 use crate::ops::Request;
 use crate::pcr::TpmStatus;
 use crate::slots::{Overview, SlotKind};
+use crate::t;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -16,9 +17,9 @@ pub enum Severity {
 impl Severity {
     pub fn label(self) -> &'static str {
         match self {
-            Severity::Critical => "严重",
-            Severity::Warning => "警告",
-            Severity::Info => "提示",
+            Severity::Critical => t!("严重"),
+            Severity::Warning => t!("警告"),
+            Severity::Info => t!("提示"),
         }
     }
 }
@@ -49,22 +50,22 @@ fn issue(
 pub fn check(ov: &Overview) -> Vec<Issue> {
     let mut out = Vec::new();
     if let Some(r) = ov.read_only_reason() {
-        out.push(issue(Severity::Warning, "只读设备", r, None));
+        out.push(issue(Severity::Warning, t!("只读设备"), r, None));
     }
 
     let knowledge = ov.knowledge_slots();
     if knowledge.is_empty() {
         out.push(issue(
             Severity::Critical,
-            "没有任何密码/恢复密钥槽位",
-            "只剩硬件令牌可以解锁，请添加密码或恢复密钥。",
+            t!("没有任何密码/恢复密钥槽位"),
+            t!("只剩硬件令牌可以解锁，请添加密码或恢复密钥。"),
             None,
         ));
     } else if knowledge.len() == 1 {
         out.push(issue(
             Severity::Warning,
-            "只有一个密码/恢复密钥槽位",
-            format!("槽位 {} 是唯一的备用解锁方式。", knowledge[0]),
+            t!("只有一个密码/恢复密钥槽位"),
+            t!("槽位 {} 是唯一的备用解锁方式。", knowledge[0]),
             None,
         ));
     }
@@ -73,16 +74,20 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         if t.keyslots.is_empty() && !notes::is_notes_token(&t.kind) {
             out.push(issue(
                 Severity::Warning,
-                format!("孤立令牌 {}（{}）", t.id, t.kind),
-                "未关联任何槽位（通常是 luksKillSlot 的遗留）。",
+                t!("孤立令牌 {}（{}）", t.id, t.kind),
+                t!("未关联任何槽位（通常是 luksKillSlot 的遗留）。"),
                 Some(Request::RemoveOrphanToken { token: t.id }),
             ));
         }
         if t.keyslots.len() > 1 {
             out.push(issue(
                 Severity::Info,
-                format!("令牌 {} 关联了多个槽位 {:?}", t.id, t.keyslots),
-                "systemd-cryptenroll --wipe-slot 会连带擦除其它槽位。",
+                t!(
+                    "令牌 {} 关联了多个槽位 {}",
+                    t.id,
+                    format!("{:?}", t.keyslots)
+                ),
+                t!("systemd-cryptenroll --wipe-slot 会连带擦除其它槽位。"),
                 None,
             ));
         }
@@ -91,8 +96,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         if s.tokens.len() > 1 {
             out.push(issue(
                 Severity::Info,
-                format!("槽位 {} 关联了多个令牌 {:?}", s.id, s.tokens),
-                "通常由其它工具创建。",
+                t!("槽位 {} 关联了多个令牌 {}", s.id, format!("{:?}", s.tokens)),
+                t!("通常由其它工具创建。"),
                 None,
             ));
         }
@@ -102,13 +107,13 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         match &s.tpm2_status {
             Some(TpmStatus::Mismatch { .. }) => out.push(issue(
                 Severity::Warning,
-                format!("槽位 {} 的 TPM2 策略与当前 PCR 不匹配", s.id),
-                format!("{}。", s.tpm2_status.as_ref().unwrap().label()),
+                t!("槽位 {} 的 TPM2 策略与当前 PCR 不匹配", s.id),
+                t!("{}。", s.tpm2_status.as_ref().unwrap().label()),
                 None,
             )),
             Some(TpmStatus::Unknown(why)) => out.push(issue(
                 Severity::Info,
-                format!("无法判断槽位 {} 的 TPM2 状态", s.id),
+                t!("无法判断槽位 {} 的 TPM2 状态", s.id),
                 why.clone(),
                 None,
             )),
@@ -119,8 +124,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
                 if ks.kdf.kind == "pbkdf2" {
                     out.push(issue(
                         Severity::Info,
-                        format!("槽位 {} 使用 PBKDF2", s.id),
-                        "可在槽位菜单中转换为 Argon2id。",
+                        t!("槽位 {} 使用 PBKDF2", s.id),
+                        t!("可在槽位菜单中转换为 Argon2id。"),
                         None,
                     ));
                 }
@@ -129,8 +134,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         if let SlotKind::OtherToken(t) = &s.kind {
             out.push(issue(
                 Severity::Info,
-                format!("槽位 {} 由其它工具管理（{t}）", s.id),
-                "Luks Assistant 不修改其令牌。",
+                t!("槽位 {} 由其它工具管理（{}）", s.id, t),
+                t!("Luks Assistant 不修改其令牌。"),
                 None,
             ));
         }
@@ -144,7 +149,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
                 format!(
                     "{s}{}",
                     if *l == Location::Local {
-                        "(本机)"
+                        t!("(本机)")
                     } else {
                         ""
                     }
@@ -154,8 +159,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             .join(", ");
         out.push(issue(
             Severity::Info,
-            "存在过期备注",
-            format!("槽位 {list} 已被删除或改写。"),
+            t!("存在过期备注"),
+            t!("槽位 {} 已被删除或改写。", list),
             Some(Request::PruneNotes),
         ));
     }
@@ -163,8 +168,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
     if ov.used().count() as u32 >= crate::MAX_SLOTS - 2 {
         out.push(issue(
             Severity::Info,
-            "槽位即将用尽",
-            "32 个槽位快满了。",
+            t!("槽位即将用尽"),
+            t!("32 个槽位快满了。"),
             None,
         ));
     }

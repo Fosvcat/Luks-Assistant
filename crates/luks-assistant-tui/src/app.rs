@@ -7,6 +7,7 @@ use luks_assistant_core::health::{self, Issue};
 use luks_assistant_core::ops::{self, Hooks, Plan, Request, TokenKind, TokenTest};
 use luks_assistant_core::slots::{Overview, Slot};
 use luks_assistant_core::{Ctx, config};
+use luks_assistant_core::{n, t};
 use luks_assistant_sysinfo::SystemInfo;
 use luks_assistant_sysinfo::bootcheck;
 use luks_assistant_sysinfo::tpm::PcrValues;
@@ -28,12 +29,12 @@ pub enum Tab {
 }
 
 pub const TABS: [(Tab, &str); 6] = [
-    (Tab::Slots, "1 槽位"),
-    (Tab::System, "2 系统信息"),
-    (Tab::Health, "3 体检"),
-    (Tab::Boot, "4 开机检查"),
-    (Tab::Backup, "5 备份"),
-    (Tab::Log, "6 日志"),
+    (Tab::Slots, n!("1 槽位")),
+    (Tab::System, n!("2 系统信息")),
+    (Tab::Health, n!("3 体检")),
+    (Tab::Boot, n!("4 开机检查")),
+    (Tab::Backup, n!("5 备份")),
+    (Tab::Log, n!("6 日志")),
 ];
 
 #[derive(Debug, Clone)]
@@ -208,7 +209,7 @@ impl App {
         self.boot = None;
         let Some(dev) = self.device().cloned() else {
             self.ov = None;
-            self.load_error = Some("没有找到 LUKS 卷".into());
+            self.load_error = Some(t!("没有找到 LUKS 卷").into());
             return;
         };
         match Overview::load(&self.ctx, dev) {
@@ -227,7 +228,7 @@ impl App {
             Err(e) => {
                 self.ov = None;
                 self.issues.clear();
-                self.load_error = Some(format!("读取失败: {e}"));
+                self.load_error = Some(t!("读取失败: {}", e));
             }
         }
     }
@@ -309,9 +310,9 @@ impl App {
             return;
         };
         let title = if s.is_empty() {
-            format!("槽位 {}", s.id)
+            t!("槽位 {}", s.id)
         } else {
-            format!("槽位 {}（{}）", s.id, s.kind.label())
+            t!("槽位 {}（{}）", s.id, s.kind.label())
         };
         let items = forms::slot_actions(s, &self.ctx.caps)
             .into_iter()
@@ -326,7 +327,7 @@ impl App {
             .iter()
             .map(|d| PickRow {
                 depth: 0,
-                text: format!("{}  镜像文件", d.path.display()),
+                text: t!("{}  镜像文件", d.path.display()),
                 device: self.devices.iter().position(|x| x.path == d.path),
             })
             .collect();
@@ -393,7 +394,7 @@ impl App {
         };
         match forms::build(kind, &env) {
             Ok(f) => self.modal = Some(Modal::Form(FormState::new(f))),
-            Err(e) => self.message("无法执行", e),
+            Err(e) => self.message(t!("无法执行"), e),
         }
     }
 
@@ -413,9 +414,7 @@ impl App {
         match submit {
             Submit::Verify(m) => self.verify(m),
             Submit::SetBackupDir(d) => match config::set_backup_dir(&mut self.ctx.paths, d) {
-                Ok(()) => {
-                    self.status = format!("备份位置: {}", self.ctx.paths.backup_root.display())
-                }
+                Ok(()) => self.status = t!("备份位置: {}", self.ctx.paths.backup_root.display()),
                 Err(e) => {
                     state.error = Some(e.to_string());
                     self.modal = Some(Modal::Form(state));
@@ -423,7 +422,7 @@ impl App {
             },
             Submit::Request(req) => {
                 if self.needs_root() {
-                    state.error = Some("需要 root：sudo Luks-Assistant-TUI".into());
+                    state.error = Some(t!("需要 root：sudo Luks-Assistant-TUI").into());
                     self.modal = Some(Modal::Form(state));
                     return;
                 }
@@ -451,7 +450,7 @@ impl App {
         let Some(ov) = &self.ov else { return };
         match ops::plan(&self.ctx, ov, &req) {
             Ok(plan) => self.confirm(vec![plan]),
-            Err(e) => self.message("无法执行", e.to_string()),
+            Err(e) => self.message(t!("无法执行"), e.to_string()),
         }
     }
 
@@ -462,17 +461,17 @@ impl App {
                 match ops::verify_credential(&self.ctx, &ov.device.path, &c) {
                     Ok(slot) => {
                         let kind = ov.slot(slot).map(|s| s.kind.label()).unwrap_or_default();
-                        self.message("验证", format!("✓ 槽位 {slot}（{kind}）验证成功"))
+                        self.message(t!("验证"), t!("✓ 槽位 {}（{}）验证成功", slot, kind))
                     }
-                    Err(e) => self.message("验证", format!("✗ {e}")),
+                    Err(e) => self.message(t!("验证"), format!("✗ {e}")),
                 }
             }
             VerifyMethod::Token { kind, pin } => {
                 let tests = ops::token_tests(ov, kind, pin.as_ref());
                 if tests.is_empty() {
-                    self.message("验证", format!("没有 {} 令牌", kind.label()));
+                    self.message(t!("验证"), t!("没有 {} 令牌", kind.label()));
                 } else {
-                    self.busy = Some(format!("正在验证 {}…", kind.label()));
+                    self.busy = Some(t!("正在验证 {}…", kind.label()));
                     self.pending = Some(Job::VerifyTokens { kind, tests });
                 }
             }
@@ -481,7 +480,7 @@ impl App {
 
     fn backup_selected(&mut self) {
         if !self.sys.is_root && self.devices.iter().any(|d| !d.is_file) {
-            return self.message("备份", "需要 root：sudo Luks-Assistant-TUI");
+            return self.message(t!("备份"), t!("需要 root：sudo Luks-Assistant-TUI"));
         }
         let mut plans = Vec::new();
         let mut errors = Vec::new();
@@ -498,14 +497,18 @@ impl App {
         }
         if plans.is_empty() {
             let text = if errors.is_empty() {
-                "未选择任何卷".to_owned()
+                t!("未选择任何卷").to_owned()
             } else {
                 errors.join("\n")
             };
-            return self.message("备份", text);
+            return self.message(t!("备份"), text);
         }
         if let Some(p) = plans.first_mut() {
-            p.warnings.extend(errors);
+            p.warnings.extend(
+                errors
+                    .into_iter()
+                    .map(luks_assistant_core::i18n::Text::plain),
+            );
         }
         self.confirm(plans);
     }
@@ -537,19 +540,20 @@ impl App {
                                 .collect::<Vec<_>>()
                                 .join(", ");
                             return self.message(
-                                "验证",
-                                format!(
-                                    "✓ 槽位 {slots}（{} 令牌 {}）验证成功",
+                                t!("验证"),
+                                t!(
+                                    "✓ 槽位 {}（{} 令牌 {}）验证成功",
+                                    slots,
                                     kind.label(),
                                     t.token
                                 ),
                             );
                         }
-                        Ok(o) => last = ops::token_failure(&o),
+                        Ok(o) => last = ops::token_failure(&o).to_string(),
                         Err(e) => last = e.to_string(),
                     }
                 }
-                self.message("验证", format!("✗ {} 验证失败\n{last}", kind.label()));
+                self.message(t!("验证"), t!("✗ {} 验证失败\n{}", kind.label(), last));
             }
         }
     }
@@ -560,9 +564,9 @@ impl App {
         let mut recovery = None;
         let mut new_slot = None;
         let title = if plans.len() == 1 {
-            plans[0].title.clone()
+            plans[0].title.to_string()
         } else {
-            format!("{} 项操作", plans.len())
+            t!("{} 项操作", plans.len())
         };
         for plan in &plans {
             let mut hooks = TuiHooks { terminal };
@@ -575,32 +579,40 @@ impl App {
                 plan.device.display()
             ));
             if let Some(b) = &report.backup_file {
-                lines.push(format!("  备份: {}", b.display()));
+                lines.push(t!("  备份: {}", b.display()));
             }
             for s in &report.steps {
                 lines.push(format!("  {} {}", if s.ok { "✓" } else { "✗" }, s.desc));
                 if let Some(c) = &s.command {
                     lines.push(format!("      $ {c}"));
                 }
-                for l in s.output.lines().filter(|l| !l.trim().is_empty()) {
+                for l in s
+                    .output
+                    .to_string()
+                    .lines()
+                    .filter(|l| !l.trim().is_empty())
+                {
                     lines.push(format!("      {l}"));
                 }
             }
             if let Some(e) = &report.error {
-                lines.push(format!("  错误: {e}"));
+                lines.push(t!("  错误: {}", e));
             }
             lines.push(String::new());
-            recovery = recovery.or(report.recovery_key);
+            recovery = recovery.or(report.recovery_key.clone());
             new_slot = new_slot.or(report.new_slot);
-            self.log.push(format!(
-                "[{}] {} {} — {}",
-                luks_assistant_core::util::format_time(luks_assistant_core::util::now_unix()),
-                if report.ok { "✓" } else { "✗" },
-                plan.title,
-                plan.device.display()
-            ));
+            // The log is always English.
+            let time =
+                luks_assistant_core::util::format_time(luks_assistant_core::util::now_unix());
+            for (i, l) in ops::log_text(plan, &report).lines().enumerate() {
+                self.log.push(if i == 0 {
+                    format!("[{time}] {l}")
+                } else {
+                    l.to_owned()
+                });
+            }
         }
-        self.status = format!("{title}: {}", if all_ok { "成功" } else { "失败" });
+        self.status = format!("{title}: {}", if all_ok { t!("成功") } else { t!("失败") });
         self.rescan();
         self.reload();
         if let Some(s) = new_slot {
@@ -658,7 +670,7 @@ impl App {
                 self.fido2_devices = None;
                 self.pkcs11_tokens = None;
                 self.set_tab(self.tab);
-                self.status = "已刷新".into();
+                self.status = t!("已刷新").into();
             }
             _ => match self.tab {
                 Tab::Slots => self.on_slots_key(k),
@@ -689,7 +701,7 @@ impl App {
                     .into_iter()
                     .map(|(l, k)| (l, MenuItem::Form(k)))
                     .collect();
-                self.open_menu("添加".into(), items);
+                self.open_menu(t!("添加").into(), items);
             }
             KeyCode::Char('d') | KeyCode::Delete if used => {
                 self.open_form(FormKind::Remove(self.selected))
@@ -815,10 +827,10 @@ impl App {
             } => {
                 let word = plans.iter().find_map(|p| p.confirm_word.clone());
                 match k.code {
-                    KeyCode::Esc => self.status = "已取消".into(),
+                    KeyCode::Esc => self.status = t!("已取消").into(),
                     KeyCode::Enter => {
                         if word.as_ref().is_none_or(|w| typed.trim() == w) {
-                            self.busy = Some("正在执行…".into());
+                            self.busy = Some(t!("正在执行…").into());
                             self.pending = Some(Job::Execute(plans));
                         } else {
                             self.modal = Some(Modal::Confirm {
@@ -1032,11 +1044,14 @@ struct TuiHooks<'a> {
 impl Hooks for TuiHooks<'_> {
     fn suspend(&mut self) {
         crate::term::leave();
-        println!("\n=== Luks Assistant：请按提示操作（PIN / 触摸安全密钥）===\n");
+        println!(
+            "{}",
+            t!("\n=== Luks Assistant：请按提示操作（PIN / 触摸安全密钥）===\n")
+        );
     }
 
     fn resume(&mut self) {
-        println!("\n=== 按回车返回 ===");
+        println!("{}", t!("\n=== 按回车返回 ==="));
         let mut s = String::new();
         let _ = std::io::stdin().read_line(&mut s);
         *self.terminal = crate::term::enter();

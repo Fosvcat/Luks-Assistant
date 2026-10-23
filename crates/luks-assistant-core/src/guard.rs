@@ -8,13 +8,15 @@
 
 use crate::error::{Error, Result};
 use crate::header::Priority;
+use crate::i18n::Text;
 use crate::secret::Secret;
 use crate::slots::{Overview, SlotKind};
+use crate::tx;
 
 /// cryptsetup's limit for interactive passphrases.
 pub const MAX_PASSPHRASE: usize = 512;
 
-fn blocked<T>(msg: impl Into<String>) -> Result<T> {
+fn blocked<T>(msg: impl Into<Text>) -> Result<T> {
     Err(Error::Blocked(msg.into()))
 }
 
@@ -29,15 +31,13 @@ pub fn ensure_writable(ov: &Overview) -> Result<()> {
 pub fn free_slot(ov: &Overview, wanted: Option<u32>) -> Result<u32> {
     match wanted {
         Some(n) if n >= crate::MAX_SLOTS => {
-            blocked(format!("槽位编号必须在 0-{} 之间", crate::MAX_SLOTS - 1))
+            blocked(tx!("槽位编号必须在 0-{} 之间", crate::MAX_SLOTS - 1))
         }
-        Some(n) if ov.slot(n).is_some_and(|s| !s.is_empty()) => {
-            blocked(format!("槽位 {n} 已被占用"))
-        }
+        Some(n) if ov.slot(n).is_some_and(|s| !s.is_empty()) => blocked(tx!("槽位 {} 已被占用", n)),
         Some(n) => Ok(n),
         None => match ov.header.free_slots().next() {
             Some(n) => Ok(n),
-            None => blocked("32 个槽位已满"),
+            None => blocked(tx!("32 个槽位已满")),
         },
     }
 }
@@ -47,44 +47,44 @@ pub fn ensure_any_free(ov: &Overview) -> Result<()> {
 }
 
 /// Validate a new passphrase. Returns warnings that do not block.
-pub fn check_new_passphrase(p: &Secret) -> Result<Vec<String>> {
+pub fn check_new_passphrase(p: &Secret) -> Result<Vec<Text>> {
     let bytes = p.expose();
     if bytes.is_empty() {
-        return blocked("新密码不能为空");
+        return blocked(tx!("新密码不能为空"));
     }
     if bytes.len() > MAX_PASSPHRASE {
-        return blocked(format!("密码不能超过 {MAX_PASSPHRASE} 字节"));
+        return blocked(tx!("密码不能超过 {} 字节", MAX_PASSPHRASE));
     }
     let Ok(text) = std::str::from_utf8(bytes) else {
-        return blocked("密码必须是有效的 UTF-8 文本");
+        return blocked(tx!("密码必须是有效的 UTF-8 文本"));
     };
     if text.chars().any(char::is_control) {
-        return blocked("密码不能包含换行或控制字符");
+        return blocked(tx!("密码不能包含换行或控制字符"));
     }
     let mut warnings = Vec::new();
     if text.chars().count() < 8 {
-        warnings.push("密码少于 8 个字符".into());
+        warnings.push(tx!("密码少于 8 个字符"));
     }
     if !text.is_ascii() {
-        warnings.push("密码含非 ASCII 字符，开机时可能无法输入".into());
+        warnings.push(tx!("密码含非 ASCII 字符，开机时可能无法输入"));
     }
     if text.starts_with(' ') || text.ends_with(' ') {
-        warnings.push("密码首尾有空格".into());
+        warnings.push(tx!("密码首尾有空格"));
     }
     Ok(warnings)
 }
 
 /// Rules for wiping `slot`. `auth_slot` is the slot the user's credential
 /// unlocked, if verified.
-pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result<Vec<String>> {
+pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result<Vec<Text>> {
     let Some(s) = ov.slot(slot).filter(|s| !s.is_empty()) else {
-        return blocked(format!("槽位 {slot} 是空的"));
+        return blocked(tx!("槽位 {} 是空的", slot));
     };
     if s.kind == SlotKind::Reencrypt {
-        return blocked("该槽位正用于重加密");
+        return blocked(tx!("该槽位正用于重加密"));
     }
     if ov.used().count() <= 1 {
-        return blocked("这是最后一个槽位，不能删除");
+        return blocked(tx!("这是最后一个槽位，不能删除"));
     }
     if s.kind.is_knowledge() {
         let remaining = ov
@@ -93,15 +93,15 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
             .filter(|&k| k != slot)
             .count();
         if remaining == 0 {
-            return blocked("这是最后一个密码/密钥文件/恢复密钥槽位，不能删除");
+            return blocked(tx!("这是最后一个密码/密钥文件/恢复密钥槽位，不能删除"));
         }
     }
     if auth_slot == Some(slot) {
-        return blocked("验证用的凭据就是要删除的槽位，请用其它槽位的凭据");
+        return blocked(tx!("验证用的凭据就是要删除的槽位，请用其它槽位的凭据"));
     }
     let mut w = Vec::new();
     if let SlotKind::OtherToken(t) = &s.kind {
-        w.push(format!("该槽位由其它工具管理（{t}）"));
+        w.push(tx!("该槽位由其它工具管理（{}）", t));
     }
     let shared: Vec<u32> = ov
         .header
@@ -110,10 +110,14 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
         .map(|t| t.id)
         .collect();
     if !shared.is_empty() {
-        w.push(format!("令牌 {shared:?} 关联多个槽位，只删除槽位 {slot}"));
+        w.push(tx!(
+            "令牌 {} 关联多个槽位，只删除槽位 {}",
+            format!("{:?}", shared),
+            slot
+        ));
     }
     if ov.device.holds_root() {
-        w.push("这是根分区所在设备".into());
+        w.push(tx!("这是根分区所在设备"));
     }
     let remaining_knowledge = ov
         .knowledge_slots()
@@ -121,7 +125,7 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
         .filter(|&k| k != slot)
         .count();
     if s.kind.is_knowledge() && remaining_knowledge == 1 {
-        w.push("删除后只剩一个密码/恢复密钥槽位".into());
+        w.push(tx!("删除后只剩一个密码/恢复密钥槽位"));
     }
     Ok(w)
 }
@@ -130,19 +134,20 @@ pub fn check_removal(ov: &Overview, slot: u32, auth_slot: Option<u32>) -> Result
 pub fn check_replace(ov: &Overview, replace: u32, kind: &SlotKind) -> Result<()> {
     match ov.slot(replace) {
         Some(s) if s.kind == *kind => Ok(()),
-        Some(s) if s.is_empty() => blocked(format!("槽位 {replace} 是空的")),
-        Some(s) => blocked(format!(
-            "槽位 {replace} 是“{}”，只能替换{}槽位",
-            s.kind.label(),
-            kind.label()
+        Some(s) if s.is_empty() => blocked(tx!("槽位 {} 是空的", replace)),
+        Some(s) => blocked(tx!(
+            "槽位 {} 是“{}”，只能替换{}槽位",
+            replace,
+            s.kind.text(),
+            kind.text()
         )),
-        None => blocked(format!("无效的槽位 {replace}")),
+        None => blocked(tx!("无效的槽位 {}", replace)),
     }
 }
 
-pub fn check_priority(ov: &Overview, slot: u32, prio: Priority) -> Result<Vec<String>> {
+pub fn check_priority(ov: &Overview, slot: u32, prio: Priority) -> Result<Vec<Text>> {
     let Some(s) = ov.slot(slot).filter(|s| !s.is_empty()) else {
-        return blocked(format!("槽位 {slot} 是空的"));
+        return blocked(tx!("槽位 {} 是空的", slot));
     };
     if prio == Priority::Ignore && s.kind.is_knowledge() {
         let others = ov
@@ -155,18 +160,20 @@ pub fn check_priority(ov: &Overview, slot: u32, prio: Priority) -> Result<Vec<St
             })
             .count();
         if others == 0 {
-            return blocked("这是最后一个未被忽略的密码槽位，开机时将无法用密码解锁");
+            return blocked(tx!(
+                "这是最后一个未被忽略的密码槽位，开机时将无法用密码解锁"
+            ));
         }
-        return Ok(vec!["开机时将不再尝试该槽位".into()]);
+        return Ok(vec![tx!("开机时将不再尝试该槽位")]);
     }
     Ok(Vec::new())
 }
 
 /// Warning shown when enrolling a token while no knowledge slot exists.
-pub fn token_only_warning(ov: &Overview) -> Option<String> {
+pub fn token_only_warning(ov: &Overview) -> Option<Text> {
     ov.knowledge_slots()
         .is_empty()
-        .then(|| "当前没有任何密码/恢复密钥槽位".into())
+        .then(|| tx!("当前没有任何密码/恢复密钥槽位"))
 }
 
 #[cfg(test)]
@@ -184,8 +191,12 @@ mod tests {
                 .is_empty()
         );
         let w = check_new_passphrase(&Secret::from_text("密码密码密码密码")).unwrap();
-        assert!(w.iter().any(|m| m.contains("非 ASCII")));
-        assert!(check_new_passphrase(&Secret::from_text("short")).unwrap()[0].contains("8"));
+        assert!(w.iter().any(|m| m.to_string().contains("非 ASCII")));
+        assert!(
+            check_new_passphrase(&Secret::from_text("short")).unwrap()[0]
+                .to_string()
+                .contains("8")
+        );
     }
 
     #[test]

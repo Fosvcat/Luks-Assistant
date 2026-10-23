@@ -8,8 +8,10 @@
 //!   documented non-interactive interface of systemd-cryptenroll.
 
 use crate::error::{Error, Result};
+use crate::i18n::{Lang, Text};
 use crate::secret::Secret;
 use crate::util::shell_quote;
+use crate::{t, tx};
 use std::os::fd::RawFd;
 use std::process::{Command, Stdio};
 use zeroize::Zeroizing;
@@ -23,7 +25,7 @@ pub enum Arg {
     Plain(String),
     /// Passed as `/dev/fd/N`; `label` is shown instead of the value.
     Secret {
-        label: String,
+        label: Text,
         value: Secret,
     },
 }
@@ -73,11 +75,8 @@ impl Cmd {
         self
     }
 
-    pub fn secret_arg(mut self, label: &str, value: Secret) -> Self {
-        self.args.push(Arg::Secret {
-            label: label.to_owned(),
-            value,
-        });
+    pub fn secret_arg(mut self, label: Text, value: Secret) -> Self {
+        self.args.push(Arg::Secret { label, value });
         self
     }
 
@@ -111,6 +110,11 @@ impl Cmd {
     /// A secret pipe is shown as bash process substitution, which is what
     /// one would type to reproduce the call by hand.
     pub fn display(&self) -> String {
+        self.display_in(crate::i18n::lang())
+    }
+
+    /// [`Cmd::display`] in `lang` (logs are English).
+    pub fn display_in(&self, lang: Lang) -> String {
         let mut out = String::new();
         if let Some(data) = &self.stdin {
             let text = String::from_utf8_lossy(data);
@@ -122,14 +126,14 @@ impl Cmd {
             ));
         }
         for (name, _) in &self.env {
-            out.push_str(&format!("{name}=<已隐藏> "));
+            out.push_str(&tx!("{}=<已隐藏> ", name).render(lang));
         }
         out.push_str(&self.program);
         for a in &self.args {
             out.push(' ');
             match a {
                 Arg::Plain(s) => out.push_str(&shell_quote(s)),
-                Arg::Secret { label, .. } => out.push_str(&format!("<({label})")),
+                Arg::Secret { label, .. } => out.push_str(&format!("<({})", label.render(lang))),
             }
         }
         out
@@ -162,7 +166,7 @@ impl CmdOutput {
                 program: program.to_owned(),
                 code: self.code,
                 message: if msg.is_empty() {
-                    "(无输出)".into()
+                    t!("(无输出)").into()
                 } else {
                     msg.to_owned()
                 },
@@ -195,7 +199,7 @@ impl Drop for PipeFd {
 /// is inheritable (no CLOEXEC) so the child can open it as /dev/fd/N.
 fn secret_pipe(data: &[u8]) -> Result<PipeFd> {
     if data.len() > MAX_PIPE_SECRET {
-        return Err(Error::Invalid("密钥数据过大".into()));
+        return Err(Error::Invalid(tx!("密钥数据过大")));
     }
     let mut fds = [0 as RawFd; 2];
     // SAFETY: fds is a valid 2-element array.
@@ -410,7 +414,8 @@ pub fn run_in_pty(
                         unsafe { libc::write(master.0, line.as_ptr().cast(), line.len()) };
                         since_answer.clear();
                     }
-                    None if ["pin", "password", "passphrase", "密码"]
+                    // "密码": prompts under a Chinese locale
+                    None if ["pin", "password", "passphrase", "\u{5bc6}\u{7801}"]
                         .iter()
                         .any(|w| tail.contains(w)) =>
                     {
@@ -432,12 +437,12 @@ pub fn run_in_pty(
         if started.elapsed() > timeout {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(Error::Invalid(format!("{} 超时", cmd.program)));
+            return Err(Error::Invalid(tx!("{} 超时", &cmd.program)));
         }
     }
     let status = child.wait()?;
     if let Some(p) = unanswerable {
-        return Err(Error::Invalid(format!("需要输入：{p}")));
+        return Err(Error::Invalid(tx!("需要输入：{}", p)));
     }
     Ok(CmdOutput {
         code: status.code().unwrap_or(-1),
@@ -456,8 +461,8 @@ mod tests {
             .arg("luksAddKey")
             .arg("/dev/sda2")
             .arg("--key-file")
-            .secret_arg("现有密码", Secret::from_text("hunter2"))
-            .secret_arg("新密码", Secret::from_text("correct horse"));
+            .secret_arg(Text::plain("现有密码"), Secret::from_text("hunter2"))
+            .secret_arg(Text::plain("新密码"), Secret::from_text("correct horse"));
         let d = c.display();
         assert_eq!(
             d,
@@ -476,7 +481,7 @@ mod tests {
 
     #[test]
     fn secrets_arrive_exactly() {
-        let c = Cmd::new("cat").secret_arg("x", Secret::from_text("a\nb c"));
+        let c = Cmd::new("cat").secret_arg(Text::plain("x"), Secret::from_text("a\nb c"));
         let out = SystemRunner.run(&c).unwrap();
         assert!(out.success());
         assert_eq!(&out.stdout[..], b"a\nb c");

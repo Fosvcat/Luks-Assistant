@@ -303,7 +303,12 @@ fn recovery_key_priority_orphans_and_restore() {
     assert_eq!(ov.slots[slot as usize].kind, SlotKind::Recovery);
     assert_eq!(env.unlocks(&key), Some(slot));
     // the secret must not leak into the step output
-    assert!(report.steps.iter().all(|s| !s.output.contains(&key)));
+    assert!(
+        report
+            .steps
+            .iter()
+            .all(|s| !s.output.to_string().contains(&key))
+    );
 
     // regenerate (replace) keeps the note on the new slot
     let report = env.run(Request::AddRecoveryKey {

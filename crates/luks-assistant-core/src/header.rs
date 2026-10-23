@@ -3,6 +3,8 @@
 use crate::ctx::Ctx;
 use crate::error::{Error, Result};
 use crate::exec::Cmd;
+use crate::i18n::Text;
+use crate::{t, tx};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeMap;
@@ -34,11 +36,19 @@ impl Priority {
         }
     }
 
+    pub fn text(self) -> Text {
+        match self {
+            Priority::Ignore => tx!("忽略"),
+            Priority::Normal => tx!("普通"),
+            Priority::Prefer => tx!("优先"),
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
-            Priority::Ignore => "忽略",
-            Priority::Normal => "普通",
-            Priority::Prefer => "优先",
+            Priority::Ignore => t!("忽略"),
+            Priority::Normal => t!("普通"),
+            Priority::Prefer => t!("优先"),
         }
     }
 }
@@ -58,7 +68,7 @@ pub struct Kdf {
 impl Kdf {
     pub fn summary(&self) -> String {
         match self.kind.as_str() {
-            "pbkdf2" => format!(
+            "pbkdf2" => t!(
                 "pbkdf2-{} {} 次迭代",
                 self.hash.as_deref().unwrap_or("?"),
                 self.iterations.unwrap_or(0)
@@ -191,7 +201,7 @@ pub fn parse_text_dump(text: &str) -> Result<TextInfo> {
         }
     }
     if info.version == 0 || info.uuid.is_empty() {
-        return Err(Error::Parse("luksDump 输出中缺少 Version/UUID".into()));
+        return Err(Error::Parse(tx!("luksDump 输出中缺少 Version/UUID")));
     }
     Ok(info)
 }
@@ -237,8 +247,8 @@ fn objects(v: &Value, key: &str) -> Vec<(u32, Value)> {
 
 /// Build a header from the text dump info and the JSON metadata.
 pub fn parse(info: TextInfo, json: &str) -> Result<Header> {
-    let v: Value =
-        serde_json::from_str(json).map_err(|e| Error::Parse(format!("JSON 元数据: {e}")))?;
+    let v: Value = serde_json::from_str(json)
+        .map_err(|e| Error::Parse(tx!("JSON 元数据: {}", e.to_string())))?;
     let keyslots = objects(&v, "keyslots")
         .into_iter()
         .map(|(id, k)| {
@@ -384,9 +394,9 @@ pub fn read(ctx: &Ctx, device: &Path) -> Result<Header> {
         return Ok(luks1(info, &text));
     }
     if !ctx.caps.json_dump {
-        return Err(Error::Unsupported(
-            "需要 cryptsetup ≥ 2.4 才能导出 JSON 元数据".into(),
-        ));
+        return Err(Error::Unsupported(tx!(
+            "需要 cryptsetup ≥ 2.4 才能导出 JSON 元数据"
+        )));
     }
     let json = ctx
         .runner

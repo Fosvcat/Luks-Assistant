@@ -6,6 +6,7 @@
 //! changes anything.
 
 use crate::cmd;
+use crate::t;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -68,9 +69,9 @@ pub fn check(target: &Target) -> Vec<Item> {
     let tpm = crate::tpm::TpmInfo::detect();
     items.push(if tpm.is_tpm2() {
         item(
-            "TPM 2.0 设备",
+            t!("TPM 2.0 设备"),
             Status::Ok,
-            format!(
+            t!(
                 "{} 可用",
                 tpm.dev_node
                     .map(|p| p.display().to_string())
@@ -78,19 +79,23 @@ pub fn check(target: &Target) -> Vec<Item> {
             ),
         )
     } else if tpm.present {
-        item("TPM 2.0 设备", Status::Fail, "不是 TPM 2.0")
+        item(t!("TPM 2.0 设备"), Status::Fail, t!("不是 TPM 2.0"))
     } else {
-        item("TPM 2.0 设备", Status::Warn, "未检测到 TPM")
+        item(t!("TPM 2.0 设备"), Status::Warn, t!("未检测到 TPM"))
     });
 
     items.push(check_plugins());
 
     let fw = crate::firmware::Firmware::detect();
     items.push(match fw.secure_boot {
-        _ if !fw.uefi => item("安全启动", Status::Warn, "传统 BIOS"),
-        Some(true) => item("安全启动", Status::Ok, "已开启"),
-        Some(false) => item("安全启动", Status::Warn, "未开启"),
-        None => item("安全启动", Status::Unknown, "无法读取 SecureBoot 变量"),
+        _ if !fw.uefi => item(t!("安全启动"), Status::Warn, t!("传统 BIOS")),
+        Some(true) => item(t!("安全启动"), Status::Ok, t!("已开启")),
+        Some(false) => item(t!("安全启动"), Status::Warn, t!("未开启")),
+        None => item(
+            t!("安全启动"),
+            Status::Unknown,
+            t!("无法读取 SecureBoot 变量"),
+        ),
     });
 
     let mut found_generator = false;
@@ -110,7 +115,7 @@ pub fn check(target: &Target) -> Vec<Item> {
         items.push(item(
             "initramfs-tools",
             Status::Warn,
-            "一般不支持 systemd-cryptenroll 令牌，开机时仍需输入密码",
+            t!("一般不支持 systemd-cryptenroll 令牌，开机时仍需输入密码"),
         ));
     }
     if Path::new("/etc/booster.yaml").exists() {
@@ -118,11 +123,11 @@ pub fn check(target: &Target) -> Vec<Item> {
         items.push(item(
             "booster",
             Status::Info,
-            "支持 systemd-tpm2 / systemd-fido2 令牌",
+            t!("支持 systemd-tpm2 / systemd-fido2 令牌"),
         ));
     }
     if !found_generator {
-        items.push(item("initramfs 生成器", Status::Unknown, "未识别"));
+        items.push(item(t!("initramfs 生成器"), Status::Unknown, t!("未识别")));
     }
 
     let crypttab = std::fs::read_to_string("/etc/crypttab").unwrap_or_default();
@@ -161,15 +166,15 @@ fn check_plugins() -> Item {
     }
     if found.is_empty() {
         item(
-            "cryptsetup 令牌插件",
+            t!("cryptsetup 令牌插件"),
             Status::Warn,
-            "未找到 libcryptsetup-token-systemd-*.so",
+            t!("未找到 libcryptsetup-token-systemd-*.so"),
         )
     } else {
         item(
-            "cryptsetup 令牌插件",
+            t!("cryptsetup 令牌插件"),
             Status::Ok,
-            format!("已安装: {}", found.join(", ")),
+            t!("已安装: {}", found.join(", ")),
         )
     }
 }
@@ -219,7 +224,7 @@ pub fn mkinitcpio_hooks(conf: &str) -> Option<Vec<String>> {
 
 pub fn analyze_mkinitcpio(conf: &str) -> Item {
     let Some(hooks) = mkinitcpio_hooks(conf) else {
-        return item("mkinitcpio", Status::Unknown, "没有找到 HOOKS= 配置");
+        return item("mkinitcpio", Status::Unknown, t!("没有找到 HOOKS= 配置"));
     };
     let has = |h: &str| hooks.iter().any(|x| x == h);
     let list = hooks.join(" ");
@@ -228,26 +233,29 @@ pub fn analyze_mkinitcpio(conf: &str) -> Item {
             item(
                 "mkinitcpio",
                 Status::Ok,
-                format!("systemd + sd-encrypt。HOOKS=({list})"),
+                t!("systemd + sd-encrypt。HOOKS=({})", list),
             )
         } else {
             item(
                 "mkinitcpio",
                 Status::Warn,
-                format!("有 sd-encrypt 但缺少 systemd 钩子。HOOKS=({list})"),
+                t!("有 sd-encrypt 但缺少 systemd 钩子。HOOKS=({})", list),
             )
         }
     } else if has("encrypt") {
         item(
             "mkinitcpio",
             Status::Fail,
-            format!("encrypt 钩子不支持令牌，需改用 systemd + sd-encrypt。HOOKS=({list})"),
+            t!(
+                "encrypt 钩子不支持令牌，需改用 systemd + sd-encrypt。HOOKS=({})",
+                list
+            ),
         )
     } else {
         item(
             "mkinitcpio",
             Status::Info,
-            format!("没有加密钩子。HOOKS=({list})"),
+            t!("没有加密钩子。HOOKS=({})", list),
         )
     }
 }
@@ -284,12 +292,16 @@ pub fn analyze_dracut(conf: &str) -> Item {
         (true, _) => item(
             "dracut",
             Status::Ok,
-            format!(
+            t!(
                 "已添加 tpm2-tss 模块{}",
-                if has_fido { "和 fido2 模块" } else { "" }
+                if has_fido { t!("和 fido2 模块") } else { "" }
             ),
         ),
-        (false, true) => item("dracut", Status::Ok, "已添加 fido2 模块（未添加 tpm2-tss）"),
+        (false, true) => item(
+            "dracut",
+            Status::Ok,
+            t!("已添加 fido2 模块（未添加 tpm2-tss）"),
+        ),
         (false, false) => item(
             "dracut",
             if available {
@@ -298,9 +310,9 @@ pub fn analyze_dracut(conf: &str) -> Item {
                 Status::Fail
             },
             if available {
-                "未显式添加 tpm2-tss / fido2 模块（hostonly 可能自动包含）"
+                t!("未显式添加 tpm2-tss / fido2 模块（hostonly 可能自动包含）")
             } else {
-                "未找到 tpm2-tss 模块"
+                t!("未找到 tpm2-tss 模块")
             },
         ),
     }
@@ -340,7 +352,7 @@ pub fn analyze_crypttab(text: &str, target: &Target) -> Item {
             item(
                 "/etc/crypttab",
                 Status::Info,
-                format!(
+                t!(
                     "条目 {} 未指定 tpm2-device= / fido2-device=（通常会自动尝试令牌）",
                     fields[0]
                 ),
@@ -349,11 +361,11 @@ pub fn analyze_crypttab(text: &str, target: &Target) -> Item {
             item(
                 "/etc/crypttab",
                 Status::Ok,
-                format!("条目 {} 已配置: {}", fields[0], found.join(", ")),
+                t!("条目 {} 已配置: {}", fields[0], found.join(", ")),
             )
         };
     }
-    item("/etc/crypttab", Status::Info, "没有该设备的条目")
+    item("/etc/crypttab", Status::Info, t!("没有该设备的条目"))
 }
 
 pub fn analyze_cmdline(cmdline: &str, target: &Target) -> Item {
@@ -361,14 +373,14 @@ pub fn analyze_cmdline(cmdline: &str, target: &Target) -> Item {
     let uuid = target.uuid.to_ascii_lowercase();
     if let Some(a) = args.iter().find(|a| a.starts_with("cryptdevice=")) {
         return item(
-            "内核参数",
+            t!("内核参数"),
             Status::Fail,
-            format!("{a}：encrypt 钩子写法，不支持令牌"),
+            t!("{}：encrypt 钩子写法，不支持令牌", a),
         );
     }
     let luks: Vec<&&str> = args.iter().filter(|a| a.starts_with("rd.luks.")).collect();
     if luks.is_empty() {
-        return item("内核参数", Status::Info, "没有 rd.luks.* 参数");
+        return item(t!("内核参数"), Status::Info, t!("没有 rd.luks.* 参数"));
     }
     let opts = luks
         .iter()
@@ -386,14 +398,14 @@ pub fn analyze_cmdline(cmdline: &str, target: &Target) -> Item {
         .collect::<Vec<_>>()
         .join(" ");
     if token_opt {
-        item("内核参数", Status::Ok, summary)
+        item(t!("内核参数"), Status::Ok, summary)
     } else if mentions_target {
-        item("内核参数", Status::Info, summary)
+        item(t!("内核参数"), Status::Info, summary)
     } else {
         item(
-            "内核参数",
+            t!("内核参数"),
             Status::Info,
-            format!("{summary}（未包含该设备 UUID）"),
+            t!("{}（未包含该设备 UUID）", summary),
         )
     }
 }

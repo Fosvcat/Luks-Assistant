@@ -18,6 +18,8 @@
 use crate::ctx::Paths;
 use crate::error::{Error, Result};
 use crate::header::{Header, Keyslot};
+use crate::i18n::Text;
+use crate::{t, tx};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -39,10 +41,17 @@ pub enum KeyKind {
 }
 
 impl KeyKind {
+    pub fn text(self) -> Text {
+        match self {
+            KeyKind::Passphrase => tx!("密码"),
+            KeyKind::Keyfile => tx!("密钥文件"),
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
-            KeyKind::Passphrase => "密码",
-            KeyKind::Keyfile => "密钥文件",
+            KeyKind::Passphrase => t!("密码"),
+            KeyKind::Keyfile => t!("密钥文件"),
         }
     }
 }
@@ -54,10 +63,17 @@ pub enum Location {
 }
 
 impl Location {
+    pub fn text(self) -> Text {
+        match self {
+            Location::Header => tx!("存入头部"),
+            Location::Local => tx!("存在本机 /etc/"),
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
-            Location::Header => "存入头部",
-            Location::Local => "存在本机 /etc/",
+            Location::Header => t!("存入头部"),
+            Location::Local => t!("存在本机 /etc/"),
         }
     }
 }
@@ -182,10 +198,10 @@ impl Notes {
 
 pub fn validate_text(text: &str) -> Result<()> {
     if text.chars().count() > MAX_NOTE_CHARS {
-        return Err(Error::Invalid(format!("备注最多 {MAX_NOTE_CHARS} 个字符")));
+        return Err(Error::Invalid(tx!("备注最多 {} 个字符", MAX_NOTE_CHARS)));
     }
     if text.chars().any(char::is_control) {
-        return Err(Error::Invalid("备注不能包含控制字符或换行".into()));
+        return Err(Error::Invalid(tx!("备注不能包含控制字符或换行")));
     }
     Ok(())
 }
@@ -215,9 +231,10 @@ pub fn check_header_space(header: &Header, current: &NoteSet, new: &NoteSet) -> 
     let projected = header.json_used + new_len.saturating_sub(old_len) + 16;
     let limit = header.config.json_size as usize;
     if limit > 0 && projected + JSON_HEADROOM > limit {
-        return Err(Error::Blocked(format!(
+        return Err(Error::Blocked(tx!(
             "头部 JSON 区空间不足（约 {} / {} 字节）",
-            projected, limit
+            projected,
+            limit
         )));
     }
     Ok(())

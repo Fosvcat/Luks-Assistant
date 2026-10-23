@@ -11,6 +11,7 @@
 use crate::ctx::Paths;
 use crate::forms::{Form, FormKind};
 use crate::health::Issue;
+use crate::i18n::Text;
 use crate::ops::{Credential, Danger, Plan, Report, Request, StepReport, TokenKind};
 use crate::secret::Secret;
 use crate::slots::Overview;
@@ -32,6 +33,10 @@ pub struct Call {
 #[serde(tag = "method", content = "params", rename_all = "snake_case")]
 pub enum Method {
     Hello,
+    /// Language of everything the helper returns: "zh" or "en" → null
+    SetLanguage {
+        lang: String,
+    },
     /// → [`view::SystemView`]; `extra` are image files opened explicitly.
     SystemView {
         extra: Vec<PathBuf>,
@@ -154,17 +159,17 @@ impl PlanView {
     pub fn new(id: u64, p: &Plan) -> Self {
         PlanView {
             id,
-            title: p.title.clone(),
+            title: p.title.to_string(),
             device: p.device.clone(),
             steps: p
                 .steps
                 .iter()
                 .map(|s| StepView {
-                    desc: s.desc().to_owned(),
+                    desc: s.desc().to_string(),
                     command: s.command(),
                 })
                 .collect(),
-            warnings: p.warnings.clone(),
+            warnings: p.warnings.iter().map(Text::to_string).collect(),
             danger: p.danger,
             confirm_word: p.confirm_word.clone(),
             interactive: p.is_interactive(),
@@ -183,18 +188,21 @@ pub struct ReportView {
     pub recovery_key: Option<Secret>,
     pub error: Option<String>,
     pub backup_file: Option<PathBuf>,
+    /// The same in English, for the log.
+    pub log: String,
 }
 
 impl ReportView {
     pub fn new(p: &Plan, r: Report) -> Self {
         ReportView {
-            title: p.title.clone(),
+            log: crate::ops::log_text(p, &r),
+            title: p.title.to_string(),
             device: p.device.clone(),
             ok: r.ok,
             steps: r.steps,
             new_slot: r.new_slot,
             recovery_key: r.recovery_key,
-            error: r.error,
+            error: r.error.map(|e| e.to_string()),
             backup_file: r.backup_file,
         }
     }
@@ -213,7 +221,12 @@ pub enum SubmitReply {
     /// A write operation, to be confirmed and executed.
     Plan(PlanView),
     /// Outcome of a verification.
-    Message { ok: bool, text: String },
+    Message {
+        ok: bool,
+        text: String,
+        /// The same in English, for the log.
+        log: String,
+    },
     /// The backup directory changed.
     Paths(Paths),
 }
@@ -260,11 +273,16 @@ mod tests {
         let m = SubmitReply::Message {
             ok: true,
             text: "✓".into(),
+            log: "ok".into(),
         };
         assert_eq!(
             serde_json::to_string(&m).unwrap(),
-            r#"{"kind":"message","ok":true,"text":"✓"}"#
+            r#"{"kind":"message","ok":true,"text":"✓","log":"ok"}"#
         );
+        let c: Call =
+            serde_json::from_str(r#"{"id":2,"method":"set_language","params":{"lang":"en"}}"#)
+                .unwrap();
+        assert!(matches!(c.method, Method::SetLanguage { .. }));
     }
 
     #[test]

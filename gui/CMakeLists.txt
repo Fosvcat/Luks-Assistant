@@ -15,6 +15,8 @@ find_package(Qt6 6.2 REQUIRED COMPONENTS Widgets)
 
 add_executable(Luks-Assistant-GUI
     src/main.cpp
+    src/appsettings.cpp
+    src/appsettings.h
     src/helperclient.cpp
     src/helperclient.h
     src/mainwindow.cpp
@@ -25,6 +27,12 @@ add_executable(Luks-Assistant-GUI
     src/dialogs.cpp
     src/dialogs.h
 )
+
+# English catalog shared with the Rust crates.
+qt_add_resources(Luks-Assistant-GUI i18n
+    PREFIX /i18n
+    BASE ../i18n
+    FILES ../i18n/en.tsv)
 
 target_compile_definitions(Luks-Assistant-GUI PRIVATE
     LUKS_ASSISTANT_VERSION="${PROJECT_VERSION}")

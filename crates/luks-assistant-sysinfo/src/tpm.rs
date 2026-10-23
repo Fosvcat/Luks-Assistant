@@ -1,6 +1,7 @@
 //! TPM2 device detection and PCR reading.
 
 use crate::cmd;
+use crate::t;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -104,7 +105,7 @@ pub fn read_pcrs(bank: &str, device: &str) -> Result<PcrValues, String> {
 fn read_pcrs_sysfs(bank: &str) -> Result<PcrValues, String> {
     let dir = Path::new(SYSFS_TPM).join(format!("pcr-{bank}"));
     if !dir.is_dir() {
-        return Err(format!(
+        return Err(t!(
             "{} 不存在（没有 TPM，或内核早于 5.12 不提供 PCR sysfs 接口）",
             dir.display()
         ));
@@ -116,7 +117,7 @@ fn read_pcrs_sysfs(bank: &str) -> Result<PcrValues, String> {
             std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
         out.insert(
             i,
-            decode_hex(text.trim()).ok_or_else(|| format!("{}: 无法解析", path.display()))?,
+            decode_hex(text.trim()).ok_or_else(|| t!("{}: 无法解析", path.display()))?,
         );
     }
     Ok(out)
@@ -129,9 +130,9 @@ fn read_pcrs_tpm2_tools(bank: &str, tcti: Option<&str>) -> Result<PcrValues, Str
         args.extend(["-T", t]);
     }
     args.push(&sel);
-    let out = cmd::run("tpm2_pcrread", &args).ok_or("未安装 tpm2-tools (tpm2_pcrread)")?;
+    let out = cmd::run("tpm2_pcrread", &args).ok_or(t!("未安装 tpm2-tools (tpm2_pcrread)"))?;
     if !out.success {
-        return Err(format!("tpm2_pcrread 失败: {}", out.stderr.trim()));
+        return Err(t!("tpm2_pcrread 失败: {}", out.stderr.trim()));
     }
     parse_tpm2_pcrread(&out.stdout, bank)
 }
@@ -161,7 +162,7 @@ pub fn parse_tpm2_pcrread(text: &str, bank: &str) -> Result<PcrValues, String> {
         }
     }
     if out.is_empty() {
-        Err(format!("tpm2_pcrread 输出中没有 {bank} bank"))
+        Err(t!("tpm2_pcrread 输出中没有 {} bank", bank))
     } else {
         Ok(out)
     }

@@ -8,6 +8,7 @@ pub mod bootcheck;
 pub mod cmd;
 pub mod fido2;
 pub mod firmware;
+pub mod i18n;
 pub mod os;
 pub mod tools;
 pub mod tpm;

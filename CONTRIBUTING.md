@@ -43,6 +43,7 @@ sudo env LUKS_ASSISTANT_FAST_KDF=1 \
 | `LUKS_ASSISTANT_ETC_DIR` | 本机备注目录（默认 `/etc/luks-assistant`） |
 | `LUKS_ASSISTANT_STATE_DIR` | 头部备份、PCR 快照、日志、锁文件目录（默认 `/var/lib/luks-assistant`） |
 | `LUKS_ASSISTANT_FAST_KDF=1` | 新槽位使用极弱的 PBKDF2，**仅用于测试** |
+| `LUKS_ASSISTANT_LANG=en` / `zh` | 终端界面语言（默认跟随 locale） |
 
 ## 图形界面
 
@@ -57,6 +58,15 @@ sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/Luks-Assistant-Helper LUKS_ASSI
 ```
 
 无显示器的环境可以用 `Xvfb :99` + `DISPLAY=:99`，再用 `xdotool` 点击、`import -window root` 截图。
+
+## 界面文字与翻译
+
+源文字是中文，英文译文统一放在 `i18n/en.tsv`（每行“中文<TAB>English”，`\n`、`\t` 转义），Rust 与 Qt 共用：
+
+- Rust：`t!("…")` 立即按当前语言翻译；`tx!("… {}", x)` 生成 `Text`，显示时再翻译——计划、步骤、报告和错误都用它，这样同一条消息既能按界面语言显示，也能以英文写入日志；`const` 表格里的文字用 `n!("…")` 标记，显示时用 `i18n::tr` 翻译。占位符一律写 `{}`。
+- Qt：`tr("…")`（占位符 `%1`）；`.ui` 中的文字由 uic 自动处理。同一中文在不同场合需要不同英文时，在 `.ui` 里加 `comment="…"`，对应条目写成 `中文@comment`。
+
+`cargo test` 中的 `catalog` 测试会检查：源码里每段中文都经过上述宏或 `tr()`、都在 `en.tsv` 中、占位符一致，且 `en.tsv` 没有多余条目；缺少的条目会以 TSV 行打印出来，补上英文即可。
 
 ## 约定
 

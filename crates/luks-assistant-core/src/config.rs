@@ -1,6 +1,7 @@
 //! Persistent settings in `<etc_dir>/config.json`.
 
 use crate::error::Result;
+use crate::tx;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -36,7 +37,7 @@ impl Config {
 pub fn set_backup_dir(paths: &mut crate::ctx::Paths, dir: Option<PathBuf>) -> Result<()> {
     if let Some(d) = &dir {
         if !d.is_absolute() {
-            return Err(crate::Error::Invalid("备份目录必须是绝对路径".into()));
+            return Err(crate::Error::Invalid(tx!("备份目录必须是绝对路径")));
         }
     }
     let mut cfg = Config::load(&paths.etc_dir);

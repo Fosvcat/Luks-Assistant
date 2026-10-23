@@ -1,6 +1,7 @@
 //! Versions of the external tools we drive and the features they support.
 
 use crate::cmd;
+use crate::t;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -134,15 +135,15 @@ impl Caps {
     /// Human readable list of (feature, available).
     pub fn describe(&self) -> Vec<(&'static str, bool)> {
         vec![
-            ("JSON 头部导出 (cryptsetup ≥ 2.4)", self.json_dump),
+            (t!("JSON 头部导出 (cryptsetup ≥ 2.4)"), self.json_dump),
             ("systemd-cryptenroll (systemd ≥ 248)", self.cryptenroll),
-            ("FIDO2 PIN/触摸/验证选项 (≥ 249)", self.fido2_options),
+            (t!("FIDO2 PIN/触摸/验证选项 (≥ 249)"), self.fido2_options),
             ("TPM2 + PIN (≥ 251)", self.tpm2_pin),
             (
-                "用密钥文件验证 --unlock-key-file (≥ 252)",
+                t!("用密钥文件验证 --unlock-key-file (≥ 252)"),
                 self.unlock_key_file,
             ),
-            ("TPM2 签名 PCR 策略 (≥ 252)", self.tpm2_public_key),
+            (t!("TPM2 签名 PCR 策略 (≥ 252)"), self.tpm2_public_key),
             ("TPM2 pcrlock (≥ 255)", self.tpm2_pcrlock),
         ]
     }

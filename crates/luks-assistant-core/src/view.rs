@@ -9,6 +9,7 @@ use crate::health::{Issue, Severity};
 use crate::ops::Request;
 use crate::pcr::{self, TpmStatus};
 use crate::slots::{Overview, Slot, SlotKind};
+use crate::t;
 use crate::util::format_time;
 use luks_assistant_sysinfo::SystemInfo;
 use luks_assistant_sysinfo::tools::Version;
@@ -140,7 +141,8 @@ pub struct BackupRow {
 }
 
 fn ver(v: Option<Version>) -> String {
-    v.map(|v| v.to_string()).unwrap_or_else(|| "未安装".into())
+    v.map(|v| v.to_string())
+        .unwrap_or_else(|| t!("未安装").into())
 }
 
 pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
@@ -151,9 +153,9 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
     } else if sys.tpm.is_tpm2() {
         format!("TPM2 ✓ {}", sys.tpm.banks.join("/"))
     } else {
-        "无 TPM".into()
+        t!("无 TPM").into()
     };
-    let summary = format!(
+    let summary = t!(
         "{} · 内核 {} · systemd {} · cryptsetup {} · {} · 安全启动 {}",
         sys.os.pretty_name,
         sys.os.kernel,
@@ -163,37 +165,40 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
         sys.firmware.secure_boot_label()
     );
     let system = vec![
-        row("发行版", sys.os.pretty_name.clone()),
-        row("系列", sys.os.family.label()),
-        row("内核", sys.os.kernel.clone()),
-        row("主机名", sys.os.hostname.clone()),
+        row(t!("发行版"), sys.os.pretty_name.clone()),
+        row(t!("系列"), sys.os.family.label()),
+        row(t!("内核"), sys.os.kernel.clone()),
+        row(t!("主机名"), sys.os.hostname.clone()),
         row("cryptsetup", ver(sys.tools.cryptsetup)),
         row("systemd", ver(sys.tools.systemd)),
-        row("固件", if sys.firmware.uefi { "UEFI" } else { "BIOS" }),
-        row("安全启动", sys.firmware.secure_boot_label()),
+        row(t!("固件"), if sys.firmware.uefi { "UEFI" } else { "BIOS" }),
+        row(t!("安全启动"), sys.firmware.secure_boot_label()),
     ];
     let mut tpm = Vec::new();
     if sys.tpm.present {
         tpm.push(row(
-            "版本",
+            t!("版本"),
             format!("TPM {}.0", sys.tpm.version_major.unwrap_or(0)),
         ));
         tpm.push(row(
-            "设备",
+            t!("设备"),
             sys.tpm
                 .dev_node
                 .as_ref()
                 .map(|p| p.display().to_string())
                 .unwrap_or_default(),
         ));
-        tpm.push(row("驱动", sys.tpm.driver.clone().unwrap_or_default()));
-        tpm.push(row("描述", sys.tpm.description.clone().unwrap_or_default()));
+        tpm.push(row(t!("驱动"), sys.tpm.driver.clone().unwrap_or_default()));
+        tpm.push(row(
+            t!("描述"),
+            sys.tpm.description.clone().unwrap_or_default(),
+        ));
         tpm.push(row("PCR bank", sys.tpm.banks.join(", ")));
     } else {
-        tpm.push(row("状态", "未检测到"));
+        tpm.push(row(t!("状态"), t!("未检测到")));
     }
     if ctx.tpm2_device != "auto" {
-        tpm.push(row("覆盖", ctx.tpm2_device.clone()));
+        tpm.push(row(t!("覆盖"), ctx.tpm2_device.clone()));
     }
     let disks = tree
         .flatten()
@@ -223,7 +228,7 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
         .map(|p| PickEntry {
             depth: 0,
             path: p.to_string_lossy().into_owned(),
-            text: format!("{}  镜像文件", p.display()),
+            text: t!("{}  镜像文件", p.display()),
             selectable: true,
         })
         .collect();
@@ -289,28 +294,31 @@ pub fn pcr_rows(values: Option<&PcrValues>) -> Vec<PcrRow> {
                 .and_then(|m| m.get(&info.index))
                 .map(|b| encode_hex(b))
                 .unwrap_or_default(),
-            name: info.name.to_owned(),
-            measures: info.measures.to_owned(),
-            changes: info.changes.to_owned(),
+            name: info.name().to_owned(),
+            measures: info.measures().to_owned(),
+            changes: info.changes().to_owned(),
         })
         .collect()
 }
 
 /// Selected PCRs with their meaning, followed by warnings.
 pub fn pcr_notes(selected: &[u8], secure_boot: Option<bool>) -> Vec<String> {
-    let mut v = vec![format!(
+    let mut v = vec![t!(
         "已选 PCR {}",
         if selected.is_empty() {
-            "无".into()
+            t!("无").into()
         } else {
             pcr::format_list(selected)
         }
     )];
     for &p in selected.iter().filter(|p| **p < 24) {
         let info = &pcr::PCRS[p as usize];
-        v.push(format!(
-            "PCR {p} {}：{}；改变：{}",
-            info.name, info.measures, info.changes
+        v.push(t!(
+            "PCR {} {}：{}；改变：{}",
+            p,
+            info.name(),
+            info.measures(),
+            info.changes()
         ));
     }
     v.extend(
@@ -339,7 +347,7 @@ fn kind_id(k: &SlotKind) -> &'static str {
 
 fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
     let subtitle = match (&s.note, &s.tpm2_status) {
-        (_, Some(TpmStatus::Mismatch { .. })) => "⚠ PCR 已变化".to_owned(),
+        (_, Some(TpmStatus::Mismatch { .. })) => t!("⚠ PCR 已变化").to_owned(),
         (Some(n), _) if !n.note.text.is_empty() => n.note.text.clone(),
         (_, Some(TpmStatus::Match)) => {
             format!("PCR {}", pcr::format_list(&s.tpm2.as_ref().unwrap().pcrs))
@@ -355,17 +363,17 @@ fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
     };
     let mut details = Vec::new();
     if !s.is_empty() {
-        details.push(row("类型", s.kind.label()));
+        details.push(row(t!("类型"), s.kind.label()));
         if let Some(ks) = &s.keyslot {
             details.push(row("KDF", ks.kdf.summary()));
-            details.push(row("优先级", ks.priority.label()));
+            details.push(row(t!("优先级"), ks.priority.label()));
             if let Some(e) = &ks.area_encryption {
-                details.push(row("槽位加密", format!("{e}  {} 位", ks.key_size * 8)));
+                details.push(row(t!("槽位加密"), t!("{}  {} 位", e, ks.key_size * 8)));
             }
         }
         if !s.tokens.is_empty() {
             details.push(row(
-                "令牌",
+                t!("令牌"),
                 s.tokens
                     .iter()
                     .map(u32::to_string)
@@ -374,9 +382,9 @@ fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
             ));
         }
         details.push(row(
-            "备注",
+            t!("备注"),
             match &s.note {
-                Some(n) => format!(
+                Some(n) => t!(
                     "{}（{}{}）",
                     if n.note.text.is_empty() {
                         "—"
@@ -386,7 +394,7 @@ fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
                     n.location.label(),
                     n.note
                         .kind
-                        .map(|k| format!("，{}", k.label()))
+                        .map(|k| t!("，{}", k.label()))
                         .unwrap_or_default()
                 ),
                 None => "—".into(),
@@ -395,10 +403,10 @@ fn slot_view(s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
         if let Some(t) = &s.tpm2 {
             details.push(row("TPM2", t.describe()));
             if let Some(st) = &s.tpm2_status {
-                details.push(row("状态", st.label()));
+                details.push(row(t!("状态"), st.label()));
             }
             if let Some(h) = &t.policy_hash {
-                details.push(row("策略哈希", h.clone()));
+                details.push(row(t!("策略哈希"), h.clone()));
             }
         }
         if let Some(f) = &s.fido2 {
@@ -452,13 +460,13 @@ pub fn device_view(ctx: &Ctx, ov: &Overview, issues: &[Issue]) -> DeviceView {
         path: ov.device.path.to_string_lossy().into_owned(),
         title: ov.device.display_name(),
         uuid: ov.header.uuid.clone(),
-        header: format!(
+        header: t!(
             "LUKS{} · {} · 已用 {}/32",
             ov.header.version,
             ov.header.uuid,
             ov.used().count()
         ),
-        volume: format!(
+        volume: t!(
             "{} · 扇区 {} · JSON {}/{} 字节",
             seg.and_then(|s| s.encryption.clone()).unwrap_or_default(),
             seg.and_then(|s| s.sector_size).unwrap_or(0),

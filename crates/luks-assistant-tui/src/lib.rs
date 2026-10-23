@@ -9,10 +9,12 @@ mod ui;
 use luks_assistant_core::Ctx;
 use luks_assistant_core::device::{self, LuksDevice};
 use luks_assistant_core::slots::Overview;
+use luks_assistant_core::t;
 use ratatui::crossterm::event::{self, Event, KeyEventKind};
 use std::path::PathBuf;
 
-const USAGE: &str = "\
+fn usage() -> &'static str {
+    t!("\
 用法: Luks-Assistant-TUI [选项] [设备或镜像文件]
 
   不带参数时列出 lsblk 找到的所有 LUKS 设备。
@@ -27,13 +29,16 @@ const USAGE: &str = "\
   LUKS_ASSISTANT_TPM2_DEVICE   TPM 设备或 TCTI，例如 swtpm:host=127.0.0.1,port=2321
   LUKS_ASSISTANT_ETC_DIR       备注目录（默认 /etc/luks-assistant）
   LUKS_ASSISTANT_STATE_DIR     备份/快照/日志目录（默认 /var/lib/luks-assistant）
-";
+")
+}
 
 /// Run the TUI (or one of its non-interactive modes) with `args`
 /// (without the program name). Never returns.
 pub fn main_with_args(mut args: Vec<String>) -> ! {
+    use luks_assistant_core::i18n;
+    i18n::set_lang(i18n::Lang::from_env());
     if args.iter().any(|a| a == "-h" || a == "--help") {
-        print!("{USAGE}");
+        print!("{}", usage());
         std::process::exit(0);
     }
     if args.iter().any(|a| a == "-V" || a == "--version") {
@@ -43,7 +48,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
     let dump = take_flag(&mut args, "--dump");
     let boot_check = take_flag(&mut args, "--boot-check");
     if let Some(bad) = args.iter().find(|a| a.starts_with('-')) {
-        eprintln!("未知选项: {bad}\n\n{USAGE}");
+        eprintln!("{}", t!("未知选项: {}\n\n{}", bad, usage()));
         std::process::exit(2);
     }
 
@@ -52,7 +57,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
         .iter()
         .map(|a| LuksDevice::from_path(&PathBuf::from(a)))
         .collect();
-    let mut status = String::from("就绪");
+    let mut status = String::from(t!("就绪"));
     let mut devices = extra.clone();
     match device::discover(&ctx) {
         Ok(found) => {
@@ -67,7 +72,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
 
     if dump {
         let Some(dev) = devices.first().cloned() else {
-            eprintln!("没有找到 LUKS 设备");
+            eprintln!("{}", t!("没有找到 LUKS 设备"));
             std::process::exit(1);
         };
         match Overview::load(&ctx, dev) {
@@ -102,7 +107,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
 
     let sys = luks_assistant_sysinfo::SystemInfo::probe();
     if !sys.is_root {
-        status = "只读（写操作需要 sudo）".into();
+        status = t!("只读（写操作需要 sudo）").into();
     }
     let mut app = app::App::new(ctx, sys, extra, status);
     let mut terminal = term::enter();

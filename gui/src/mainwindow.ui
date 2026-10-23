@@ -6,33 +6,16 @@
    <rect><x>0</x><y>0</y><width>1180</width><height>780</height></rect>
   </property>
   <property name="windowTitle">
-   <string>Luks Assistant</string>
+   <string notr="true">Luks Assistant</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="centralLayout">
-    <item>
-     <layout class="QHBoxLayout" name="headerLayout">
-      <item>
-       <widget class="QLabel" name="summaryLabel">
-        <property name="text"><string/></property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Ignored" vsizetype="Preferred"><horstretch>1</horstretch><verstretch>0</verstretch></sizepolicy>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QPushButton" name="refreshButton">
-        <property name="text"><string>刷新</string></property>
-       </widget>
-      </item>
-     </layout>
-    </item>
     <item>
      <widget class="QTabWidget" name="tabs">
       <property name="currentIndex"><number>0</number></property>
 
       <widget class="QWidget" name="slotsTab">
-       <attribute name="title"><string>槽位</string></attribute>
+       <attribute name="title"><string comment="tab">槽位</string></attribute>
        <layout class="QVBoxLayout" name="slotsLayout">
         <item>
          <layout class="QHBoxLayout" name="deviceBar">
@@ -137,42 +120,45 @@
        </layout>
       </widget>
 
-      <widget class="QWidget" name="healthTab">
-       <attribute name="title"><string>体检</string></attribute>
-       <layout class="QVBoxLayout" name="healthLayout">
-        <item><widget class="QTreeWidget" name="issueTree"><property name="columnCount"><number>3</number></property></widget></item>
+      <widget class="QWidget" name="checkTab">
+       <attribute name="title"><string>自我检查</string></attribute>
+       <layout class="QHBoxLayout" name="checkLayout" stretch="1,1">
         <item>
-         <layout class="QHBoxLayout" name="healthButtons">
-          <item><spacer name="healthSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
-          <item><widget class="QPushButton" name="fixButton"><property name="text"><string>修复…</string></property></widget></item>
-         </layout>
+         <widget class="QGroupBox" name="issueGroup">
+          <property name="title"><string>问题与警告</string></property>
+          <layout class="QVBoxLayout" name="issueGroupLayout">
+           <item><widget class="QTreeWidget" name="issueTree"><property name="columnCount"><number>3</number></property></widget></item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="bootGroup">
+          <property name="title"><string>硬件解锁可用性</string></property>
+          <layout class="QVBoxLayout" name="bootGroupLayout">
+           <item><widget class="QTreeWidget" name="bootTree"><property name="columnCount"><number>3</number></property></widget></item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
 
-      <widget class="QWidget" name="bootTab">
-       <attribute name="title"><string>开机检查</string></attribute>
-       <layout class="QVBoxLayout" name="bootLayout">
-        <item><widget class="QLabel" name="bootLabel"><property name="text"><string>开机时 TPM2/FIDO2 自动解锁是否可用</string></property></widget></item>
-        <item><widget class="QTreeWidget" name="bootTree"><property name="columnCount"><number>3</number></property></widget></item>
-       </layout>
-      </widget>
-
       <widget class="QWidget" name="backupTab">
-       <attribute name="title"><string>备份</string></attribute>
+       <attribute name="title"><string>头部管理</string></attribute>
        <layout class="QVBoxLayout" name="backupLayout">
         <item>
          <layout class="QHBoxLayout" name="backupDirLayout">
           <item><widget class="QLabel" name="backupDirLabel"><property name="text"><string>备份位置</string></property></widget></item>
           <item><widget class="QLineEdit" name="backupDirEdit"/></item>
           <item><widget class="QPushButton" name="browseButton"><property name="text"><string>浏览…</string></property></widget></item>
-          <item><widget class="QPushButton" name="saveDirButton"><property name="text"><string>保存位置</string></property></widget></item>
+          <item><widget class="QPushButton" name="openDirButton"><property name="text"><string>打开文件夹</string></property></widget></item>
          </layout>
         </item>
         <item><widget class="QTreeWidget" name="backupTree"><property name="columnCount"><number>4</number></property></widget></item>
         <item>
          <layout class="QHBoxLayout" name="backupButtons">
           <item><widget class="QPushButton" name="selectAllButton"><property name="text"><string>全选</string></property></widget></item>
+          <item><widget class="QPushButton" name="invertButton"><property name="text"><string>反选</string></property></widget></item>
+          <item><widget class="QPushButton" name="clearButton"><property name="text"><string>清空</string></property></widget></item>
           <item><spacer name="backupSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
           <item><widget class="QPushButton" name="restoreButton"><property name="text"><string>恢复…</string></property></widget></item>
           <item><widget class="QPushButton" name="backupButton"><property name="text"><string>备份所选</string></property><property name="default"><bool>true</bool></property></widget></item>
@@ -185,6 +171,51 @@
        <attribute name="title"><string>日志</string></attribute>
        <layout class="QVBoxLayout" name="logLayout">
         <item><widget class="QPlainTextEdit" name="logView"><property name="readOnly"><bool>true</bool></property></widget></item>
+        <item>
+         <layout class="QHBoxLayout" name="logButtons">
+          <item><spacer name="logSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+          <item><widget class="QPushButton" name="exportButton"><property name="text"><string>导出…</string></property></widget></item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+
+      <widget class="QWidget" name="aboutTab">
+       <attribute name="title"><string>关于</string></attribute>
+       <layout class="QVBoxLayout" name="aboutLayout">
+        <item><spacer name="aboutTop"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
+        <item><widget class="QLabel" name="appIcon"><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+        <item><widget class="QLabel" name="appName"><property name="text"><string notr="true">Luks Assistant</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+        <item><widget class="QLabel" name="appVersion"><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+        <item><widget class="QLabel" name="appLink"><property name="alignment"><set>Qt::AlignCenter</set></property><property name="openExternalLinks"><bool>true</bool></property><property name="textFormat"><enum>Qt::RichText</enum></property></widget></item>
+        <item><spacer name="aboutGap"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeType"><enum>QSizePolicy::Fixed</enum></property><property name="sizeHint" stdset="0"><size><width>0</width><height>24</height></size></property></spacer></item>
+        <item>
+         <layout class="QHBoxLayout" name="settingsRow">
+          <item><spacer name="settingsLeft"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+          <item>
+           <layout class="QFormLayout" name="settingsForm">
+            <item row="0" column="0"><widget class="QLabel" name="languageLabel"><property name="text"><string>语言</string></property><property name="buddy"><cstring>languageCombo</cstring></property></widget></item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="languageCombo">
+              <item><property name="text"><string>跟随系统</string></property></item>
+              <item><property name="text"><string notr="true">English</string></property></item>
+              <item><property name="text"><string notr="true">简体中文</string></property></item>
+             </widget>
+            </item>
+            <item row="1" column="0"><widget class="QLabel" name="themeLabel"><property name="text"><string>主题</string></property><property name="buddy"><cstring>themeCombo</cstring></property></widget></item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="themeCombo">
+              <item><property name="text"><string>跟随系统</string></property></item>
+              <item><property name="text"><string>亮色</string></property></item>
+              <item><property name="text"><string>暗色</string></property></item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item><spacer name="settingsRight"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+         </layout>
+        </item>
+        <item><spacer name="aboutBottom"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
        </layout>
       </widget>
      </widget>

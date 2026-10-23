@@ -1,5 +1,6 @@
 //! UEFI and Secure Boot state.
 
+use crate::t;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -25,11 +26,11 @@ impl Firmware {
 
     pub fn secure_boot_label(&self) -> &'static str {
         match (self.uefi, self.secure_boot, self.setup_mode) {
-            (false, _, _) => "传统 BIOS",
-            (true, Some(true), _) => "已开启",
-            (true, Some(false), Some(true)) => "未开启（Setup Mode）",
-            (true, Some(false), _) => "未开启",
-            (true, None, _) => "未知",
+            (false, _, _) => t!("传统 BIOS"),
+            (true, Some(true), _) => t!("已开启"),
+            (true, Some(false), Some(true)) => t!("未开启（Setup Mode）"),
+            (true, Some(false), _) => t!("未开启"),
+            (true, None, _) => t!("未知"),
         }
     }
 }
