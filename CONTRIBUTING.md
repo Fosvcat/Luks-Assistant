@@ -63,3 +63,11 @@ sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/luks-assistant-helper LUKS_ASSI
 - 新的安全规则放在 `guard.rs`，被阻止时返回 `Error::Blocked`，不提供绕过选项。
 - 秘密用 `Secret` 类型（drop 时清零、`Debug` 不输出内容），只能通过 `Cmd::secret_arg` / `Cmd::secret_env` 传给子进程。
 - 功能按工具版本启用（`Caps`），不按发行版名称判断。
+
+## 发布新版本
+
+1. 修改根目录 `Cargo.toml` 中 `[workspace.package]` 的 `version`。
+2. 运行 `cargo build`，让 `Cargo.lock` 中的版本号同步更新。
+3. 把 `Cargo.toml` 和 `Cargo.lock` 一起提交并推送到 `main`。
+
+Release 工作流会自动创建 `v<版本号>` 标签，编译并发布。也可以在 Actions → Release → Run workflow 手动运行（标签留空即使用 `Cargo.toml` 中的版本）。

@@ -1,49 +1,87 @@
 name: Release
 
+# A release is made when
+#  - the version in Cargo.toml changes on main (push the version bump, done),
+#  - a v* tag is pushed, or
+#  - the workflow is started by hand (Actions → Release → Run workflow).
+# The tag is always v<version from Cargo.toml>; it is created on the commit
+# being released. A tag left behind by a failed run (no release attached)
+# is moved to that commit.
+
 on:
   push:
+    branches: [main]
+    paths: ["Cargo.toml"]
     tags: ["v*"]
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release, e.g. v0.1.0 (created on the selected branch if missing)"
-        required: true
+        description: "Tag, e.g. v0.2.0 (leave empty to use the version in Cargo.toml)"
+        required: false
 
 permissions:
   contents: write
   id-token: write
   attestations: write
 
-env:
-  TAG: ${{ inputs.tag || github.ref_name }}
-
 jobs:
-  check-version:
+  prepare:
     runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      release: ${{ steps.tag.outputs.release }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Create the tag when started by hand
-        if: github.event_name == 'workflow_dispatch'
+      - id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            echo "tag $TAG exists"
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            tag=$GITHUB_REF_NAME
           else
-            git tag "$TAG"
-            git push origin "refs/tags/$TAG"
+            tag=${INPUT_TAG:-v$version}
           fi
-      - name: Tag matches Cargo.toml version
-        run: |
-          git checkout -q "$TAG"
-          version=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
-          if [ "v$version" != "$TAG" ]; then
-            echo "::error::tag $TAG does not match workspace version $version"
+          if [ "$tag" != "v$version" ]; then
+            echo "::error::$tag 与 Cargo.toml 中的版本 $version 不一致（请先修改 Cargo.toml 的 version 并推送）"
             exit 1
           fi
+          if ! grep -A1 '^name = "luks-assistant-core"$' Cargo.lock | grep -q "^version = \"$version\"$"; then
+            echo "::error::Cargo.lock 仍是旧版本号：请运行 cargo build 后一起提交 Cargo.lock"
+            exit 1
+          fi
+          head=$(git rev-parse HEAD)
+          release=true
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            at=$(git rev-parse "$tag^{commit}")
+            if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = branch ]; then
+                echo "$tag 已发布，跳过（版本号没有变化）"
+                release=false
+              elif [ "$at" != "$head" ]; then
+                echo "::error::$tag 已发布在另一个提交上；请提高版本号"
+                exit 1
+              fi
+            elif [ "$at" != "$head" ]; then
+              echo "移动未发布的标签 $tag: $at → $head"
+              git tag -f "$tag" "$head"
+              git push -f origin "refs/tags/$tag"
+            fi
+          else
+            git tag "$tag" "$head"
+            git push origin "refs/tags/$tag"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "release=$release" >> "$GITHUB_OUTPUT"
 
   build-static:
-    needs: check-version
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     strategy:
       matrix:
         include:
@@ -78,7 +116,10 @@ jobs:
           path: dist/*.tar.gz
 
   build-gui:
-    needs: check-version
+    needs: prepare
+    if: needs.prepare.outputs.release == 'true'
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     strategy:
       matrix:
         include:
@@ -112,7 +153,9 @@ jobs:
           path: dist/*.tar.gz
 
   release:
-    needs: [build-static, build-gui]
+    needs: [prepare, build-static, build-gui]
+    env:
+      TAG: ${{ needs.prepare.outputs.tag }}
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/download-artifact@v4
