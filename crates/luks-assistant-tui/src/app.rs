@@ -545,7 +545,7 @@ impl App {
                                 ),
                             );
                         }
-                        Ok(o) => last = o.stderr.trim().to_owned(),
+                        Ok(o) => last = ops::token_failure(&o),
                         Err(e) => last = e.to_string(),
                     }
                 }

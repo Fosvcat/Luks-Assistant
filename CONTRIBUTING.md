@@ -47,12 +47,13 @@ sudo env LUKS_ASSISTANT_FAST_KDF=1 \
 ## 图形界面
 
 ```sh
-sudo apt install libfontconfig1-dev libxkbcommon-dev
-cargo build -p luks-assistant-gui -p luks-assistant-helper
+sudo apt install cmake qt6-base-dev     # Arch: qt6-base；Fedora: qt6-qtbase-devel
+cargo build -p luks-assistant-helper -p luks-assistant-tui
+cmake -S gui -B gui/build && cmake --build gui/build
 # 以 root 运行时 GUI 直接启动 helper，不经过 pkexec；开发用环境变量会转成 helper 参数
 sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/Luks-Assistant-Helper LUKS_ASSISTANT_FAST_KDF=1 \
   LUKS_ASSISTANT_ETC_DIR=/tmp/luks-assistant/etc LUKS_ASSISTANT_STATE_DIR=/tmp/luks-assistant/state \
-  ./target/debug/Luks-Assistant-GUI --gui /tmp/demo.img
+  ./gui/build/Luks-Assistant-GUI --gui /tmp/demo.img
 ```
 
 无显示器的环境可以用 `Xvfb :99` + `DISPLAY=:99`，再用 `xdotool` 点击、`import -window root` 截图。

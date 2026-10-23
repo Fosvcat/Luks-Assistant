@@ -1,5 +1,5 @@
-//! Terminal UI for LUKS2 key slots. Used as `Luks-Assistant-TUI`, and by the
-//! `Luks-Assistant-GUI` binary when started from a terminal or without a display.
+//! Terminal UI for LUKS2 key slots, run as `Luks-Assistant-TUI` (which
+//! `Luks-Assistant-GUI` also execs when started from a terminal or without a display).
 
 mod app;
 mod form;

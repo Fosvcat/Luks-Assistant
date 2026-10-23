@@ -1,5 +1,6 @@
 #!/bin/sh
-# Install Luks Assistant from a release archive or a cargo build.
+# Install Luks Assistant from a release archive or a source build
+# (cargo build --release + cmake --build gui/build).
 #
 #   sudo ./install.sh                 # binaries next to this script, PREFIX=/usr/local
 #   sudo PREFIX=/usr ./install.sh
@@ -26,7 +27,7 @@ if [ "${1:-}" = "--uninstall" ]; then
 fi
 
 find_bin() {
-    for d in "$HERE" "$HERE/.." "$HERE/../target/release"; do
+    for d in "$HERE" "$HERE/.." "$HERE/../target/release" "$HERE/../gui/build"; do
         if [ -x "$d/$1" ]; then echo "$d/$1"; return; fi
     done
 }

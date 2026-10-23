@@ -8,7 +8,7 @@
 
 > *Luks Assistant manages LUKS2 key slots (passphrases, key files, recovery keys, TPM2 with PCR selection, FIDO2, PKCS#11) on top of cryptsetup and systemd-cryptenroll, with a graphical and a terminal frontend. LUKS2 only; LUKS1 is not supported.*
 
-- **图形界面** `Luks-Assistant-GUI`：普通用户运行，通过 `pkexec` 启动 root 后端 `Luks-Assistant-Helper`
+- **图形界面** `Luks-Assistant-GUI`：Qt6 Widgets 原生界面（KDE 下使用系统样式，GNOME 下随 Qt 平台主题呈现 GTK 风格），普通用户运行，通过 `pkexec` 启动 root 后端 `Luks-Assistant-Helper`
 - **终端界面** `Luks-Assistant-TUI`：`sudo` 运行，适合服务器和 SSH
 
 `Luks-Assistant-GUI` 在桌面中启动时打开图形界面；在终端中或没有图形环境时自动进入终端界面（`--gui` / `--tui` 可强制）。
@@ -50,7 +50,7 @@
 
 | 文件 | 说明 |
 |---|---|
-| `Luks-Assistant-GUI` | 图形界面（glibc ≥ 2.35） |
+| `Luks-Assistant-GUI` | 图形界面（glibc ≥ 2.35，Qt ≥ 6.2） |
 | `Luks-Assistant-TUI` | 终端界面（静态链接，任何发行版可用） |
 | `Luks-Assistant-Helper` | 图形界面使用的 root 后端（静态链接） |
 | `install.sh` 等 | 安装脚本、polkit 策略、桌面启动项 |
@@ -61,20 +61,19 @@ sudo ./install.sh                # 安装到 /usr/local，含 polkit 策略和�
 sudo ./install.sh --uninstall
 ```
 
-运行时依赖：`cryptsetup` ≥ 2.4；TPM2/FIDO2/PKCS#11/恢复密钥需要 `systemd-cryptenroll`（systemd ≥ 248，TPM2+PIN 需要 ≥ 251）；图形界面需要 polkit（`pkexec`）和 fontconfig。功能按工具版本自动启用。
+运行时依赖：`cryptsetup` ≥ 2.4；TPM2/FIDO2/PKCS#11/恢复密钥需要 `systemd-cryptenroll`（systemd ≥ 248，TPM2+PIN 需要 ≥ 251）；图形界面需要 polkit（`pkexec`）和 Qt 6 Widgets（Arch `qt6-base`，Fedora `qt6-qtbase-gui`，Debian/Ubuntu `libqt6widgets6`）。功能按工具版本自动启用。
 
 ## 从源码构建
 
-需要 Rust ≥ 1.85；图形界面另需 `libfontconfig1-dev`、`libxkbcommon-dev`（或对应发行版的包）。
+需要 Rust ≥ 1.85；图形界面另需 CMake 与 Qt ≥ 6.2 开发包（Arch `qt6-base`，Fedora `qt6-qtbase-devel`，Debian/Ubuntu `qt6-base-dev`）。
 
 ```sh
-cargo build --release
-sudo packaging/install.sh                        # 安装 target/release 中的二进制
+cargo build --release                            # TUI 与 helper
+cmake -S gui -B gui/build -DCMAKE_BUILD_TYPE=Release && cmake --build gui/build   # 图形界面
+sudo packaging/install.sh                        # 安装 target/release 与 gui/build 中的二进制
 sudo ./target/release/Luks-Assistant-TUI /dev/nvme0n1p2 # 直接运行终端界面
 ./target/release/Luks-Assistant-TUI --dump disk.img     # 以 JSON 输出槽位模型
 ```
-
-`cargo build --release -p luks-assistant-gui --features qt` 使用 Qt 后端和原生 Qt 样式（KDE 外观，需要 Qt 6 开发包）。
 
 ### 页面（终端界面按键）
 
@@ -104,8 +103,8 @@ crates/
 ├── luks-assistant-sysinfo  只读的系统探测：发行版、工具版本与功能、UEFI/安全启动、TPM、PCR、FIDO2/PKCS#11、开机检查
 ├── luks-assistant-core     头部解析、32 槽位模型、备注、PCR 策略计算、安全护栏、表单、操作计划与执行、通信协议
 ├── luks-assistant-tui      ratatui 终端界面（库 + Luks-Assistant-TUI 二进制）
-├── luks-assistant-helper   root 后端 Luks-Assistant-Helper，由图形界面通过 pkexec 启动
-└── luks-assistant-gui      Slint 图形界面（Luks-Assistant-GUI 二进制，终端中自动转为 TUI）
+└── luks-assistant-helper   root 后端 Luks-Assistant-Helper，由图形界面通过 pkexec 启动
+gui/                        C++ Qt6 Widgets 图形界面（Luks-Assistant-GUI，终端中自动转为 TUI）
 packaging/                  polkit 策略、桌面启动项、安装脚本
 ```
 

@@ -8,13 +8,13 @@
 //! Plans stay inside the helper (they hold secrets); the GUI only sees a
 //! [`PlanView`] and executes a plan by id.
 
-use crate::backup::BackupFile;
 use crate::ctx::Paths;
-use crate::device::BlockTree;
+use crate::forms::{Form, FormKind};
 use crate::health::Issue;
 use crate::ops::{Credential, Danger, Plan, Report, Request, StepReport, TokenKind};
 use crate::secret::Secret;
 use crate::slots::Overview;
+use crate::view;
 use luks_assistant_sysinfo::tools::Caps;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -32,26 +32,42 @@ pub struct Call {
 #[serde(tag = "method", content = "params", rename_all = "snake_case")]
 pub enum Method {
     Hello,
-    SystemInfo,
-    BlockTree,
+    /// → [`view::SystemView`]; `extra` are image files opened explicitly.
+    SystemView {
+        extra: Vec<PathBuf>,
+    },
+    /// → [`DeviceReply`]
+    DeviceView {
+        path: PathBuf,
+    },
+    /// → `Vec<view::BackupRow>`
+    BackupRows {
+        paths: Vec<PathBuf>,
+    },
+    /// → [`Form`]
+    BuildForm {
+        path: PathBuf,
+        kind: FormKind,
+    },
+    /// → [`SubmitReply`]
+    SubmitForm {
+        path: PathBuf,
+        form: Form,
+    },
+    /// → `Vec<String>`: meaning of the selected PCRs and warnings
+    PcrNotes {
+        pcrs: Vec<u8>,
+    },
     /// → [`OverviewReply`]
     Overview {
         path: PathBuf,
     },
-    BootCheck {
-        path: PathBuf,
-    },
-    Pcrs {
-        bank: String,
-    },
-    Fido2Devices,
-    Pkcs11Tokens,
     /// → [`PlanView`]
     Plan {
         path: PathBuf,
         request: Request,
     },
-    /// Header backups of several devices → `Vec<PlanView>` (one per device that could be read)
+    /// Header backups of several devices → `Vec<PlanView>`
     PlanBackups {
         paths: Vec<PathBuf>,
     },
@@ -70,10 +86,6 @@ pub enum Method {
         path: PathBuf,
         kind: TokenKind,
         pin: Option<Secret>,
-    },
-    /// → `Vec<BackupFile>`
-    Backups {
-        uuid: String,
     },
     /// → [`Paths`]
     SetBackupDir {
@@ -189,13 +201,28 @@ impl ReportView {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceReply {
+    pub device: view::DeviceView,
+    pub boot: Vec<luks_assistant_sysinfo::bootcheck::Item>,
+}
+
+/// Result of a submitted form.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SubmitReply {
+    /// A write operation, to be confirmed and executed.
+    Plan(PlanView),
+    /// Outcome of a verification.
+    Message { ok: bool, text: String },
+    /// The backup directory changed.
+    Paths(Paths),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenVerified {
     pub token: u32,
     pub slots: Vec<u32>,
 }
-
-pub type Backups = Vec<BackupFile>;
-pub type Tree = BlockTree;
 
 #[cfg(test)]
 mod tests {
@@ -229,6 +256,15 @@ mod tests {
         );
         let r: Reply = serde_json::from_str(r#"{"id":3,"err":"x"}"#).unwrap();
         assert!(matches!(r.body, ReplyBody::Err(_)));
+
+        let m = SubmitReply::Message {
+            ok: true,
+            text: "✓".into(),
+        };
+        assert_eq!(
+            serde_json::to_string(&m).unwrap(),
+            r#"{"kind":"message","ok":true,"text":"✓"}"#
+        );
     }
 
     #[test]

@@ -3,20 +3,21 @@
 ## 分层
 
 ```
-┌──────────────┐   ┌──────────────────────────────┐
-│ Luks-Assistant-TUI  │   │ luks-assistant-gui（Slint，普通用户）  │
-└──────┬───────┘   └──────────────┬───────────────┘
-       │ 直接调用（sudo 运行）       │ pkexec + stdin/stdout 逐行 JSON
-       │                    ┌─────▼──────────────────┐
-       │                    │ Luks-Assistant-Helper（root）   │
-       │                    └─────┬──────────────────┘
-┌──────▼──────────────────────────▼──────────────────┐
-│ luks-assistant-core                                         │
-│  header  slots  notes  pcr  health  guard  ops  exec │
-└──────┬───────────────────────────────────────────────┘
-┌──────▼──────────┐   ┌──────────────────────────────┐
+┌────────────────────┐   ┌─────────────────────────────────────┐
+│ Luks-Assistant-TUI │   │ Luks-Assistant-GUI（C++ Qt6，普通用户） │
+└─────────┬──────────┘   └──────────────────┬──────────────────┘
+          │ 直接调用（sudo 运行）             │ pkexec + stdin/stdout 逐行 JSON
+          │                      ┌──────────▼───────────────┐
+          │                      │ Luks-Assistant-Helper（root）│
+          │                      └──────────┬───────────────┘
+┌─────────▼─────────────────────────────────▼──────────┐
+│ luks-assistant-core                                   │
+│  header  slots  notes  pcr  health  guard  ops  exec  │
+│  forms  view  proto                                   │
+└─────────┬─────────────────────────────────────────────┘
+┌─────────▼──────────────┐   ┌──────────────────────────────────┐
 │ luks-assistant-sysinfo │   │ cryptsetup / systemd-cryptenroll │
-└─────────────────┘   └──────────────────────────────┘
+└────────────────────────┘   └──────────────────────────────────┘
 ```
 
 ## 核心流程
@@ -26,7 +27,7 @@
 3. **计划**：`ops::plan(ctx, overview, Request)` 先检查 `guard` 规则，再生成 `Plan`（步骤、等效命令、警告、危险级别、确认词）。计划阶段只会运行只读命令，例如 `cryptsetup open --test-passphrase`。
 4. **执行**：`ops::execute` 加锁（flock）后逐步运行，遇到第一个失败的步骤就停止。会创建槽位的步骤执行后，通过前后对比头部识别新槽位，后续的备注和 PCR 快照步骤会引用它（`SlotRef::New`）。最后写入脱敏日志。
 
-`Request`/`Plan`/`Report` 就是将来 helper 的 D-Bus 接口：GUI 发送 Request，收到 Plan 后展示给用户确认，再请求执行。
+`Request`/`Plan`/`Report` 也是 helper 协议的核心：GUI 发送 Request，收到 Plan 后展示给用户确认，再请求执行。
 
 ## TPM2 策略的本地验证
 
@@ -48,5 +49,6 @@ Luks Assistant 用当前 PCR 值（`/sys/class/tpm/tpm0/pcr-<bank>/N`）重新�
 - 协议见 `luks_assistant_core::proto`：每行一个 JSON 请求，返回同 id 的 `ok` / `err`，执行过程中插入 `event`（步骤进度、命令输出）。
 - **计划留在 helper 里**：GUI 只拿到不含秘密的 `PlanView`，按 id 执行；需要确认词的计划在 helper 中再校验一次。护栏全部在 helper 侧的 `ops::plan` 中执行，GUI 无法绕过。
 - FIDO2 / PKCS#11 / TPM2+PIN 需要终端交互。helper 在伪终端里运行这些命令，自动回答 PIN 提示（输出中的 PIN 会被打码），把“请触摸安全密钥”等输出实时转发给 GUI；出现无法回答的密码提示时立即报错，不会卡住。
-- 表单定义（`luks_assistant_core::forms`）由 TUI 与 GUI 共用，两者行为一致。
-- 默认使用 Slint 的 winit 后端与 Fluent 样式（只依赖 fontconfig，OpenGL 不可用时自动用软件渲染）；`--features qt` 改用 Qt 后端与原生 Qt 样式。
+- 表单定义（`luks_assistant_core::forms`）由 TUI 与 GUI 共用，两者行为一致：GUI 用 `build_form` 取得表单（字段、默认值、提示），按字段类型生成 Qt 控件，再用 `submit_form` 提交；helper 解析后返回计划、验证结果或错误。
+- 展示数据由 helper 整理好（`luks_assistant_core::view`）：`system_view`（系统、磁盘、PCR、磁盘下拉框）、`device_view`（32 槽位、详情、可用操作、体检、开机检查）、`backup_rows`、`pcr_notes`。GUI 是不含业务逻辑的薄客户端，只负责显示与交互。
+- GUI 使用 Qt6 Widgets（`gui/`，CMake 构建），界面元素都是标准 Qt 控件：KDE 下沿用 Breeze 等系统样式与配色，GNOME 下随 Qt 平台主题呈现 GTK 风格。

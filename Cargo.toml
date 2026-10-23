@@ -5,7 +5,6 @@ members = [
     "crates/luks-assistant-core",
     "crates/luks-assistant-tui",
     "crates/luks-assistant-helper",
-    "crates/luks-assistant-gui",
 ]
 
 [workspace.package]

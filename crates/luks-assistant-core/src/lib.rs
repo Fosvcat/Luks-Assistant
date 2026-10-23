@@ -24,6 +24,7 @@ pub mod proto;
 pub mod secret;
 pub mod slots;
 pub mod util;
+pub mod view;
 
 pub use ctx::{Ctx, Paths};
 pub use error::{Error, Result};

@@ -9,9 +9,10 @@ use crate::ops::{Credential, KdfChoice, NoteInput, Request, TokenKind};
 use crate::secret::Secret;
 use crate::slots::{Overview, Slot, SlotKind};
 use luks_assistant_sysinfo::tools::Caps;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Value {
     Text(String),
     Secret(String),
@@ -25,42 +26,42 @@ pub enum Value {
     Label,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Field {
-    pub key: &'static str,
+    pub key: String,
     pub label: String,
     pub value: Value,
     pub hint: Option<String>,
 }
 
 impl Field {
-    pub fn text(key: &'static str, label: &str, init: &str) -> Self {
+    pub fn text(key: &str, label: &str, init: &str) -> Self {
         Field {
-            key,
+            key: key.to_owned(),
             label: label.into(),
             value: Value::Text(init.into()),
             hint: None,
         }
     }
-    pub fn secret(key: &'static str, label: &str) -> Self {
+    pub fn secret(key: &str, label: &str) -> Self {
         Field {
-            key,
+            key: key.to_owned(),
             label: label.into(),
             value: Value::Secret(String::new()),
             hint: None,
         }
     }
-    pub fn toggle(key: &'static str, label: &str, init: bool) -> Self {
+    pub fn toggle(key: &str, label: &str, init: bool) -> Self {
         Field {
-            key,
+            key: key.to_owned(),
             label: label.into(),
             value: Value::Toggle(init),
             hint: None,
         }
     }
-    pub fn choice(key: &'static str, label: &str, options: &[&str], index: usize) -> Self {
+    pub fn choice(key: &str, label: &str, options: &[&str], index: usize) -> Self {
         Field {
-            key,
+            key: key.to_owned(),
             label: label.into(),
             value: Value::Choice {
                 options: options.iter().map(|s| s.to_string()).collect(),
@@ -69,13 +70,13 @@ impl Field {
             hint: None,
         }
     }
-    pub fn pcrs(key: &'static str, label: &str, selected: &[u8]) -> Self {
+    pub fn pcrs(key: &str, label: &str, selected: &[u8]) -> Self {
         let mut set = [false; 24];
         for &p in selected.iter().filter(|p| **p < 24) {
             set[p as usize] = true;
         }
         Field {
-            key,
+            key: key.to_owned(),
             label: label.into(),
             value: Value::Pcrs(set),
             hint: None,
@@ -83,7 +84,7 @@ impl Field {
     }
     pub fn label(text: &str) -> Self {
         Field {
-            key: "",
+            key: String::new(),
             label: text.into(),
             value: Value::Label,
             hint: None,
@@ -98,7 +99,7 @@ impl Field {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum FormKind {
     AddPassphrase,
     AddKeyfile,
@@ -118,7 +119,7 @@ pub enum FormKind {
     BackupDir,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Form {
     pub title: String,
     pub kind: FormKind,

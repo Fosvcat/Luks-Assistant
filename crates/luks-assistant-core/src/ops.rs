@@ -6,7 +6,7 @@
 
 use crate::ctx::Ctx;
 use crate::error::{Error, Result};
-use crate::exec::Cmd;
+use crate::exec::{Cmd, CmdOutput};
 use crate::guard;
 use crate::header::{self, Header, Priority};
 use crate::notes::{self, KeyKind, Location, Note, NoteSet, Notes};
@@ -545,6 +545,26 @@ pub fn token_tests(ov: &Overview, kind: TokenKind, pin: Option<&Secret>) -> Vec<
             }
         })
         .collect()
+}
+
+/// Why a token test failed, from cryptsetup's messages.
+pub fn token_failure(out: &CmdOutput) -> String {
+    let text = format!("{}\n{}", String::from_utf8_lossy(&out.stdout), out.stderr);
+    if text.contains("requires additional missing resource") {
+        return "找不到所需设备（TPM 或安全密钥）".into();
+    }
+    let lines: Vec<&str> = text
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .collect();
+    lines
+        .iter()
+        .rev()
+        .find(|l| !l.starts_with("Command failed"))
+        .or(lines.last())
+        .map(|l| (*l).to_owned())
+        .unwrap_or_default()
 }
 
 fn check_tpm(ctx: &Ctx) -> Result<()> {
@@ -1702,6 +1722,27 @@ fn log_history(ctx: &Ctx, plan: &Plan, report: &Report) {
 mod tests {
     use super::*;
     use crate::slots::tests::{sample_overview, test_ctx};
+
+    #[test]
+    fn explains_token_failure() {
+        let out = |stdout: &str| CmdOutput {
+            code: 1,
+            stdout: zeroize::Zeroizing::new(stdout.as_bytes().to_vec()),
+            stderr: String::new(),
+        };
+        assert_eq!(
+            token_failure(&out(
+                "Token 0 requires additional missing resource.\nCommand failed with code -1 (wrong or missing parameters).\n"
+            )),
+            "找不到所需设备（TPM 或安全密钥）"
+        );
+        assert_eq!(
+            token_failure(&out(
+                "No usable token is available.\nCommand failed with code -2.\n"
+            )),
+            "No usable token is available."
+        );
+    }
 
     #[test]
     fn parses_unlocked_slot() {

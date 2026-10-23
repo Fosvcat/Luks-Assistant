@@ -7,14 +7,15 @@
 
 use luks_assistant_core::device::{self, LuksDevice};
 use luks_assistant_core::exec::{Cmd, CmdOutput, Runner, SystemRunner, run_in_pty};
+use luks_assistant_core::forms::{self, Env, Form, Submit, VerifyMethod};
 use luks_assistant_core::health;
-use luks_assistant_core::ops::{self, Plan, Request};
+use luks_assistant_core::ops::{self, Plan, Request, TokenKind};
 use luks_assistant_core::proto::{
-    self, Call, Event, Hello, Method, OverviewReply, PlanView, Reply, ReplyBody, ReportView,
-    TokenVerified,
+    self, Call, DeviceReply, Event, Hello, Method, OverviewReply, PlanView, Reply, ReplyBody,
+    ReportView, SubmitReply, TokenVerified,
 };
 use luks_assistant_core::slots::Overview;
-use luks_assistant_core::{Ctx, Error, Result, config};
+use luks_assistant_core::{Ctx, Error, Result, Secret, config, view};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::{BufRead, Write};
@@ -119,6 +120,98 @@ impl Helper {
         view
     }
 
+    fn target(&self, path: &Path) -> luks_assistant_sysinfo::bootcheck::Target {
+        self.overview(path)
+            .map(|o| luks_assistant_sysinfo::bootcheck::Target {
+                uuid: o.header.uuid.clone(),
+                path: o.device.path.to_string_lossy().into_owned(),
+                mapping: o.device.mapping.clone(),
+            })
+            .unwrap_or_default()
+    }
+
+    fn verify_token(
+        &self,
+        path: &Path,
+        kind: TokenKind,
+        pin: Option<&Secret>,
+    ) -> Result<TokenVerified> {
+        let ov = self.overview(path)?;
+        let tests = ops::token_tests(&ov, kind, pin);
+        if tests.is_empty() {
+            return Err(Error::Invalid(format!("没有 {} 令牌", kind.label())));
+        }
+        let mut last = String::new();
+        for t in tests {
+            match self.ctx.runner.run(&t.cmd) {
+                Ok(o) if o.success() => {
+                    return Ok(TokenVerified {
+                        token: t.token,
+                        slots: t.slots,
+                    });
+                }
+                Ok(o) => last = ops::token_failure(&o),
+                Err(e) => last = e.to_string(),
+            }
+        }
+        Err(Error::Invalid(format!("{} 验证失败：{last}", kind.label())))
+    }
+
+    fn submit(&mut self, path: &Path, form: &Form) -> Result<SubmitReply> {
+        let submit = forms::submit(form).map_err(Error::Invalid)?;
+        Ok(match submit {
+            Submit::Request(request) => {
+                let ov = self.overview(path)?;
+                let plan = ops::plan(&self.ctx, &ov, &request)?;
+                SubmitReply::Plan(self.store(plan))
+            }
+            Submit::Verify(VerifyMethod::Credential(c)) => {
+                match ops::verify_credential(&self.ctx, path, &c) {
+                    Ok(slot) => {
+                        let kind = self
+                            .overview(path)
+                            .ok()
+                            .and_then(|o| o.slot(slot).map(|s| s.kind.label()))
+                            .unwrap_or_default();
+                        SubmitReply::Message {
+                            ok: true,
+                            text: format!("槽位 {slot}（{kind}）验证成功"),
+                        }
+                    }
+                    Err(e) => SubmitReply::Message {
+                        ok: false,
+                        text: e.to_string(),
+                    },
+                }
+            }
+            Submit::Verify(VerifyMethod::Token { kind, pin }) => {
+                match self.verify_token(path, kind, pin.as_ref()) {
+                    Ok(v) => SubmitReply::Message {
+                        ok: true,
+                        text: format!(
+                            "槽位 {}（{} 令牌 {}）验证成功",
+                            v.slots
+                                .iter()
+                                .map(u32::to_string)
+                                .collect::<Vec<_>>()
+                                .join(", "),
+                            kind.label(),
+                            v.token
+                        ),
+                    },
+                    Err(e) => SubmitReply::Message {
+                        ok: false,
+                        text: e.to_string(),
+                    },
+                }
+            }
+            Submit::SetBackupDir(dir) => {
+                config::set_backup_dir(&mut self.ctx.paths, dir)?;
+                SubmitReply::Paths(self.ctx.paths.clone())
+            }
+        })
+    }
+
     fn handle(&mut self, m: Method) -> Result<serde_json::Value> {
         match m {
             Method::Hello => json(Hello {
@@ -128,8 +221,33 @@ impl Helper {
                 caps: self.ctx.caps.clone(),
                 tpm2_device: self.ctx.tpm2_device.clone(),
             }),
-            Method::SystemInfo => json(luks_assistant_sysinfo::SystemInfo::probe()),
-            Method::BlockTree => json(device::block_tree(&self.ctx)?),
+            Method::SystemView { extra } => json(view::system_view(&self.ctx, &extra)),
+            Method::DeviceView { path } => {
+                let mut ov = self.overview(&path)?;
+                let _ = ov.remember_pcrs(&self.ctx);
+                let issues = health::check(&ov);
+                let boot = luks_assistant_sysinfo::bootcheck::check(&self.target(&path));
+                json(DeviceReply {
+                    device: view::device_view(&self.ctx, &ov, &issues),
+                    boot,
+                })
+            }
+            Method::BackupRows { paths } => json(view::backup_rows(&self.ctx, &paths)),
+            Method::BuildForm { path, kind } => {
+                let ov = self.overview(&path)?;
+                let env = Env {
+                    ov: &ov,
+                    caps: &self.ctx.caps,
+                    paths: &self.ctx.paths,
+                    ask_pins: true,
+                };
+                json(forms::build(kind, &env).map_err(Error::Invalid)?)
+            }
+            Method::SubmitForm { path, form } => json(self.submit(&path, &form)?),
+            Method::PcrNotes { pcrs } => {
+                let sb = luks_assistant_sysinfo::firmware::Firmware::detect().secure_boot;
+                json(view::pcr_notes(&pcrs, sb))
+            }
             Method::Overview { path } => {
                 let mut ov = self.overview(&path)?;
                 let _ = ov.remember_pcrs(&self.ctx);
@@ -139,23 +257,6 @@ impl Helper {
                     issues,
                 })
             }
-            Method::BootCheck { path } => {
-                let target = self
-                    .overview(&path)
-                    .map(|o| luks_assistant_sysinfo::bootcheck::Target {
-                        uuid: o.header.uuid.clone(),
-                        path: o.device.path.to_string_lossy().into_owned(),
-                        mapping: o.device.mapping.clone(),
-                    })
-                    .unwrap_or_default();
-                json(luks_assistant_sysinfo::bootcheck::check(&target))
-            }
-            Method::Pcrs { bank } => json(
-                luks_assistant_sysinfo::tpm::read_pcrs(&bank, &self.ctx.tpm2_device)
-                    .map_err(Error::Invalid)?,
-            ),
-            Method::Fido2Devices => json(luks_assistant_sysinfo::fido2::list_devices()),
-            Method::Pkcs11Tokens => json(luks_assistant_sysinfo::fido2::list_pkcs11()),
             Method::Plan { path, request } => {
                 let ov = self.overview(&path)?;
                 let plan = ops::plan(&self.ctx, &ov, &request)?;
@@ -195,36 +296,7 @@ impl Helper {
                 json(ops::verify_credential(&self.ctx, &path, &credential)?)
             }
             Method::VerifyToken { path, kind, pin } => {
-                let ov = self.overview(&path)?;
-                let tests = ops::token_tests(&ov, kind, pin.as_ref());
-                if tests.is_empty() {
-                    return Err(Error::Invalid(format!("没有 {} 令牌", kind.label())));
-                }
-                let mut last = String::new();
-                for t in tests {
-                    match self.ctx.runner.run(&t.cmd) {
-                        Ok(o) if o.success() => {
-                            return json(TokenVerified {
-                                token: t.token,
-                                slots: t.slots,
-                            });
-                        }
-                        Ok(o) => {
-                            last = o
-                                .stderr
-                                .trim()
-                                .lines()
-                                .last()
-                                .unwrap_or_default()
-                                .to_owned()
-                        }
-                        Err(e) => last = e.to_string(),
-                    }
-                }
-                Err(Error::Invalid(format!("{} 验证失败 {last}", kind.label())))
-            }
-            Method::Backups { uuid } => {
-                json(luks_assistant_core::backup::list(&self.ctx.paths, &uuid))
+                json(self.verify_token(&path, kind, pin.as_ref())?)
             }
             Method::SetBackupDir { dir } => {
                 config::set_backup_dir(&mut self.ctx.paths, dir)?;
