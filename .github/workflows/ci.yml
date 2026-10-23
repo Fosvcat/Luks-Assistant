@@ -15,6 +15,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Install cryptsetup, swtpm and Qt
         run: |
+          # skip the man-db rebuild that Qt's many packages would trigger
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo rm -f /var/lib/man-db/auto-update
           sudo apt-get update
           sudo apt-get install -y cryptsetup-bin swtpm swtpm-tools tpm2-tools libtss2-tcti-swtpm0t64 \
             cmake ninja-build qt6-base-dev
