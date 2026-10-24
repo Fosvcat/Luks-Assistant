@@ -14,7 +14,7 @@
  Tab/↑↓ 切换  空格/←→ 选择  Enter 确定  Esc 取消 	 Tab/↑↓ move  Space/←→ choose  Enter OK  Esc cancel 
  备份位置: 	 Backup location: 
  帮助 	 Help 
- 日志 	 Log 
+ 日志 	 Logs
  槽位 	 Slots 
  槽位 {} 	 Slot {} 
  硬件解锁可用性 	 Hardware unlock availability 
@@ -36,7 +36,7 @@
 32 个槽位已满	All 32 slots are in use
 32 个槽位快满了。	The 32 slots are almost full.
 4 头部管理	4 Headers
-5 日志	5 Log
+5 日志	5 Logs
 6 关于	6 About
 Arch 系	Arch family
 Debian/Ubuntu 系	Debian/Ubuntu family
@@ -299,7 +299,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 密钥文件超过 cryptsetup 默认上限 8 MiB	The key file exceeds cryptsetup's default limit of 8 MiB
 密钥未设置 PIN 时留空	Leave empty if the key has no PIN
 导出…	Export…
-导出日志	Export log
+导出日志	Export logs
 将执行以下步骤。命令为等效命令，其中的密码已隐藏。	The following steps will run. Commands are equivalents with passwords hidden.
 将生成新密钥文件 {}（权限 0400）。请把它备份到安全的位置	A new key file {} will be created (mode 0400). Back it up to a safe place
 就绪	Ready
@@ -392,8 +392,8 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 无法读取 SecureBoot 变量	Cannot read the SecureBoot variable
 无法读取 {} PCR	Cannot read the {} PCRs
 无额外要求	no extra requirements
-日志	Log
-日志已导出：{}	Log exported: {}
+日志	Logs
+日志已导出：{}	Logs exported: {}
 旧密码	old password
 显卡、网卡等外部设备固件	Firmware of graphics, network and other expansion cards
 显示所有的 PCR 度量	Show all PCR measurements
@@ -459,7 +459,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 槽位 {}（{}）	Slot {} ({})
 槽位 {}（{}）验证成功	Slot {} ({}) verified
 槽位@tab	Slots
-槽位\n  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单\n  a 添加   e 修改/重新录入   d 删除   n 备注\n  v 验证   u 解锁/锁定   D 选择磁盘\n系统信息\n  p 显示所有的 PCR 度量\n头部管理\n  空格 勾选   a 全选   i 反选   x 清空\n  b 备份所选   r 恢复   Enter/右键 单个卷的备份与恢复\n  c 备份位置\n日志\n  x 导出为 txt\n全局\n  Tab / 1-6 切换页面   F5 刷新   q 退出	Slots\n  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu\n  a add   e edit/re-enroll   d delete   n note\n  v verify   u unlock/lock   D choose disk\nSystem\n  p show all PCR measurements\nHeaders\n  Space check   a all   i invert   x clear\n  b back up checked   r restore   Enter/right click back up or restore one volume\n  c backup location\nLog\n  x export as txt\nGlobal\n  Tab / 1-6 switch page   F5 refresh   q quit
+槽位\n  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单\n  a 添加   e 修改/重新录入   d 删除   n 备注\n  v 验证   u 解锁/锁定   D 选择磁盘\n系统信息\n  p 显示所有的 PCR 度量\n头部管理\n  空格 勾选   a 全选   i 反选   x 清空\n  b 备份所选   r 恢复   Enter/右键 单个卷的备份与恢复\n  c 备份位置\n日志\n  x 导出为 txt\n全局\n  Tab / 1-6 切换页面   F5 刷新   q 退出	Slots\n  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu\n  a add   e edit/re-enroll   d delete   n note\n  v verify   u unlock/lock   D choose disk\nSystem\n  p show all PCR measurements\nHeaders\n  Space check   a all   i invert   x clear\n  b back up checked   r restore   Enter/right click back up or restore one volume\n  c backup location\nLogs\n  x export as txt\nGlobal\n  Tab / 1-6 switch page   F5 refresh   q quit
 槽位加密	Slot encryption
 槽位即将用尽	Running out of slots
 槽位必须是数字	The slot must be a number
@@ -504,7 +504,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 用户/应用写入（systemd、fwupd 等）	Written by user space/applications (systemd, fwupd, …)
 用户验证	user verification
 用新密码替换槽位 {}	Replace slot {} with the new password
-用法: Luks-Assistant-TUI [选项] [设备或镜像文件]\n\n  不带参数时列出 lsblk 找到的所有 LUKS 设备。\n\n选项:\n  --dump [设备]   以 JSON 输出槽位模型后退出（调试用）\n  --boot-check    输出开机解锁检查结果后退出\n  -h, --help      显示帮助\n  -V, --version   显示版本\n\n环境变量（开发用）:\n  LUKS_ASSISTANT_TPM2_DEVICE   TPM 设备或 TCTI，例如 swtpm:host=127.0.0.1,port=2321\n  LUKS_ASSISTANT_ETC_DIR       备注目录（默认 /etc/luks-assistant）\n  LUKS_ASSISTANT_STATE_DIR     备份/快照/日志目录（默认 /var/lib/luks-assistant）\n	Usage: Luks-Assistant-TUI [options] [device or image file]\n\n  Without arguments, lists every LUKS device lsblk finds.\n\nOptions:\n  --dump [device]   print the slot model as JSON and exit (debugging)\n  --boot-check      print the boot unlock check and exit\n  -h, --help        show this help\n  -V, --version     show the version\n\nEnvironment (development):\n  LUKS_ASSISTANT_LANG          zh or en (default: from the locale)\n  LUKS_ASSISTANT_TPM2_DEVICE   TPM device or TCTI, e.g. swtpm:host=127.0.0.1,port=2321\n  LUKS_ASSISTANT_ETC_DIR       notes directory (default /etc/luks-assistant)\n  LUKS_ASSISTANT_STATE_DIR     backups/snapshots/log directory (default /var/lib/luks-assistant)\n
+用法: Luks-Assistant-TUI [选项] [设备或镜像文件]\n\n  不带参数时列出 lsblk 找到的所有 LUKS 设备。\n\n选项:\n  --dump [设备]   以 JSON 输出槽位模型后退出（调试用）\n  --boot-check    输出开机解锁检查结果后退出\n  -h, --help      显示帮助\n  -V, --version   显示版本\n\n环境变量（开发用）:\n  LUKS_ASSISTANT_TPM2_DEVICE   TPM 设备或 TCTI，例如 swtpm:host=127.0.0.1,port=2321\n  LUKS_ASSISTANT_ETC_DIR       备注目录（默认 /etc/luks-assistant）\n  LUKS_ASSISTANT_STATE_DIR     备份/快照/日志目录（默认 /var/lib/luks-assistant）\n	Usage: Luks-Assistant-TUI [options] [device or image file]\n\n  Without arguments, lists every LUKS device lsblk finds.\n\nOptions:\n  --dump [device]   print the slot model as JSON and exit (debugging)\n  --boot-check      print the boot unlock check and exit\n  -h, --help        show this help\n  -V, --version     show the version\n\nEnvironment (development):\n  LUKS_ASSISTANT_LANG          zh or en (default: from the locale)\n  LUKS_ASSISTANT_TPM2_DEVICE   TPM device or TCTI, e.g. swtpm:host=127.0.0.1,port=2321\n  LUKS_ASSISTANT_ETC_DIR       notes directory (default /etc/luks-assistant)\n  LUKS_ASSISTANT_STATE_DIR     backups/snapshots/logs directory (default /var/lib/luks-assistant)\n
 用途	Purpose
 电源事件	Power events
 留空 = {}	Empty = {}
