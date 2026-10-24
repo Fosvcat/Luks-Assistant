@@ -376,6 +376,7 @@ pub(crate) mod tests {
             },
             tpm2_device: "swtpm:host=127.0.0.1,port=1".into(),
             extra_kdf_args: Vec::new(),
+            owner: None,
         }
     }
 

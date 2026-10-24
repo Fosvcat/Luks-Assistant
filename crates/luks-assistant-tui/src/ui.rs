@@ -196,7 +196,7 @@ fn draw_bottom(f: &mut Frame, app: &App, area: Rect) {
         Tab::System => t!("p 显示所有的 PCR 度量  Tab/1-6 切换  F5 刷新  q 退出"),
         Tab::Check => t!("↑↓ 选择  Tab/1-6 切换  F5 刷新  q 退出"),
         Tab::Headers => t!(
-            "↑↓ 选择  空格 勾选  Enter 备份/恢复  a 全选  i 反选  x 清空  b 备份所选  r 恢复  c 备份位置"
+            "↑↓ 选择  空格 勾选  Enter 菜单  a 全选  i 反选  x 清空  r 恢复  p 清理  b 备份所选  c 备份位置"
         ),
         Tab::Log => t!("↑↓ 滚动  x 导出  Tab/1-6 切换  q 退出"),
         Tab::About => t!("Tab/1-6 切换  F5 刷新  q 退出"),
@@ -698,12 +698,13 @@ fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
         (HeaderButton::All, t!("全选").to_owned(), true),
         (HeaderButton::Invert, t!("反选").into(), true),
         (HeaderButton::Clear, t!("清空").into(), true),
+        (HeaderButton::Restore, t!("恢复…").into(), checked == 1),
+        (HeaderButton::Prune, t!("清理").into(), checked > 0),
         (
             HeaderButton::Backup,
             t!("备份所选 ({})", checked),
             checked > 0,
         ),
-        (HeaderButton::Restore, t!("恢复…").into(), checked == 1),
     ] {
         if on {
             let r = row.push(button(&label));
@@ -791,6 +792,9 @@ fn draw_log(f: &mut Frame, app: &App, area: Rect) {
         ),
         Line::from(""),
     ];
+    if app.log.is_empty() {
+        lines.push(Line::from(t!("还没有日志").dark_gray()));
+    }
     lines.extend(app.log.iter().map(|l| Line::from(l.clone())));
     f.render_widget(
         Paragraph::new(lines)
@@ -1042,8 +1046,8 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
   p 显示所有的 PCR 度量
 头部管理
   空格 勾选   a 全选   i 反选   x 清空
-  b 备份所选   r 恢复   Enter/右键 单个卷的备份与恢复
-  c 备份位置
+  r 恢复   p 清理（只留最新备份）   b 备份所选
+  Enter/右键 单个卷的备份、恢复与清理   c 备份位置
 日志
   x 导出为 txt
 全局

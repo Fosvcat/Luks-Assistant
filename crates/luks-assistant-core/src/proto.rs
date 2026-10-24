@@ -80,6 +80,11 @@ pub enum Method {
     PlanBackups {
         paths: Vec<PathBuf>,
     },
+    /// Delete all but the newest header backup of several devices →
+    /// `Vec<PlanView>`; devices with nothing to delete are skipped.
+    PlanPrunes {
+        paths: Vec<PathBuf>,
+    },
     /// → `Vec<ReportView>`; `confirm` must match the plans' confirm word.
     Execute {
         plans: Vec<u64>,

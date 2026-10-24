@@ -82,6 +82,50 @@ pub fn write_atomic(path: &std::path::Path, data: &[u8], mode: u32) -> std::io::
 }
 
 /// Create `dir` (and parents) and restrict it to `mode`.
+/// A non-root user who started us through pkexec or sudo.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct User {
+    pub uid: u32,
+    pub gid: u32,
+    pub name: String,
+}
+
+/// The user behind `pkexec` (`PKEXEC_UID`) or `sudo` (`SUDO_UID`), unless
+/// that is root.
+pub fn invoking_user() -> Option<User> {
+    let uid: u32 = std::env::var("PKEXEC_UID")
+        .or_else(|_| std::env::var("SUDO_UID"))
+        .ok()?
+        .trim()
+        .parse()
+        .ok()?;
+    if uid == 0 {
+        return None;
+    }
+    let mut pw: libc::passwd = unsafe { std::mem::zeroed() };
+    let mut buf = vec![0 as libc::c_char; 4096];
+    let mut found: *mut libc::passwd = std::ptr::null_mut();
+    // SAFETY: the buffers outlive the call; `found` points into them on success.
+    let rc = unsafe { libc::getpwuid_r(uid, &mut pw, buf.as_mut_ptr(), buf.len(), &mut found) };
+    if rc != 0 || found.is_null() {
+        return None;
+    }
+    // SAFETY: on success pw_name is a NUL-terminated string inside `buf`.
+    let name = unsafe { std::ffi::CStr::from_ptr(pw.pw_name) }
+        .to_string_lossy()
+        .into_owned();
+    Some(User {
+        uid,
+        gid: pw.pw_gid,
+        name,
+    })
+}
+
+/// Hand `path` to `user` (owner and group).
+pub fn chown(path: &std::path::Path, user: &User) -> std::io::Result<()> {
+    std::os::unix::fs::chown(path, Some(user.uid), Some(user.gid))
+}
+
 pub fn ensure_private_dir(dir: &std::path::Path, mode: u32) -> std::io::Result<()> {
     use std::os::unix::fs::PermissionsExt;
     std::fs::create_dir_all(dir)?;

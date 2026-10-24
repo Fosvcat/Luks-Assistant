@@ -57,6 +57,7 @@ private:
     QStringList checkedVolumes() const;
     void updateBackupButtons();
     void backupVolumes(const QStringList &paths);
+    void pruneVolumes(const QStringList &paths);
     void restoreVolume(const QString &path);
     void toggleLock();
     void updateLockState();

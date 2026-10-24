@@ -82,6 +82,9 @@ pub struct Ctx {
     /// Extra cryptsetup arguments appended when a new key slot is written
     /// (`--pbkdf ...`). Empty means cryptsetup's defaults.
     pub extra_kdf_args: Vec<String>,
+    /// The desktop user behind pkexec/sudo: header backups are handed to
+    /// them, so they can open, copy and clean up their own backups.
+    pub owner: Option<crate::util::User>,
 }
 
 impl Ctx {
@@ -102,6 +105,7 @@ impl Ctx {
             tpm2_device: std::env::var("LUKS_ASSISTANT_TPM2_DEVICE")
                 .unwrap_or_else(|_| "auto".into()),
             extra_kdf_args: if fast { fast_kdf_args() } else { Vec::new() },
+            owner: crate::util::invoking_user(),
         }
     }
 }

@@ -215,6 +215,7 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
 
     ui->verifyButton->setIcon(QIcon::fromTheme(S("dialog-ok-apply")));
     ui->backupButton->setIcon(QIcon::fromTheme(S("document-save")));
+    ui->pruneButton->setIcon(QIcon::fromTheme(S("edit-clear-history"), QIcon::fromTheme(S("edit-delete"))));
     ui->restoreButton->setIcon(QIcon::fromTheme(S("document-revert")));
     ui->browseButton->setIcon(QIcon::fromTheme(S("document-open-folder")));
     ui->openDirButton->setIcon(QIcon::fromTheme(S("folder-open")));
@@ -309,6 +310,7 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
     connect(ui->backupTree, &QTreeWidget::itemChanged, this, &MainWindow::updateBackupButtons);
     connect(ui->backupTree, &QWidget::customContextMenuRequested, this, &MainWindow::backupContextMenu);
     connect(ui->backupButton, &QPushButton::clicked, this, [this] { backupVolumes(checkedVolumes()); });
+    connect(ui->pruneButton, &QPushButton::clicked, this, [this] { pruneVolumes(checkedVolumes()); });
     connect(ui->restoreButton, &QPushButton::clicked, this, [this] {
         const QStringList v = checkedVolumes();
         if (v.size() == 1)
@@ -384,6 +386,7 @@ void MainWindow::retranslate()
     ui->appVersion->setText(S("%1 %2").arg(QStringLiteral(LUKS_ASSISTANT_VERSION), arch()));
     updateLockState();
     ui->appLink->setText(S("<a href=\"%1\">%1</a>").arg(QString::fromLatin1(RepoUrl)));
+    ui->logView->setPlaceholderText(tr("还没有日志"));
 }
 
 void MainWindow::showError(const QString &title, const QString &message)
@@ -816,6 +819,8 @@ void MainWindow::backupContextMenu(const QPoint &pos)
     const QString path = item->data(0, Qt::UserRole).toString();
     QMenu menu(this);
     menu.addAction(QIcon::fromTheme(S("document-save")), tr("备份"), this, [this, path] { backupVolumes({path}); });
+    menu.addAction(QIcon::fromTheme(S("edit-clear-history"), QIcon::fromTheme(S("edit-delete"))), tr("清理旧备份"), this,
+                   [this, path] { pruneVolumes({path}); });
     menu.addAction(QIcon::fromTheme(S("document-revert")), tr("恢复…"), this, [this, path] { restoreVolume(path); });
     menu.exec(ui->backupTree->viewport()->mapToGlobal(pos));
 }
@@ -956,7 +961,23 @@ void MainWindow::updateBackupButtons()
 {
     const int checked = checkedVolumes().size();
     ui->backupButton->setEnabled(checked > 0);
+    ui->pruneButton->setEnabled(checked > 0);
     ui->restoreButton->setEnabled(checked == 1);
+}
+
+/// Keep only the newest header backup of each volume.
+void MainWindow::pruneVolumes(const QStringList &volumes)
+{
+    if (volumes.isEmpty())
+        return;
+    QJsonArray paths;
+    for (const QString &p : volumes)
+        paths.append(p);
+    m_helper->call(S("plan_prunes"), QJsonObject{{S("paths"), paths}}, [this](const QJsonValue &ok, const QString &err) {
+        if (!err.isEmpty())
+            return showError(tr("清理"), err);
+        confirm(ok.toArray());
+    });
 }
 
 void MainWindow::backupVolumes(const QStringList &volumes)

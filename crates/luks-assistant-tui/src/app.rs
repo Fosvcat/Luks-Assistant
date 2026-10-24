@@ -46,6 +46,7 @@ pub enum MenuItem {
     /// Back up / restore the volume with this index in `devices`.
     Backup(usize),
     Restore(usize),
+    Prune(usize),
 }
 
 /// The buttons of the header page.
@@ -56,6 +57,7 @@ pub enum HeaderButton {
     Clear,
     Backup,
     Restore,
+    Prune,
 }
 
 /// What a form is for: a core operation, or the TUI's own log export.
@@ -663,6 +665,7 @@ impl App {
             HeaderButton::Invert => self.backup_sel.iter_mut().for_each(|x| *x = !*x),
             HeaderButton::Clear => self.backup_sel.iter_mut().for_each(|x| *x = false),
             HeaderButton::Backup => self.backup_volumes(self.checked_volumes()),
+            HeaderButton::Prune => self.prune_volumes(self.checked_volumes()),
             HeaderButton::Restore => {
                 if let [i] = self.checked_volumes()[..] {
                     self.restore_volume(i);
@@ -678,6 +681,7 @@ impl App {
             vec![
                 (t!("备份").into(), MenuItem::Backup(i)),
                 (t!("恢复…").into(), MenuItem::Restore(i)),
+                (t!("清理旧备份").into(), MenuItem::Prune(i)),
             ],
         );
     }
@@ -687,7 +691,43 @@ impl App {
             MenuItem::Form(kind) => self.open_form(kind),
             MenuItem::Backup(i) => self.backup_volumes(vec![i]),
             MenuItem::Restore(i) => self.restore_volume(i),
+            MenuItem::Prune(i) => self.prune_volumes(vec![i]),
         }
+    }
+
+    /// Keep only the newest header backup of each volume.
+    fn prune_volumes(&mut self, volumes: Vec<usize>) {
+        if !self.sys.is_root
+            && volumes
+                .iter()
+                .any(|i| self.devices.get(*i).is_some_and(|d| !d.is_file))
+        {
+            return self.message(t!("清理"), t!("需要 root：sudo Luks-Assistant-TUI"));
+        }
+        let mut plans = Vec::new();
+        let mut errors = Vec::new();
+        for i in volumes {
+            let Some(d) = self.devices.get(i) else {
+                continue;
+            };
+            match Overview::load(&self.ctx, d.clone())
+                .and_then(|ov| ops::plan(&self.ctx, &ov, &Request::PruneBackups))
+            {
+                Ok(p) => plans.push(p),
+                // nothing to delete for this one
+                Err(luks_assistant_core::Error::Invalid(_)) => {}
+                Err(e) => errors.push(format!("{}: {e}", d.path.display())),
+            }
+        }
+        if plans.is_empty() {
+            let text = if errors.is_empty() {
+                t!("没有可清理的旧备份").to_owned()
+            } else {
+                errors.join("\n")
+            };
+            return self.message(t!("清理"), text);
+        }
+        self.confirm(plans);
     }
 
     fn restore_volume(&mut self, i: usize) {
@@ -986,6 +1026,7 @@ impl App {
             KeyCode::Char('x') => self.header_button(HeaderButton::Clear),
             KeyCode::Char('b') => self.header_button(HeaderButton::Backup),
             KeyCode::Char('r') => self.header_button(HeaderButton::Restore),
+            KeyCode::Char('p') => self.header_button(HeaderButton::Prune),
             KeyCode::Char('c') => self.open_form(FormKind::BackupDir),
             _ => {}
         }

@@ -456,3 +456,44 @@ fn tpm2_enroll_detect_drift_and_reenroll() {
     });
     assert!(env.ov().slots[new as usize].is_empty());
 }
+
+#[test]
+fn backups_belong_to_the_user_and_prune_keeps_the_newest() {
+    use std::os::unix::fs::MetadataExt;
+    if !available() {
+        return;
+    }
+    let mut env = setup();
+    let nobody = luks_assistant_core::util::User {
+        uid: 65534,
+        gid: 65534,
+        name: "nobody".into(),
+    };
+    env.ctx.owner = Some(nobody);
+    let uuid = env.ov().header.uuid.clone();
+    let mut made = Vec::new();
+    for _ in 0..3 {
+        let report = env.run(Request::BackupHeader { dest: None });
+        made.push(report.backup_file.unwrap());
+    }
+    for p in [
+        env.ctx.paths.backup_root.clone(),
+        env.ctx.paths.backups_dir(&uuid),
+        made[2].clone(),
+    ] {
+        let m = std::fs::metadata(&p).unwrap();
+        assert_eq!((m.uid(), m.gid()), (65534, 65534), "{}", p.display());
+    }
+
+    let files = luks_assistant_core::backup::list(&env.ctx.paths, &uuid);
+    assert_eq!(files.len(), 3);
+    let newest = files[0].path.clone();
+    env.run(Request::PruneBackups);
+    let left = luks_assistant_core::backup::list(&env.ctx.paths, &uuid);
+    assert_eq!(left.len(), 1);
+    assert_eq!(left[0].path, newest);
+    assert!(matches!(
+        ops::plan(&env.ctx, &env.ov(), &Request::PruneBackups),
+        Err(Error::Invalid(_))
+    ));
+}

@@ -135,7 +135,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 ←↑↓→ 选择  Enter 操作  a 添加  d 删除  n 备注  e 修改  v 验证  u 解锁/锁定  D 磁盘  ? 帮助  q 退出	←↑↓→ select  Enter actions  a add  d delete  n note  e edit  v verify  u unlock/lock  D disk  ? help  q quit
 ↑↓ 滚动  x 导出  Tab/1-6 切换  q 退出	↑↓ scroll  x export  Tab/1-6 switch  q quit
 ↑↓ 选择  Tab/1-6 切换  F5 刷新  q 退出	↑↓ select  Tab/1-6 switch  F5 refresh  q quit
-↑↓ 选择  空格 勾选  Enter 备份/恢复  a 全选  i 反选  x 清空  b 备份所选  r 恢复  c 备份位置	↑↓ select  Space check  Enter back up/restore  a all  i invert  x clear  b back up checked  r restore  c backup location
+↑↓ 选择  空格 勾选  Enter 菜单  a 全选  i 反选  x 清空  r 恢复  p 清理  b 备份所选  c 备份位置	↑↓ select  Space check  Enter menu  a all  i invert  x clear  r restore  p clean up  b back up checked  c backup location
 ⚠ PCR 已变化	⚠ PCRs changed
 ✓ 槽位 {}（{} 令牌 {}）验证成功	✓ Slot {} ({} token {}) verified
 ✓ 槽位 {}（{}）验证成功	✓ Slot {} ({}) verified
@@ -197,6 +197,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 写入 {}	Write {}
 写入新密码到槽位 {}	Write the new password to slot {}
 创建备份目录 {}	Create the backup directory {}
+删除 {}	Delete {}
 删除 {} 的备注	Remove the notes of {}
 删除令牌	Remove the token
 删除后只剩一个密码/恢复密钥槽位	Only one password/recovery key slot will be left
@@ -221,6 +222,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 发行版	Distribution
 取消	Cancel
 另一个 Luks Assistant 实例正在执行操作	Another Luks Assistant instance is running an operation
+只保留最新的备份 {}，其余 {} 个将被删除	Only the newest backup {} is kept; the other {} will be deleted
 只剩硬件令牌可以解锁，请添加密码或恢复密钥。	Only hardware tokens can unlock it; add a password or a recovery key.
 只显示这一次，请离线保存	Shown only once; store it offline
 只有一个密码/恢复密钥槽位	Only one password/recovery key slot
@@ -359,6 +361,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 执行时请触摸安全密钥	Touch the security key when asked
 找不到 Luks-Assistant-Helper	Luks-Assistant-Helper not found
 找不到所需设备（TPM 或安全密钥）	The required device (TPM or security key) was not found
+把备份交给用户 {}	Hand the backup over to user {}
 把密钥文件写入槽位 {}	Write the key file to slot {}
 把槽位 {} 的优先级设为“{}”	Set the priority of slot {} to “{}”
 把槽位 {} 转换为 Argon2id	Convert slot {} to Argon2id
@@ -459,7 +462,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 槽位 {}（{}）	Slot {} ({})
 槽位 {}（{}）验证成功	Slot {} ({}) verified
 槽位@tab	Slots
-槽位\n  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单\n  a 添加   e 修改/重新录入   d 删除   n 备注\n  v 验证   u 解锁/锁定   D 选择磁盘\n系统信息\n  p 显示所有的 PCR 度量\n头部管理\n  空格 勾选   a 全选   i 反选   x 清空\n  b 备份所选   r 恢复   Enter/右键 单个卷的备份与恢复\n  c 备份位置\n日志\n  x 导出为 txt\n全局\n  Tab / 1-6 切换页面   F5 刷新   q 退出	Slots\n  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu\n  a add   e edit/re-enroll   d delete   n note\n  v verify   u unlock/lock   D choose disk\nSystem\n  p show all PCR measurements\nHeaders\n  Space check   a all   i invert   x clear\n  b back up checked   r restore   Enter/right click back up or restore one volume\n  c backup location\nLogs\n  x export as txt\nGlobal\n  Tab / 1-6 switch page   F5 refresh   q quit
+槽位\n  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单\n  a 添加   e 修改/重新录入   d 删除   n 备注\n  v 验证   u 解锁/锁定   D 选择磁盘\n系统信息\n  p 显示所有的 PCR 度量\n头部管理\n  空格 勾选   a 全选   i 反选   x 清空\n  r 恢复   p 清理（只留最新备份）   b 备份所选\n  Enter/右键 单个卷的备份、恢复与清理   c 备份位置\n日志\n  x 导出为 txt\n全局\n  Tab / 1-6 切换页面   F5 刷新   q 退出	Slots\n  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu\n  a add   e edit/re-enroll   d delete   n note\n  v verify   u unlock/lock   D choose disk\nSystem\n  p show all PCR measurements\nHeaders\n  Space check   a all   i invert   x clear\n  r restore   p clean up (keep the newest backup)   b back up checked\n  Enter/right click back up, restore or clean up one volume   c backup location\nLogs\n  x export as txt\nGlobal\n  Tab / 1-6 switch page   F5 refresh   q quit
 槽位加密	Slot encryption
 槽位即将用尽	Running out of slots
 槽位必须是数字	The slot must be a number
@@ -470,12 +473,14 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 正在请求管理员权限…	Requesting administrator rights…
 正在读取…	Reading…
 正在验证 {}…	Verifying {}…
+每个所选卷只保留最新的头部备份，删除其余旧备份	Keep only the newest header backup of each selected volume and delete the older ones
 没有 LUKS 卷	No LUKS volumes
 没有 rd.luks.* 参数	No rd.luks.* options
 没有 {} 令牌	No {} token
 没有任何密码/恢复密钥槽位	No password/recovery key slot
 没有加密钩子。HOOKS=({})	No encryption hook. HOOKS=({})
 没有发现问题	No problems found
+没有可清理的旧备份	No old backups to clean up
 没有找到 HOOKS= 配置	No HOOKS= setting found
 没有找到 LUKS 卷	No LUKS volumes found
 没有找到 LUKS 设备	No LUKS devices found
@@ -489,6 +494,9 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 添加	Add
 添加密码	Add password
 添加密钥文件	Add key file
+清理	Clean up
+清理旧备份	Clean up old backups
+清理旧的头部备份	Clean up old header backups
 清理过期备注	Clean up stale notes
 清空	Clear
 版本	Version
@@ -567,6 +575,7 @@ tpm2_pcrread 输出中没有 {} bank	No {} bank in tpm2_pcrread output
 输入 {} 后按 Enter 确认	Type {} and press Enter to confirm
 运行时加载的程序和库	Programs and libraries loaded at run time
 运行期间持续变化	Keeps changing at run time
+还没有日志	No logs yet
 这是 Luks Assistant 的备注令牌	This is the Luks Assistant notes token
 这是当前系统所在的卷，不能锁定	This volume holds the running system and cannot be locked
 这是最后一个密码/密钥文件/恢复密钥槽位，不能删除	This is the last password/key file/recovery key slot; it cannot be deleted

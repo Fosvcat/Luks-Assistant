@@ -314,6 +314,21 @@ impl Helper {
                 }
                 json(views)
             }
+            Method::PlanPrunes { paths } => {
+                let mut views = Vec::new();
+                for p in paths {
+                    let ov = self.overview(&p)?;
+                    match ops::plan(&self.ctx, &ov, &Request::PruneBackups) {
+                        Ok(plan) => views.push(self.store(plan)),
+                        Err(Error::Invalid(_)) => {} // nothing to delete
+                        Err(e) => return Err(e),
+                    }
+                }
+                if views.is_empty() {
+                    return Err(Error::Invalid(tx!("没有可清理的旧备份")));
+                }
+                json(views)
+            }
             Method::Execute { plans, confirm } => {
                 for id in &plans {
                     let p = self

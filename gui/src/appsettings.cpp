@@ -7,6 +7,7 @@
 #include <QLibraryInfo>
 #include <QLocale>
 #include <QSettings>
+#include <QStyle>
 #include <QStyleFactory>
 #include <QTranslator>
 
@@ -87,6 +88,8 @@ QString firstStyle(std::initializer_list<const char *> names)
 
 QTranslator *s_qt = nullptr;
 QTranslator *s_catalog = nullptr;
+// The style the desktop gave us at startup, to return to "follow the system".
+QString s_systemStyle;
 
 } // namespace
 
@@ -184,8 +187,12 @@ void prepareTheme()
 
 void applyStyle()
 {
+    if (s_systemStyle.isEmpty())
+        s_systemStyle = QApplication::style()->name();
     switch (theme()) {
     case Theme::System:
+        if (QApplication::style()->name() != s_systemStyle)
+            QApplication::setStyle(s_systemStyle);
         return;
     case Theme::Qt:
         QApplication::setStyle(firstStyle({"Breeze"}));

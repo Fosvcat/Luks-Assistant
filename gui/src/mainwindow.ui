@@ -157,6 +157,7 @@
           <item><widget class="QPushButton" name="clearButton"><property name="text"><string>清空</string></property></widget></item>
           <item><spacer name="backupSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
           <item><widget class="QPushButton" name="restoreButton"><property name="text"><string>恢复…</string></property></widget></item>
+          <item><widget class="QPushButton" name="pruneButton"><property name="text"><string>清理</string></property><property name="toolTip"><string>每个所选卷只保留最新的头部备份，删除其余旧备份</string></property></widget></item>
           <item><widget class="QPushButton" name="backupButton"><property name="text"><string>备份所选</string></property><property name="default"><bool>true</bool></property></widget></item>
          </layout>
         </item>

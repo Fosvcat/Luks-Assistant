@@ -152,6 +152,8 @@ pub enum Request {
     BackupHeader {
         dest: Option<PathBuf>,
     },
+    /// Delete this program's header backups of the device except the newest.
+    PruneBackups,
     RestoreHeader {
         file: PathBuf,
     },
@@ -191,6 +193,9 @@ pub enum KindUpdate {
 #[derive(Debug, Clone)]
 pub enum Action {
     EnsurePrivateDir(PathBuf),
+    /// Hand header backups (and their directories) to the desktop user.
+    GiveToUser(Vec<PathBuf>),
+    RemoveFile(PathBuf),
     GenerateKeyfile {
         path: PathBuf,
         bytes: usize,
@@ -364,7 +369,7 @@ impl<'a> Builder<'a> {
         let file = unique_backup_path(&dir, tag);
         self.plan.steps.push(Step::internal(
             tx!("创建备份目录 {}", dir.display()),
-            Action::EnsurePrivateDir(dir),
+            Action::EnsurePrivateDir(dir.clone()),
         ));
         self.plan.steps.push(Step::run(
             tx!("备份 LUKS 头部"),
@@ -372,7 +377,18 @@ impl<'a> Builder<'a> {
                 .arg("--header-backup-file")
                 .arg(file.to_string_lossy()),
         ));
+        self.give_to_user(vec![self.ctx.paths.backup_root.clone(), dir, file.clone()]);
         self.plan.backup_file = Some(file);
+    }
+
+    /// Make `paths` the desktop user's, when we run for one.
+    fn give_to_user(&mut self, paths: Vec<PathBuf>) {
+        if let Some(u) = &self.ctx.owner {
+            self.plan.steps.push(Step::internal(
+                tx!("把备份交给用户 {}", u.name),
+                Action::GiveToUser(paths),
+            ));
+        }
     }
 
     fn step(&mut self, s: Step) {
@@ -663,11 +679,37 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                             .arg("--header-backup-file")
                             .arg(d.to_string_lossy()),
                     ));
+                    b.give_to_user(vec![d.clone()]);
                     b.plan.backup_file = Some(d.clone());
                 }
                 None => b.backup("manual"),
             }
             b.warn([tx!("备份文件加上任一旧密码即可解密数据，请妥善保管")]);
+            return Ok(b.finish());
+        }
+        PruneBackups => {
+            let files = crate::backup::list(&ctx.paths, &ov.header.uuid);
+            if files.len() < 2 {
+                return Err(Error::Invalid(tx!("没有可清理的旧备份")));
+            }
+            let mut b = Builder::new(ctx, ov, tx!("清理旧的头部备份"));
+            b.plan.danger = Danger::High;
+            let keep = files[0]
+                .path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            b.warn([tx!(
+                "只保留最新的备份 {}，其余 {} 个将被删除",
+                keep,
+                files.len() - 1
+            )]);
+            for f in &files[1..] {
+                b.step(Step::internal(
+                    tx!("删除 {}", f.path.display()),
+                    Action::RemoveFile(f.path.clone()),
+                ));
+            }
             return Ok(b.finish());
         }
         RestoreHeader { file } => return plan_restore(ctx, ov, file),
@@ -1261,7 +1303,9 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             ));
             Ok(b.finish())
         }
-        BackupHeader { .. } | RestoreHeader { .. } => unreachable!("handled above"),
+        BackupHeader { .. } | RestoreHeader { .. } | PruneBackups => {
+            unreachable!("handled above")
+        }
     }
 }
 
@@ -1532,6 +1576,18 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
     match action {
         Action::EnsurePrivateDir(dir) => {
             util::ensure_private_dir(dir, 0o700)?;
+            Ok(Text::plain(""))
+        }
+        Action::GiveToUser(paths) => {
+            if let Some(u) = &ctx.owner {
+                for p in paths {
+                    util::chown(p, u)?;
+                }
+            }
+            Ok(Text::plain(""))
+        }
+        Action::RemoveFile(path) => {
+            std::fs::remove_file(path)?;
             Ok(Text::plain(""))
         }
         Action::GenerateKeyfile { path, bytes } => {
