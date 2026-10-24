@@ -26,7 +26,7 @@ It uses `cryptsetup` and `systemd-cryptenroll` under the hood, so it works on al
 - **Unlock / lock**: open and close volumes with a passphrase, a key file, or a TPM2/FIDO2/PKCS#11 token
 - **PBKDF2 → Argon2id** conversion
 - **Verify**: check that a passphrase, key file, or TPM2/FIDO2/PKCS#11 token works
-- **Interface language**: chosen on the GUI's "About" page (follows the system by default)
+- **Interface language**: English and Simplified Chinese, chosen on the GUI's "About" page (follows the system by default); the TUI follows the locale. Translations are standard gettext catalogs in `po/`; see [CONTRIBUTING.md](CONTRIBUTING.md) to add a language
 - **Log**
 
 ## Safety guardrails

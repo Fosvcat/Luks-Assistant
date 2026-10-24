@@ -1,15 +1,15 @@
-# 架构
+# Architecture
 
-## 分层
+## Layers
 
 ```
-┌────────────────────┐   ┌─────────────────────────────────────┐
-│ Luks-Assistant-TUI │   │ Luks-Assistant-GUI（C++ Qt6，普通用户） │
-└─────────┬──────────┘   └──────────────────┬──────────────────┘
-          │ 直接调用（sudo 运行）             │ pkexec + stdin/stdout 逐行 JSON
-          │                      ┌──────────▼───────────────┐
-          │                      │ Luks-Assistant-Helper（root）│
-          │                      └──────────┬───────────────┘
+┌────────────────────┐   ┌────────────────────────────────────────┐
+│ Luks-Assistant-TUI │   │ Luks-Assistant-GUI (C++ Qt6, regular user) │
+└─────────┬──────────┘   └──────────────────┬─────────────────────┘
+          │ direct calls (run with sudo)     │ pkexec + one JSON message per line on stdin/stdout
+          │                      ┌──────────▼────────────────┐
+          │                      │ Luks-Assistant-Helper (root) │
+          │                      └──────────┬────────────────┘
 ┌─────────▼─────────────────────────────────▼──────────┐
 │ luks-assistant-core                                   │
 │  header  slots  notes  pcr  health  guard  ops  exec  │
@@ -20,35 +20,36 @@
 └────────────────────────┘   └──────────────────────────────────┘
 ```
 
-## 核心流程
+## Core flow
 
-1. **读取**：`cryptsetup luksDump`（UUID/版本）+ `luksDump --dump-json-metadata`（槽位、令牌、段、摘要、配置）→ `header::Header`。
-2. **建模**：`slots::Overview` 把槽位、令牌、备注组合成 32 个 `Slot`，并对每个 `systemd-tpm2` 令牌调用 `pcr::evaluate`。
-3. **计划**：`ops::plan(ctx, overview, Request)` 先检查 `guard` 规则，再生成 `Plan`（步骤、等效命令、警告、危险级别、确认词）。计划阶段只会运行只读命令，例如 `cryptsetup open --test-passphrase`。
-4. **执行**：`ops::execute` 加锁（flock）后逐步运行，遇到第一个失败的步骤就停止。会创建槽位的步骤执行后，通过前后对比头部识别新槽位，后续的备注和 PCR 快照步骤会引用它（`SlotRef::New`）。最后写入脱敏日志。
+1. **Read**: `cryptsetup luksDump` (UUID/version) + `luksDump --dump-json-metadata` (key slots, tokens, segments, digests, config) → `header::Header`.
+2. **Model**: `slots::Overview` combines key slots, tokens and notes into 32 `Slot`s and calls `pcr::evaluate` for every `systemd-tpm2` token.
+3. **Plan**: `ops::plan(ctx, overview, Request)` first checks the `guard` rules, then builds a `Plan` (steps, equivalent commands, warnings, danger level, confirmation word). Planning only runs read-only commands, such as `cryptsetup open --test-passphrase`.
+4. **Execute**: `ops::execute` takes a lock (flock) and runs the steps in order, stopping at the first failure. After a step that creates a slot, the new slot is found by comparing the header before and after; later note and PCR snapshot steps refer to it (`SlotRef::New`). Finally a redacted log entry is written.
 
-`Request`/`Plan`/`Report` 也是 helper 协议的核心：GUI 发送 Request，收到 Plan 后展示给用户确认，再请求执行。
+`Request`/`Plan`/`Report` are also the core of the helper protocol: the GUI sends a Request, shows the returned Plan for confirmation, then asks for it to be executed.
 
-## TPM2 策略的本地验证
+## Checking TPM2 policies locally
 
-systemd-cryptenroll 把卷密钥封装在 TPM 策略下，并把策略摘要保存为令牌的 `tpm2-policy-hash`。对于纯 PCR 策略（可加 PIN），摘要完全由所选 PCR 的值决定：
+systemd-cryptenroll seals the volume key under a TPM policy and stores the policy digest in the token as `tpm2-policy-hash`. For a pure PCR policy (optionally with a PIN) the digest depends only on the values of the selected PCRs:
 
 ```
 policy₀ = 0³²
-PolicyPCR:       policy = SHA256(policy ‖ 0x0000017F ‖ TPML_PCR_SELECTION ‖ SHA256(PCR 值按编号拼接))
-PolicyAuthValue: policy = SHA256(policy ‖ 0x0000016B)          （使用 PIN 时）
+PolicyPCR:       policy = SHA256(policy ‖ 0x0000017F ‖ TPML_PCR_SELECTION ‖ SHA256(PCR values concatenated by index))
+PolicyAuthValue: policy = SHA256(policy ‖ 0x0000016B)          (with a PIN)
 ```
 
-Luks Assistant 用当前 PCR 值（`/sys/class/tpm/tpm0/pcr-<bank>/N`）重新计算并比较，不访问 TPM 封装对象，就能判断该槽位现在能否自动解锁。测试中的向量取自 systemd 255 + swtpm 的实际输出。签名策略（`--tpm2-public-key`）和 pcrlock 无法这样判断，会显示为“无法判断”。
+Luks Assistant recomputes this from the current PCR values (`/sys/class/tpm/tpm0/pcr-<bank>/N`) and compares, so it can tell whether the slot will unlock automatically right now without touching the sealed TPM object. The test vectors come from real systemd 255 + swtpm output. Signed policies (`--tpm2-public-key`) and pcrlock cannot be checked this way and are shown as "unknown".
 
-策略匹配时，Luks Assistant 把这些 PCR 的值按策略哈希保存为快照（`/var/lib/luks-assistant/pcr-snapshots/<UUID>.json`）。之后再失配时，与快照对比即可指出是哪个 PCR 变了。
+While a policy matches, Luks Assistant saves the values of its PCRs as a snapshot keyed by the policy hash (`/var/lib/luks-assistant/pcr-snapshots/<UUID>.json`). When it stops matching later, comparing with the snapshot shows which PCR changed.
 
-## 图形界面与 helper
+## GUI and helper
 
-- `Luks-Assistant-GUI`（图形界面）以普通用户运行。启动时用 `pkexec /usr/libexec/Luks-Assistant-Helper` 拉起后端，polkit 弹出管理员认证（策略 `io.github.fosvcat.luks-assistant.helper`，`auth_admin_keep`）。本身已是 root 时直接启动 helper。
-- 协议见 `luks_assistant_core::proto`：每行一个 JSON 请求，返回同 id 的 `ok` / `err`，执行过程中插入 `event`（步骤进度、命令输出）。
-- **计划留在 helper 里**：GUI 只拿到不含秘密的 `PlanView`，按 id 执行；需要确认词的计划在 helper 中再校验一次。护栏全部在 helper 侧的 `ops::plan` 中执行，GUI 无法绕过。
-- FIDO2 / PKCS#11 / TPM2+PIN 需要终端交互。helper 在伪终端里运行这些命令，自动回答 PIN 提示（输出中的 PIN 会被打码），把“请触摸安全密钥”等输出实时转发给 GUI；出现无法回答的密码提示时立即报错，不会卡住。
-- 表单定义（`luks_assistant_core::forms`）由 TUI 与 GUI 共用，两者行为一致：GUI 用 `build_form` 取得表单（字段、默认值、提示），按字段类型生成 Qt 控件，再用 `submit_form` 提交；helper 解析后返回计划、验证结果或错误。
-- 展示数据由 helper 整理好（`luks_assistant_core::view`）：`system_view`（系统、磁盘、PCR、磁盘下拉框）、`device_view`（32 槽位、详情、可用操作、体检、开机检查）、`backup_rows`、`pcr_notes`。GUI 是不含业务逻辑的薄客户端，只负责显示与交互。
-- GUI 使用 Qt6 Widgets（`gui/`，CMake 构建），界面元素都是标准 Qt 控件：KDE 下沿用 Breeze 等系统样式与配色，GNOME 下随 Qt 平台主题呈现 GTK 风格。
+- `Luks-Assistant-GUI` runs as a regular user. At start-up it launches the backend with `pkexec /usr/libexec/Luks-Assistant-Helper`, and polkit asks for administrator authentication (action `io.github.fosvcat.luks-assistant.helper`, `auth_admin_keep`). When already root, it starts the helper directly.
+- The protocol is in `luks_assistant_core::proto`: one JSON request per line, answered with `ok` / `err` under the same id; `event`s (step progress, command output) arrive while a plan runs.
+- **Plans stay in the helper**: the GUI only receives a `PlanView` without secrets and executes it by id; plans that need a confirmation word are checked again in the helper. All guards run in `ops::plan` on the helper side, so the GUI cannot bypass them.
+- FIDO2 / PKCS#11 / TPM2+PIN need a terminal. The helper runs these commands in a pseudo-terminal, answers the PIN prompts itself (PINs in the output are masked) and forwards output such as "touch your security key" to the GUI as it comes; a password prompt it cannot answer fails right away instead of hanging.
+- Form definitions (`luks_assistant_core::forms`) are shared by the TUI and the GUI, so both behave the same: the GUI fetches a form with `build_form` (fields, defaults, hints), builds Qt widgets by field type, and sends it back with `submit_form`; the helper returns a plan, a verification result or an error.
+- Display data is prepared by the helper (`luks_assistant_core::view`): `system_view` (system, disks, PCRs, disk picker), `device_view` (32 slots, details, available actions, self-check, boot check), `backup_rows`, `pcr_notes`. The GUI is a thin client without business logic that only displays and interacts.
+- The GUI uses Qt6 Widgets (`gui/`, built with CMake) and only standard Qt widgets: on KDE it follows the system style and colors (Breeze etc.), on GNOME the Qt platform theme gives it a GTK look.
+- Interface text is English in the source and translated with the gettext catalogs in `po/`, which the Rust crates and the GUI share (see CONTRIBUTING.md).

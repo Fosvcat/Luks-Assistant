@@ -126,7 +126,7 @@ impl Cmd {
             ));
         }
         for (name, _) in &self.env {
-            out.push_str(&tx!("{}=<已隐藏> ", name).render(lang));
+            out.push_str(&tx!("{}=<hidden> ", name).render(lang));
         }
         out.push_str(&self.program);
         for a in &self.args {
@@ -166,7 +166,7 @@ impl CmdOutput {
                 program: program.to_owned(),
                 code: self.code,
                 message: if msg.is_empty() {
-                    t!("(无输出)").into()
+                    t!("(no output)").into()
                 } else {
                     msg.to_owned()
                 },
@@ -199,7 +199,7 @@ impl Drop for PipeFd {
 /// is inheritable (no CLOEXEC) so the child can open it as /dev/fd/N.
 fn secret_pipe(data: &[u8]) -> Result<PipeFd> {
     if data.len() > MAX_PIPE_SECRET {
-        return Err(Error::Invalid(tx!("密钥数据过大")));
+        return Err(Error::Invalid(tx!("Key data too large")));
     }
     let mut fds = [0 as RawFd; 2];
     // SAFETY: fds is a valid 2-element array.
@@ -437,12 +437,12 @@ pub fn run_in_pty(
         if started.elapsed() > timeout {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(Error::Invalid(tx!("{} 超时", &cmd.program)));
+            return Err(Error::Invalid(tx!("{} timed out", &cmd.program)));
         }
     }
     let status = child.wait()?;
     if let Some(p) = unanswerable {
-        return Err(Error::Invalid(tx!("需要输入：{}", p)));
+        return Err(Error::Invalid(tx!("Input needed: {}", p)));
     }
     Ok(CmdOutput {
         code: status.code().unwrap_or(-1),
@@ -461,12 +461,18 @@ mod tests {
             .arg("luksAddKey")
             .arg("/dev/sda2")
             .arg("--key-file")
-            .secret_arg(Text::plain("现有密码"), Secret::from_text("hunter2"))
-            .secret_arg(Text::plain("新密码"), Secret::from_text("correct horse"));
+            .secret_arg(
+                Text::plain("existing password"),
+                Secret::from_text("hunter2"),
+            )
+            .secret_arg(
+                Text::plain("new password"),
+                Secret::from_text("correct horse"),
+            );
         let d = c.display();
         assert_eq!(
             d,
-            "cryptsetup luksAddKey /dev/sda2 --key-file <(现有密码) <(新密码)"
+            "cryptsetup luksAddKey /dev/sda2 --key-file <(existing password) <(new password)"
         );
         assert!(!d.contains("hunter2"));
 
@@ -475,7 +481,7 @@ mod tests {
             .arg("--tpm2-pcrs=0+7");
         assert_eq!(
             c.display(),
-            "PASSWORD=<已隐藏> systemd-cryptenroll --tpm2-pcrs=0+7"
+            "PASSWORD=<hidden> systemd-cryptenroll --tpm2-pcrs=0+7"
         );
     }
 
@@ -530,6 +536,6 @@ mod tests {
             .run(&Cmd::new("sh").args(["-c", "echo boom >&2; exit 3"]))
             .unwrap();
         let err = out.check("sh").unwrap_err().to_string();
-        assert!(err.contains("退出码 3") && err.contains("boom"), "{err}");
+        assert!(err.contains("exit code 3") && err.contains("boom"), "{err}");
     }
 }

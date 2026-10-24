@@ -30,12 +30,12 @@ pub enum Tab {
 }
 
 pub const TABS: [(Tab, &str); 6] = [
-    (Tab::Slots, n!("1 槽位")),
-    (Tab::System, n!("2 系统信息")),
-    (Tab::Check, n!("3 自我检查")),
-    (Tab::Headers, n!("4 头部管理")),
-    (Tab::Log, n!("5 日志")),
-    (Tab::About, n!("6 关于")),
+    (Tab::Slots, n!("1 Slots")),
+    (Tab::System, n!("2 System")),
+    (Tab::Check, n!("3 Self-check")),
+    (Tab::Headers, n!("4 Headers")),
+    (Tab::Log, n!("5 Logs")),
+    (Tab::About, n!("6 About")),
 ];
 
 pub const REPO_URL: &str = "https://github.com/Fosvcat/Luks-Assistant";
@@ -241,7 +241,7 @@ impl App {
         self.boot = None;
         let Some(dev) = self.device().cloned() else {
             self.ov = None;
-            self.load_error = Some(t!("没有找到 LUKS 卷").into());
+            self.load_error = Some(t!("No LUKS volumes found").into());
             return;
         };
         match Overview::load(&self.ctx, dev) {
@@ -260,7 +260,7 @@ impl App {
             Err(e) => {
                 self.ov = None;
                 self.issues.clear();
-                self.load_error = Some(t!("读取失败: {}", e));
+                self.load_error = Some(t!("Reading failed: {}", e));
             }
         }
     }
@@ -327,7 +327,7 @@ impl App {
         self.fido2_devices = None;
         self.pkcs11_tokens = None;
         self.set_tab(self.tab);
-        self.status = t!("已刷新").into();
+        self.status = t!("Refreshed").into();
     }
 
     /// Add a line to the (English) log.
@@ -360,9 +360,9 @@ impl App {
             return;
         };
         let title = if s.is_empty() {
-            t!("槽位 {}", s.id)
+            t!("Slot {}", s.id)
         } else {
-            t!("槽位 {}（{}）", s.id, s.kind.label())
+            t!("Slot {} ({})", s.id, s.kind.label())
         };
         let items = forms::slot_actions(s, &self.ctx.caps)
             .into_iter()
@@ -377,7 +377,7 @@ impl App {
             .iter()
             .map(|d| PickRow {
                 depth: 0,
-                text: t!("{}  镜像文件", d.path.display()),
+                text: t!("{}  image file", d.path.display()),
                 device: self.devices.iter().position(|x| x.path == d.path),
             })
             .collect();
@@ -445,7 +445,7 @@ impl App {
         let pcrs: Vec<usize> = self.visible_pcrs().into_iter().map(usize::from).collect();
         match forms::build(kind, &env) {
             Ok(f) => self.modal = Some(Modal::Form(FormState::new(f, pcrs), FormUse::Core)),
-            Err(e) => self.message(t!("无法执行"), e),
+            Err(e) => self.message(t!("Not possible"), e),
         }
     }
 
@@ -457,11 +457,11 @@ impl App {
         let dir = std::env::current_dir().unwrap_or_default();
         let path = dir.join(format!("luks-assistant-log-{time}.txt"));
         let form = forms::Form {
-            title: t!("导出日志").into(),
+            title: t!("Export logs").into(),
             kind: FormKind::BackupDir,
             fields: vec![forms::Field::save_file(
                 "path",
-                t!("文件"),
+                t!("File"),
                 &path.to_string_lossy(),
             )],
         };
@@ -477,7 +477,7 @@ impl App {
         let mut text = self.log.join("\n");
         text.push('\n');
         match std::fs::write(path, text) {
-            Ok(()) => self.status = t!("日志已导出：{}", path),
+            Ok(()) => self.status = t!("Logs exported: {}", path),
             Err(e) => {
                 state.error = Some(e.to_string());
                 self.modal = Some(Modal::Form(state, FormUse::ExportLog));
@@ -505,7 +505,7 @@ impl App {
             Submit::Verify(m) => self.verify(m),
             Submit::Unlock(m) => {
                 if !self.sys.is_root {
-                    state.error = Some(t!("需要 root：sudo Luks-Assistant-TUI").into());
+                    state.error = Some(t!("Root needed: sudo Luks-Assistant-TUI").into());
                     self.modal = Some(Modal::Form(state, using));
                     return;
                 }
@@ -515,7 +515,9 @@ impl App {
                 }
             }
             Submit::SetBackupDir(d) => match config::set_backup_dir(&mut self.ctx.paths, d) {
-                Ok(()) => self.status = t!("备份位置: {}", self.ctx.paths.backup_root.display()),
+                Ok(()) => {
+                    self.status = t!("Backup location: {}", self.ctx.paths.backup_root.display())
+                }
                 Err(e) => {
                     state.error = Some(e.to_string());
                     self.modal = Some(Modal::Form(state, using));
@@ -523,7 +525,7 @@ impl App {
             },
             Submit::Request(req) => {
                 if self.needs_root() {
-                    state.error = Some(t!("需要 root：sudo Luks-Assistant-TUI").into());
+                    state.error = Some(t!("Root needed: sudo Luks-Assistant-TUI").into());
                     self.modal = Some(Modal::Form(state, using));
                     return;
                 }
@@ -549,10 +551,10 @@ impl App {
                 let out = self.ctx.runner.run(&cmd).map_err(|e| e.to_string())?;
                 if !out.success() {
                     let why = match out.code {
-                        2 => tx!("密码或密钥文件不正确"),
+                        2 => tx!("Wrong password or key file"),
                         _ => ops::token_failure(&out),
                     };
-                    let text = tx!("解锁失败：{}", why);
+                    let text = tx!("Unlocking failed: {}", why);
                     self.log_line(&text.en());
                     return Err(text.to_string());
                 }
@@ -562,9 +564,9 @@ impl App {
                 let tests =
                     ops::token_unlock_cmds(ov, kind, pin.as_ref()).map_err(|e| e.to_string())?;
                 if tests.is_empty() {
-                    return Err(t!("没有 {} 令牌", kind.label()));
+                    return Err(t!("No {} token", kind.label()));
                 }
-                self.busy = Some(t!("正在解锁…").into());
+                self.busy = Some(t!("Unlocking…").into());
                 self.pending = Some(Job::Tokens {
                     kind,
                     tests,
@@ -578,7 +580,7 @@ impl App {
     fn unlocked(&mut self) {
         let Some(ov) = &self.ov else { return };
         let text = tx!(
-            "已解锁 {} → {}",
+            "Unlocked {} → {}",
             ov.device.path.display(),
             ops::mapping_name(ov)
         );
@@ -595,7 +597,7 @@ impl App {
             return self.open_form(FormKind::Unlock);
         }
         if !self.sys.is_root {
-            return self.message(t!("锁定"), t!("需要 root：sudo Luks-Assistant-TUI"));
+            return self.message(t!("Lock"), t!("Root needed: sudo Luks-Assistant-TUI"));
         }
         let path = ov.device.path.display().to_string();
         let result = ops::lock_cmd(ov)
@@ -603,7 +605,7 @@ impl App {
             .and_then(|out| out.check("cryptsetup close").map(|_| ()));
         match result {
             Ok(()) => {
-                let text = tx!("已锁定 {}", path);
+                let text = tx!("Locked {}", path);
                 self.log_line(&text.en());
                 self.status = text.to_string();
                 self.rescan();
@@ -611,7 +613,7 @@ impl App {
             }
             Err(e) => {
                 self.log_line(&format!("Lock {path} failed: {}", e.text().en()));
-                self.message(t!("锁定"), e.to_string());
+                self.message(t!("Lock"), e.to_string());
             }
         }
     }
@@ -631,17 +633,17 @@ impl App {
                 match ops::verify_credential(&self.ctx, &ov.device.path, &c) {
                     Ok(slot) => {
                         let kind = ov.slot(slot).map(|s| s.kind.label()).unwrap_or_default();
-                        self.message(t!("验证"), t!("✓ 槽位 {}（{}）验证成功", slot, kind))
+                        self.message(t!("Verify"), t!("✓ Slot {} ({}) verified", slot, kind))
                     }
-                    Err(e) => self.message(t!("验证"), format!("✗ {e}")),
+                    Err(e) => self.message(t!("Verify"), format!("✗ {e}")),
                 }
             }
             VerifyMethod::Token { kind, pin } => {
                 let tests = ops::token_tests(ov, kind, pin.as_ref());
                 if tests.is_empty() {
-                    self.message(t!("验证"), t!("没有 {} 令牌", kind.label()));
+                    self.message(t!("Verify"), t!("No {} token", kind.label()));
                 } else {
-                    self.busy = Some(t!("正在验证 {}…", kind.label()));
+                    self.busy = Some(t!("Verifying {}…", kind.label()));
                     self.pending = Some(Job::Tokens {
                         kind,
                         tests,
@@ -679,9 +681,9 @@ impl App {
         self.open_menu(
             d.display_name(),
             vec![
-                (t!("备份").into(), MenuItem::Backup(i)),
-                (t!("恢复…").into(), MenuItem::Restore(i)),
-                (t!("清理旧备份").into(), MenuItem::Prune(i)),
+                (t!("Back up").into(), MenuItem::Backup(i)),
+                (t!("Restore…").into(), MenuItem::Restore(i)),
+                (t!("Clean up old backups").into(), MenuItem::Prune(i)),
             ],
         );
     }
@@ -702,7 +704,7 @@ impl App {
                 .iter()
                 .any(|i| self.devices.get(*i).is_some_and(|d| !d.is_file))
         {
-            return self.message(t!("清理"), t!("需要 root：sudo Luks-Assistant-TUI"));
+            return self.message(t!("Clean up"), t!("Root needed: sudo Luks-Assistant-TUI"));
         }
         let mut plans = Vec::new();
         let mut errors = Vec::new();
@@ -721,11 +723,11 @@ impl App {
         }
         if plans.is_empty() {
             let text = if errors.is_empty() {
-                t!("没有可清理的旧备份").to_owned()
+                t!("No old backups to clean up").to_owned()
             } else {
                 errors.join("\n")
             };
-            return self.message(t!("清理"), text);
+            return self.message(t!("Clean up"), text);
         }
         self.confirm(plans);
     }
@@ -745,7 +747,7 @@ impl App {
                 .iter()
                 .any(|i| self.devices.get(*i).is_some_and(|d| !d.is_file))
         {
-            return self.message(t!("备份"), t!("需要 root：sudo Luks-Assistant-TUI"));
+            return self.message(t!("Back up"), t!("Root needed: sudo Luks-Assistant-TUI"));
         }
         let mut plans = Vec::new();
         let mut errors = Vec::new();
@@ -762,11 +764,11 @@ impl App {
         }
         if plans.is_empty() {
             let text = if errors.is_empty() {
-                t!("未选择任何卷").to_owned()
+                t!("No volume selected").to_owned()
             } else {
                 errors.join("\n")
             };
-            return self.message(t!("备份"), text);
+            return self.message(t!("Back up"), text);
         }
         if let Some(p) = plans.first_mut() {
             p.warnings.extend(
@@ -789,7 +791,7 @@ impl App {
                 tests,
                 unlock,
             } => {
-                let title = if unlock { t!("解锁") } else { t!("验证") };
+                let title = if unlock { t!("Unlock") } else { t!("Verify") };
                 let mut last = Text::plain("");
                 for t in tests {
                     let out = if t.cmd.interactive {
@@ -811,9 +813,9 @@ impl App {
                                 .collect::<Vec<_>>()
                                 .join(", ");
                             return self.message(
-                                t!("验证"),
+                                t!("Verify"),
                                 t!(
-                                    "✓ 槽位 {}（{} 令牌 {}）验证成功",
+                                    "✓ Slot {} ({} token {}) verified",
                                     slots,
                                     kind.label(),
                                     t.token
@@ -830,9 +832,12 @@ impl App {
                         kind.label(),
                         last.en()
                     ));
-                    self.message(title, t!("✗ 解锁失败：{}", last));
+                    self.message(title, t!("✗ Unlock failed: {}", last));
                 } else {
-                    self.message(title, t!("✗ {} 验证失败\n{}", kind.label(), last));
+                    self.message(
+                        title,
+                        t!("✗ {} verification failed\n{}", kind.label(), last),
+                    );
                 }
             }
         }
@@ -846,7 +851,7 @@ impl App {
         let title = if plans.len() == 1 {
             plans[0].title.to_string()
         } else {
-            t!("{} 项操作", plans.len())
+            t!("{} operations", plans.len())
         };
         for plan in &plans {
             let mut hooks = TuiHooks { terminal };
@@ -859,7 +864,7 @@ impl App {
                 plan.device.display()
             ));
             if let Some(b) = &report.backup_file {
-                lines.push(t!("  备份: {}", b.display()));
+                lines.push(t!("  Backup: {}", b.display()));
             }
             for s in &report.steps {
                 lines.push(format!("  {} {}", if s.ok { "✓" } else { "✗" }, s.desc));
@@ -876,7 +881,7 @@ impl App {
                 }
             }
             if let Some(e) = &report.error {
-                lines.push(t!("  错误: {}", e));
+                lines.push(t!("  Error: {}", e));
             }
             lines.push(String::new());
             recovery = recovery.or(report.recovery_key.clone());
@@ -892,7 +897,14 @@ impl App {
                 });
             }
         }
-        self.status = format!("{title}: {}", if all_ok { t!("成功") } else { t!("失败") });
+        self.status = format!(
+            "{title}: {}",
+            if all_ok {
+                t!("succeeded")
+            } else {
+                t!("failed")
+            }
+        );
         self.rescan();
         self.reload();
         if let Some(s) = new_slot {
@@ -979,7 +991,7 @@ impl App {
                     .into_iter()
                     .map(|(l, k)| (l, MenuItem::Form(k)))
                     .collect();
-                self.open_menu(t!("添加").into(), items);
+                self.open_menu(t!("Add").into(), items);
             }
             KeyCode::Char('d') | KeyCode::Delete if used => {
                 self.open_form(FormKind::Remove(self.selected))
@@ -1092,10 +1104,10 @@ impl App {
             } => {
                 let word = plans.iter().find_map(|p| p.confirm_word.clone());
                 match k.code {
-                    KeyCode::Esc => self.status = t!("已取消").into(),
+                    KeyCode::Esc => self.status = t!("Cancelled").into(),
                     KeyCode::Enter => {
                         if word.as_ref().is_none_or(|w| typed.trim() == w) {
-                            self.busy = Some(t!("正在执行…").into());
+                            self.busy = Some(t!("Running…").into());
                             self.pending = Some(Job::Execute(plans));
                         } else {
                             self.modal = Some(Modal::Confirm {
@@ -1352,12 +1364,12 @@ impl Hooks for TuiHooks<'_> {
         crate::term::leave();
         println!(
             "{}",
-            t!("\n=== Luks Assistant：请按提示操作（PIN / 触摸安全密钥）===\n")
+            t!("\n=== Luks Assistant: follow the prompts (PIN / touch the security key) ===\n")
         );
     }
 
     fn resume(&mut self) {
-        println!("{}", t!("\n=== 按回车返回 ==="));
+        println!("{}", t!("\n=== Press Enter to return ==="));
         let mut s = String::new();
         let _ = std::io::stdin().read_line(&mut s);
         *self.terminal = crate::term::enter();

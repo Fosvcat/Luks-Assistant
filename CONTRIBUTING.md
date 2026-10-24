@@ -1,6 +1,6 @@
-# 开发指南
+# Contributing
 
-## 快速检查
+## Quick checks
 
 ```sh
 cargo fmt --all --check
@@ -8,11 +8,11 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 ```
 
-单元测试不需要 root。`crates/luks-assistant-core/tests/real_cryptsetup.rs` 中的端到端测试会在**镜像文件**上调用真实的 `cryptsetup` / `systemd-cryptenroll`，不会碰真实磁盘；没有 root 或没装 cryptsetup 时会自动跳过。
+Unit tests do not need root. The end-to-end tests in `crates/luks-assistant-core/tests/real_cryptsetup.rs` run the real `cryptsetup` / `systemd-cryptenroll` on **image files** and never touch real disks; they are skipped without root or without cryptsetup.
 
-## 用 swtpm 测试 TPM2
+## Testing TPM2 with swtpm
 
-不需要真实 TPM。在 Debian/Ubuntu 上：
+No real TPM is needed. On Debian/Ubuntu:
 
 ```sh
 sudo apt install cryptsetup-bin swtpm swtpm-tools tpm2-tools libtss2-tcti-swtpm0t64
@@ -23,9 +23,9 @@ swtpm socket --tpmstate dir=/tmp/swtpm --tpm2 \
 sudo env "PATH=$PATH" LUKS_ASSISTANT_TEST_SWTPM=swtpm:host=127.0.0.1,port=2321 cargo test --workspace
 ```
 
-测试会录入 TPM2，用 `tpm2_pcrextend` 改变 PCR，检查 Luks Assistant 能否报告“PCR 9 已变化”，再带 PIN 重新录入并替换旧槽位。
+The test enrolls TPM2, changes a PCR with `tpm2_pcrextend`, checks that Luks Assistant reports "PCR 9 changed", then re-enrolls with a PIN and replaces the old slot.
 
-## 在镜像上手动试用 TUI
+## Trying the TUI on an image
 
 ```sh
 truncate -s 32M /tmp/demo.img
@@ -37,48 +37,66 @@ sudo env LUKS_ASSISTANT_FAST_KDF=1 \
   ./target/debug/Luks-Assistant-TUI /tmp/demo.img
 ```
 
-| 变量 | 作用 |
+| Variable | Effect |
 |---|---|
-| `LUKS_ASSISTANT_TPM2_DEVICE` | `--tpm2-device=` 的值；TCTI 字符串（如 swtpm）会改用 `tpm2_pcrread` 读取 PCR |
-| `LUKS_ASSISTANT_ETC_DIR` | 本机备注目录（默认 `/etc/luks-assistant`） |
-| `LUKS_ASSISTANT_STATE_DIR` | 头部备份、PCR 快照、日志、锁文件目录（默认 `/var/lib/luks-assistant`） |
-| `LUKS_ASSISTANT_FAST_KDF=1` | 新槽位使用极弱的 PBKDF2，**仅用于测试** |
-| `LUKS_ASSISTANT_LANG=en` / `zh` | 终端界面语言（默认跟随 locale） |
+| `LUKS_ASSISTANT_TPM2_DEVICE` | Value for `--tpm2-device=`; with a TCTI string (such as swtpm) PCRs are read with `tpm2_pcrread` |
+| `LUKS_ASSISTANT_ETC_DIR` | Local notes directory (default `/etc/luks-assistant`) |
+| `LUKS_ASSISTANT_STATE_DIR` | Header backups, PCR snapshots, log and lock file (default `/var/lib/luks-assistant`) |
+| `LUKS_ASSISTANT_FAST_KDF=1` | Very weak PBKDF2 for new slots, **for tests only** |
+| `LUKS_ASSISTANT_LANG=en` / `zh_CN` | Interface language (default: the locale) |
 
-## 图形界面
+## GUI
 
 ```sh
-sudo apt install cmake qt6-base-dev     # Arch: qt6-base；Fedora: qt6-qtbase-devel
+sudo apt install cmake qt6-base-dev     # Arch: qt6-base; Fedora: qt6-qtbase-devel
 cargo build -p luks-assistant-helper -p luks-assistant-tui
 cmake -S gui -B gui/build && cmake --build gui/build
-# 以 root 运行时 GUI 直接启动 helper，不经过 pkexec；开发用环境变量会转成 helper 参数
+# Run as root, the GUI starts the helper directly instead of through pkexec;
+# the development variables are passed on to the helper.
 sudo env LUKS_ASSISTANT_HELPER=$PWD/target/debug/Luks-Assistant-Helper LUKS_ASSISTANT_FAST_KDF=1 \
   LUKS_ASSISTANT_ETC_DIR=/tmp/luks-assistant/etc LUKS_ASSISTANT_STATE_DIR=/tmp/luks-assistant/state \
   ./gui/build/Luks-Assistant-GUI --gui /tmp/demo.img
 ```
 
-无显示器的环境可以用 `Xvfb :99` + `DISPLAY=:99`，再用 `xdotool` 点击、`import -window root` 截图。
+Without a display, use `Xvfb :99` with `DISPLAY=:99`, click with `xdotool` and take screenshots with `import -window root`.
 
-## 界面文字与翻译
+## Interface text and translations
 
-源文字是中文，英文译文统一放在 `i18n/en.tsv`（每行“中文<TAB>English”，`\n`、`\t` 转义），Rust 与 Qt 共用：
+Source strings are written in **English**. Translations are standard GNU gettext catalogs, shared by the Rust crates and the Qt GUI:
 
-- Rust：`t!("…")` 立即按当前语言翻译；`tx!("… {}", x)` 生成 `Text`，显示时再翻译——计划、步骤、报告和错误都用它，这样同一条消息既能按界面语言显示，也能以英文写入日志；`const` 表格里的文字用 `n!("…")` 标记，显示时用 `i18n::tr` 翻译。占位符一律写 `{}`。
-- Qt：`tr("…")`（占位符 `%1`）；`.ui` 中的文字由 uic 自动处理。同一中文在不同场合需要不同英文时，在 `.ui` 里加 `comment="…"`，对应条目写成 `中文@comment`。
+```
+po/luks-assistant.pot   template: every translatable string (generated)
+po/zh_CN.po             Chinese (Simplified)
+```
 
-`cargo test` 中的 `catalog` 测试会检查：源码里每段中文都经过上述宏或 `tr()`、都在 `en.tsv` 中、占位符一致，且 `en.tsv` 没有多余条目；缺少的条目会以 TSV 行打印出来，补上英文即可。
+- Rust: `t!("…")` translates right away into the current language; `tx!("… {}", x)` makes a `Text` that is translated when shown. Plans, steps, reports and errors use `tx!`, so one message can be shown in the interface language and logged in English. Text in `const` tables is marked with `n!("…")` and translated where it is shown with `i18n::tr`. Placeholders are always `{}`.
+- Qt: `tr("…")` (placeholders `%1`, `%2`); `.ui` texts are handled by uic. When the same English needs different translations, give the `.ui` string a `comment="…"`; it becomes the entry's `msgctxt`. Messages printed before Qt starts use `AppSettings::cliTr("…")`.
 
-## 约定
+The `catalog` test (part of `cargo test`) extracts all strings and checks that the sources contain no untranslated non-English text, that the template is up to date, and that every `.po` file translates every string with the same placeholders. After changing interface text:
 
-- 写操作一律经过 `luks_assistant_core::ops::plan` → `execute`，前端不自己拼命令。
-- 新的安全规则放在 `guard.rs`，被阻止时返回 `Error::Blocked`，不提供绕过选项。
-- 秘密用 `Secret` 类型（drop 时清零、`Debug` 不输出内容），只能通过 `Cmd::secret_arg` / `Cmd::secret_env` 传给子进程。
-- 功能按工具版本启用（`Caps`），不按发行版名称判断。
+```sh
+UPDATE_PO=1 cargo test -p luks-assistant-sysinfo --test catalog
+```
 
-## 发布新版本
+This regenerates the template and merges it into each `.po` file: new strings get an empty `msgstr` to fill in (untranslated strings are listed by the test), strings no longer used are dropped. The files work with any PO editor (Poedit, Lokalize, Qt Linguist via `lconvert`) and translation platform (Weblate, Crowdin), and `msgfmt --check po/zh_CN.po` validates them.
 
-1. 修改根目录 `Cargo.toml` 中 `[workspace.package]` 的 `version`。
-2. 运行 `cargo build`，让 `Cargo.lock` 中的版本号同步更新。
-3. 把 `Cargo.toml` 和 `Cargo.lock` 一起提交并推送到 `main`。
+### Adding a language
 
-Release 工作流会自动创建 `v<版本号>` 标签，编译并发布。也可以在 Actions → Release → Run workflow 手动运行（标签留空即使用 `Cargo.toml` 中的版本）。
+1. `cp po/luks-assistant.pot po/<code>.po` (for example `de.po`, `pt_BR.po`), set `Language:` in the header and translate.
+2. Add the catalog to `CATALOGS` in `crates/luks-assistant-sysinfo/src/i18n.rs`.
+3. GUI: add the language to the language list on the About page (`languageCombo` in `gui/src/mainwindow.ui` and `AppSettings::Language`). The GUI embeds every `po/*.po` automatically, and "follow the system" picks it up without further changes.
+
+## Conventions
+
+- Every write goes through `luks_assistant_core::ops::plan` → `execute`; frontends never build commands themselves.
+- New safety rules go into `guard.rs`; when they block, they return `Error::Blocked` and offer no way around.
+- Secrets use the `Secret` type (zeroed on drop, hidden from `Debug`) and reach child processes only through `Cmd::secret_arg` / `Cmd::secret_env`.
+- Features are enabled by tool version (`Caps`), never by distribution name.
+
+## Releasing
+
+1. Change `version` under `[workspace.package]` in the root `Cargo.toml`.
+2. Run `cargo build` so the version in `Cargo.lock` is updated too.
+3. Commit `Cargo.toml` and `Cargo.lock` together and push to `main`.
+
+The Release workflow creates the `v<version>` tag, builds and publishes. It can also be run by hand from Actions → Release → Run workflow (leave the tag empty to use the version in `Cargo.toml`).

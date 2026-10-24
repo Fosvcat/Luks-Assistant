@@ -29,10 +29,11 @@ add_executable(Luks-Assistant-GUI
 )
 
 # English catalog shared with the Rust crates, and the application icon.
-qt_add_resources(Luks-Assistant-GUI i18n
-    PREFIX /i18n
-    BASE ../i18n
-    FILES ../i18n/en.tsv)
+file(GLOB PO_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../po/*.po)
+qt_add_resources(Luks-Assistant-GUI translations
+    PREFIX /po
+    BASE ../po
+    FILES ${PO_FILES})
 qt_add_resources(Luks-Assistant-GUI icons
     PREFIX /icons
     BASE ../packaging/icons

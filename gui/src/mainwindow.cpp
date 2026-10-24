@@ -249,22 +249,22 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
         t->setAlternatingRowColors(true);
 
     // Right-click → copy.
-    installCopyMenu(ui->systemTree, tr("复制"), [](const QTreeWidgetItem *i) {
-        return i->text(1).isEmpty() ? i->text(0) : tr("%1：%2").arg(i->text(0), i->text(1));
+    installCopyMenu(ui->systemTree, tr("Copy"), [](const QTreeWidgetItem *i) {
+        return i->text(1).isEmpty() ? i->text(0) : tr("%1: %2").arg(i->text(0), i->text(1));
     });
-    installCopyMenu(ui->diskTree, tr("复制"), [](const QTreeWidgetItem *i) {
+    installCopyMenu(ui->diskTree, tr("Copy"), [](const QTreeWidgetItem *i) {
         QStringList parts{i->data(0, Qt::UserRole).toString(), i->text(1), i->text(2), i->text(3),
                           i->text(4).isEmpty() ? QString() : S("TRIM ") + i->text(4), i->text(5)};
         parts.removeAll(QString());
         return parts.join(S("  "));
     });
-    installCopyMenu(ui->pcrTree, tr("复制 PCR 值"),
+    installCopyMenu(ui->pcrTree, tr("Copy PCR value"),
                     [](const QTreeWidgetItem *i) { return i->data(1, Qt::UserRole).toString(); });
-    installCopyMenu(ui->issueTree, tr("复制"), [](const QTreeWidgetItem *i) {
-        return i->text(2).isEmpty() ? i->text(1) : tr("%1：%2").arg(i->text(1), i->text(2));
+    installCopyMenu(ui->issueTree, tr("Copy"), [](const QTreeWidgetItem *i) {
+        return i->text(2).isEmpty() ? i->text(1) : tr("%1: %2").arg(i->text(1), i->text(2));
     });
-    installCopyMenu(ui->bootTree, tr("复制"), [](const QTreeWidgetItem *i) {
-        return tr("%1：%2").arg(i->text(1), i->data(2, Qt::UserRole).toString());
+    installCopyMenu(ui->bootTree, tr("Copy"), [](const QTreeWidgetItem *i) {
+        return tr("%1: %2").arg(i->text(1), i->data(2, Qt::UserRole).toString());
     });
 
     connect(m_refresh, &QToolButton::clicked, this, &MainWindow::refreshAll);
@@ -321,7 +321,7 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
     connect(ui->browseButton, &QPushButton::clicked, this, [this] {
         const QString current = ui->backupDirEdit->text().isEmpty() ? ui->backupDirEdit->placeholderText()
                                                                     : ui->backupDirEdit->text();
-        const QString dir = QFileDialog::getExistingDirectory(this, tr("备份位置"), current);
+        const QString dir = QFileDialog::getExistingDirectory(this, tr("Backup location"), current);
         if (dir.isEmpty())
             return;
         ui->backupDirEdit->setText(dir);
@@ -341,8 +341,8 @@ MainWindow::MainWindow(const QStringList &extraDevices, QWidget *parent)
         refreshAll();
     });
     connect(m_helper, &HelperClient::failed, this, [this](const QString &message) {
-        statusBar()->showMessage(tr("后端未连接，点击“刷新”重试"));
-        showError(tr("无法启动后端"), message);
+        statusBar()->showMessage(tr("Backend not connected; click “Refresh” to retry"));
+        showError(tr("Cannot start the backend"), message);
     });
     connect(m_helper, &HelperClient::event, this, [this](const QString &kind, const QString &text) {
         if (m_progress)
@@ -376,17 +376,17 @@ void MainWindow::changeEvent(QEvent *event)
 /// Texts set in code; the .ui texts are handled by retranslateUi.
 void MainWindow::retranslate()
 {
-    m_refresh->setText(tr("刷新"));
-    ui->systemTree->setHeaderLabels({tr("项目"), tr("值")});
-    ui->diskTree->setHeaderLabels({tr("名称"), tr("大小"), tr("加密"), tr("类型"), S("TRIM"), tr("挂载点")});
-    ui->pcrTree->setHeaderLabels({S("PCR"), tr("当前值"), tr("用途")});
-    ui->issueTree->setHeaderLabels({tr("级别"), tr("问题"), tr("说明")});
-    ui->bootTree->setHeaderLabels({tr("状态"), tr("项目"), tr("详情")});
-    ui->backupTree->setHeaderLabels({tr("卷"), S("UUID"), tr("最后备份"), tr("数量"), tr("文件")});
+    m_refresh->setText(tr("Refresh"));
+    ui->systemTree->setHeaderLabels({tr("Item"), tr("Value")});
+    ui->diskTree->setHeaderLabels({tr("Name"), tr("Size"), tr("Encryption"), tr("Type"), S("TRIM"), tr("Mount point")});
+    ui->pcrTree->setHeaderLabels({S("PCR"), tr("Current value"), tr("Purpose")});
+    ui->issueTree->setHeaderLabels({tr("Level"), tr("Problem"), tr("Explanation")});
+    ui->bootTree->setHeaderLabels({tr("Status"), tr("Item"), tr("Details")});
+    ui->backupTree->setHeaderLabels({tr("Volume"), S("UUID"), tr("Last backup"), tr("Count"), tr("File")});
     ui->appVersion->setText(S("%1 %2").arg(QStringLiteral(LUKS_ASSISTANT_VERSION), arch()));
     updateLockState();
     ui->appLink->setText(S("<a href=\"%1\">%1</a>").arg(QString::fromLatin1(RepoUrl)));
-    ui->logView->setPlaceholderText(tr("还没有日志"));
+    ui->logView->setPlaceholderText(tr("No logs yet"));
 }
 
 void MainWindow::showError(const QString &title, const QString &message)
@@ -401,7 +401,7 @@ void MainWindow::log(const QString &english)
 
 void MainWindow::startHelper()
 {
-    statusBar()->showMessage(tr("正在请求管理员权限…"));
+    statusBar()->showMessage(tr("Requesting administrator rights…"));
     m_helper->start();
 }
 
@@ -428,13 +428,13 @@ void MainWindow::refreshAll()
 {
     if (!m_helper->isRunning())
         return startHelper();
-    statusBar()->showMessage(tr("正在读取…"));
+    statusBar()->showMessage(tr("Reading…"));
     QJsonArray extra;
     for (const QString &e : m_extra)
         extra.append(e);
     m_helper->call(S("system_view"), QJsonObject{{S("extra"), extra}}, [this](const QJsonValue &ok, const QString &err) {
         if (!err.isEmpty())
-            return showError(tr("读取失败"), err);
+            return showError(tr("Reading failed"), err);
         m_system = ok.toObject();
         fillSystem();
         fillPicker();
@@ -448,7 +448,7 @@ void MainWindow::loadDevice()
         m_device = {};
         fillSlots();
         fillDetail();
-        statusBar()->showMessage(tr("没有 LUKS 卷"));
+        statusBar()->showMessage(tr("No LUKS volumes"));
         return;
     }
     m_helper->call(S("device_view"), QJsonObject{{S("path"), m_path}}, [this](const QJsonValue &ok, const QString &err) {
@@ -456,7 +456,7 @@ void MainWindow::loadDevice()
             m_device = {};
             fillSlots();
             fillDetail();
-            statusBar()->showMessage(tr("读取失败：%1").arg(err));
+            statusBar()->showMessage(tr("Reading failed: %1").arg(err));
             return;
         }
         const QJsonObject reply = ok.toObject();
@@ -467,7 +467,7 @@ void MainWindow::loadDevice()
         fillHealth();
         fillBoot();
         fillSystem(); // bound PCRs are highlighted
-        statusBar()->showMessage(tr("就绪"));
+        statusBar()->showMessage(tr("Ready"));
         loadBackups();
     });
 }
@@ -515,17 +515,17 @@ void MainWindow::fillSystem()
             keyWidth = std::max(keyWidth, sys->fontMetrics().horizontalAdvance(key));
         }
     };
-    rows(group(tr("系统")), arr(m_system, "system"));
+    rows(group(tr("System")), arr(m_system, "system"));
     rows(group(S("TPM")), arr(m_system, "tpm"));
-    for (const auto &[title, key] : {std::pair{tr("FIDO2 安全密钥"), "fido2"}, std::pair{tr("PKCS#11 智能卡"), "pkcs11"}}) {
+    for (const auto &[title, key] : {std::pair{tr("FIDO2 security keys"), "fido2"}, std::pair{tr("PKCS#11 smart cards"), "pkcs11"}}) {
         auto *g = group(title);
         const QJsonArray list = arr(m_system, key);
         if (list.isEmpty())
-            spanned(g, tr("未检测到"));
+            spanned(g, tr("Not detected"));
         for (const QJsonValue &d : list)
             spanned(g, d.toString());
     }
-    auto *caps = group(tr("功能"));
+    auto *caps = group(tr("Features"));
     for (const QJsonValue &c : arr(m_system, "caps")) {
         const QJsonArray pair = c.toArray();
         auto *item = spanned(caps, pair.at(0).toString());
@@ -575,7 +575,7 @@ void MainWindow::fillSystem()
         const QString value = str(p, "value");
         auto *item = new QTreeWidgetItem(pcrs, {QString::number(index), value.isEmpty() ? S("—") : value.left(16) + S("…"), str(p, "name")});
         item->setData(1, Qt::UserRole, value);
-        item->setToolTip(2, tr("%1\n改变：%2").arg(str(p, "measures"), str(p, "changes")));
+        item->setToolTip(2, tr("%1\nChanges: %2").arg(str(p, "measures"), str(p, "changes")));
         item->setToolTip(1, value);
         if (bound.contains(index)) {
             for (int c = 0; c < 3; ++c) {
@@ -629,14 +629,14 @@ void MainWindow::fillSlots()
 {
     auto *table = ui->slotTable;
     const QJsonArray slotList = arr(m_device, "slots");
-    ui->slotsGroup->setTitle(slotList.isEmpty() ? tr("槽位") : str(m_device, "header"));
+    ui->slotsGroup->setTitle(slotList.isEmpty() ? tr("Slot") : str(m_device, "header"));
     const QColor dim = palette().color(QPalette::Disabled, QPalette::Text);
     for (int id = 0; id < 32; ++id) {
         const QJsonObject s = slotList.at(id).toObject();
         const QString kind = str(s, "kind");
         const bool empty = kind.isEmpty() || kind == QLatin1String("empty");
         QString text = QStringLiteral("%1").arg(id, 2, 10, QLatin1Char('0'));
-        text += S("  ") + (empty ? tr("空闲") : str(s, "kind_label"));
+        text += S("  ") + (empty ? tr("Empty") : str(s, "kind_label"));
         if (!str(s, "subtitle").isEmpty())
             text += QLatin1Char('\n') + str(s, "subtitle");
         auto *item = new QTableWidgetItem(kindIcon(kind, style()), text);
@@ -646,7 +646,7 @@ void MainWindow::fillSlots()
             item->setForeground(QColor(0xda, 0x44, 0x53));
         QStringList tip;
         for (const QJsonValue &r : arr(s, "details"))
-            tip << tr("%1：%2").arg(str(r.toObject(), "key"), str(r.toObject(), "value"));
+            tip << tr("%1: %2").arg(str(r.toObject(), "key"), str(r.toObject(), "value"));
         item->setToolTip(tip.join(QLatin1Char('\n')));
         table->setItem(id / 8, id % 8, item);
     }
@@ -660,8 +660,8 @@ void MainWindow::updateLockState()
 {
     const bool loaded = !arr(m_device, "slots").isEmpty();
     const bool unlocked = m_device.value(S("unlocked")).toBool();
-    ui->lockStateLabel->setText(!loaded ? QString() : unlocked ? tr("状态：已解锁") : tr("状态：锁定"));
-    ui->lockButton->setText(unlocked ? tr("锁定") : tr("解锁"));
+    ui->lockStateLabel->setText(!loaded ? QString() : unlocked ? tr("Status: unlocked") : tr("Status: locked"));
+    ui->lockButton->setText(unlocked ? tr("Lock") : tr("Unlock"));
     ui->lockButton->setIcon(unlocked ? themed({"object-locked-symbolic", "changes-prevent-symbolic", "object-locked"},
                                               QStyle::SP_DialogCloseButton, style())
                                      : themed({"object-unlocked-symbolic", "changes-allow-symbolic", "object-unlocked"},
@@ -695,10 +695,10 @@ void MainWindow::toggleLock()
         QApplication::restoreOverrideCursor();
         if (!err.isEmpty()) {
             log(S("Lock failed: ") + path);
-            return showError(tr("锁定"), err);
+            return showError(tr("Lock"), err);
         }
         log(S("Locked ") + path);
-        statusBar()->showMessage(tr("已锁定"), 4000);
+        statusBar()->showMessage(tr("Locked"), 4000);
         refreshAll();
     });
 }
@@ -708,21 +708,21 @@ void MainWindow::fillDetail()
     clearLayout(ui->detailForm);
     clearLayout(ui->actionsLayout);
     const QJsonObject s = slot(m_selected);
-    ui->detailGroup->setTitle(tr("槽位 %1").arg(m_selected));
+    ui->detailGroup->setTitle(tr("Slot %1").arg(m_selected));
     if (m_device.isEmpty())
         return;
     const QJsonArray details = arr(s, "details");
     if (details.isEmpty())
-        ui->detailForm->addRow(new QLabel(tr("空闲")));
+        ui->detailForm->addRow(new QLabel(tr("Empty")));
     for (const QJsonValue &r : details) {
         auto *value = new QLabel(str(r.toObject(), "value"));
         value->setTextInteractionFlags(Qt::TextSelectableByMouse);
         value->setWordWrap(true);
-        ui->detailForm->addRow(tr("%1：").arg(str(r.toObject(), "key")), value);
+        ui->detailForm->addRow(tr("%1:").arg(str(r.toObject(), "key")), value);
     }
     auto *volume = new QLabel(str(m_device, "volume"));
     volume->setEnabled(false);
-    ui->detailForm->addRow(tr("卷："), volume);
+    ui->detailForm->addRow(tr("Volume:"), volume);
     const QString readOnly = str(m_device, "read_only");
     if (!readOnly.isEmpty()) {
         ui->detailForm->addRow(new QLabel(S("<b>%1</b>").arg(readOnly.toHtmlEscaped())));
@@ -748,7 +748,7 @@ void MainWindow::fillHealth()
         item->setIcon(0, statusIcon(str(i, "level"), style()));
     }
     if (t->topLevelItemCount() == 0) {
-        auto *item = new QTreeWidgetItem(t, {QString(), tr("没有发现问题")});
+        auto *item = new QTreeWidgetItem(t, {QString(), tr("No problems found")});
         item->setIcon(0, statusIcon(S("Ok"), style()));
     }
     t->resizeColumnToContents(0);
@@ -782,7 +782,7 @@ void MainWindow::fillBackups(const QJsonArray &rows)
     for (const QJsonValue &v : rows) {
         const QJsonObject r = v.toObject();
         const int count = r.value(S("count")).toInt();
-        auto *item = new QTreeWidgetItem(t, {str(r, "title"), str(r, "uuid"), count ? str(r, "last") : tr("从未备份"),
+        auto *item = new QTreeWidgetItem(t, {str(r, "title"), str(r, "uuid"), count ? str(r, "last") : tr("Never backed up"),
                                              QString::number(count), str(r, "file")});
         item->setData(0, Qt::UserRole, str(r, "path"));
         item->setCheckState(0, previous.value(str(r, "path"), Qt::Checked));
@@ -818,10 +818,10 @@ void MainWindow::backupContextMenu(const QPoint &pos)
         return;
     const QString path = item->data(0, Qt::UserRole).toString();
     QMenu menu(this);
-    menu.addAction(QIcon::fromTheme(S("document-save")), tr("备份"), this, [this, path] { backupVolumes({path}); });
-    menu.addAction(QIcon::fromTheme(S("edit-clear-history"), QIcon::fromTheme(S("edit-delete"))), tr("清理旧备份"), this,
+    menu.addAction(QIcon::fromTheme(S("document-save")), tr("Back up"), this, [this, path] { backupVolumes({path}); });
+    menu.addAction(QIcon::fromTheme(S("edit-clear-history"), QIcon::fromTheme(S("edit-delete"))), tr("Clean up old backups"), this,
                    [this, path] { pruneVolumes({path}); });
-    menu.addAction(QIcon::fromTheme(S("document-revert")), tr("恢复…"), this, [this, path] { restoreVolume(path); });
+    menu.addAction(QIcon::fromTheme(S("document-revert")), tr("Restore…"), this, [this, path] { restoreVolume(path); });
     menu.exec(ui->backupTree->viewport()->mapToGlobal(pos));
 }
 
@@ -835,7 +835,7 @@ void MainWindow::openForm(const QJsonValue &kind, const QString &forPath)
                    [this, path](const QJsonValue &ok, const QString &err) {
                        QApplication::restoreOverrideCursor();
                        if (!err.isEmpty())
-                           return showError(tr("无法执行"), err);
+                           return showError(tr("Not possible"), err);
                        auto *dialog = new FormDialog(ok.toObject(), visiblePcrs(), this);
                        dialog->setAttribute(Qt::WA_DeleteOnClose);
                        connect(dialog, &FormDialog::submitRequested, this, [this, dialog, path] { submitForm(dialog, path); });
@@ -883,19 +883,19 @@ void MainWindow::submitForm(FormDialog *dialog, const QString &path)
                            // success needs no dialog: the state shows it
                            log(str(reply, "log"));
                            if (!reply.value(S("ok")).toBool())
-                               QMessageBox::warning(this, tr("解锁"), str(reply, "text"));
+                               QMessageBox::warning(this, tr("Unlock"), str(reply, "text"));
                            else
                                statusBar()->showMessage(str(reply, "text"), 4000);
                            refreshAll();
                        } else if (kind == QLatin1String("message")) {
                            const QString text = str(reply, "text");
                            if (reply.value(S("ok")).toBool())
-                               QMessageBox::information(this, tr("验证"), text);
+                               QMessageBox::information(this, tr("Verify"), text);
                            else
-                               QMessageBox::warning(this, tr("验证"), text);
+                               QMessageBox::warning(this, tr("Verify"), text);
                            log(S("Verify: ") + str(reply, "log"));
                        } else {
-                           statusBar()->showMessage(tr("备份位置已保存"), 4000);
+                           statusBar()->showMessage(tr("Backup location saved"), 4000);
                            refreshAll();
                        }
                    });
@@ -914,7 +914,7 @@ void MainWindow::confirm(const QJsonArray &plans)
 
 void MainWindow::execute(const QJsonArray &ids, const QString &confirmText)
 {
-    m_progress = new ProgressDialog(tr("正在执行…（如有需要请触摸安全密钥）"), this);
+    m_progress = new ProgressDialog(tr("Running… (touch the security key if asked)"), this);
     m_progress->setAttribute(Qt::WA_DeleteOnClose);
     m_progress->show();
     m_helper->call(S("execute"), QJsonObject{{S("plans"), ids}, {S("confirm"), confirmText}},
@@ -923,7 +923,7 @@ void MainWindow::execute(const QJsonArray &ids, const QString &confirmText)
                            m_progress->done(QDialog::Accepted);
                        if (!err.isEmpty()) {
                            log(S("Execution failed: ") + err);
-                           return showError(tr("执行失败"), err);
+                           return showError(tr("Execution failed"), err);
                        }
                        const QJsonArray reports = ok.toArray();
                        log(reportsLog(reports));
@@ -975,7 +975,7 @@ void MainWindow::pruneVolumes(const QStringList &volumes)
         paths.append(p);
     m_helper->call(S("plan_prunes"), QJsonObject{{S("paths"), paths}}, [this](const QJsonValue &ok, const QString &err) {
         if (!err.isEmpty())
-            return showError(tr("清理"), err);
+            return showError(tr("Clean up"), err);
         confirm(ok.toArray());
     });
 }
@@ -989,7 +989,7 @@ void MainWindow::backupVolumes(const QStringList &volumes)
         paths.append(p);
     m_helper->call(S("plan_backups"), QJsonObject{{S("paths"), paths}}, [this](const QJsonValue &ok, const QString &err) {
         if (!err.isEmpty())
-            return showError(tr("备份"), err);
+            return showError(tr("Back up"), err);
         confirm(ok.toArray());
     });
 }
@@ -1009,14 +1009,14 @@ void MainWindow::restoreVolume(const QString &path)
     auto *column = new QVBoxLayout(box);
     column->setContentsMargins(0, 0, 0, 0);
     auto *source = new QComboBox;
-    source->addItem(tr("恢复本程序的备份文件：%1").arg(latest.isEmpty() ? tr("未找到备份") : QFileInfo(latest).fileName()));
-    source->addItem(tr("指定要恢复的备份文件"));
+    source->addItem(tr("Restore this program's backup: %1").arg(latest.isEmpty() ? tr("no backup found") : QFileInfo(latest).fileName()));
+    source->addItem(tr("Choose a backup file to restore"));
     column->addWidget(source);
     auto *fileRow = new QWidget;
     auto *row = new QHBoxLayout(fileRow);
     row->setContentsMargins(0, 0, 0, 0);
     auto *file = new QLineEdit;
-    auto *browse = new QPushButton(QIcon::fromTheme(S("document-open")), tr("浏览…"));
+    auto *browse = new QPushButton(QIcon::fromTheme(S("document-open")), tr("Browse…"));
     row->addWidget(file, 1);
     row->addWidget(browse);
     fileRow->hide();
@@ -1028,7 +1028,7 @@ void MainWindow::restoreVolume(const QString &path)
         const bool ours = source->currentIndex() == 0;
         const QString f = ours ? latest : file->text().trimmed();
         if (f.isEmpty())
-            return d->setMessage(ours ? tr("没有找到本程序为这个卷保存的备份。") : tr("请选择备份文件。"));
+            return d->setMessage(ours ? tr("This program has saved no backup of this volume.") : tr("Choose a backup file."));
         const QJsonObject request{{S("RestoreHeader"), QJsonObject{{S("file"), f}}}};
         m_helper->call(S("plan"), QJsonObject{{S("path"), path}, {S("request"), request}},
                        [d](const QJsonValue &ok, const QString &err) {
@@ -1048,7 +1048,7 @@ void MainWindow::restoreVolume(const QString &path)
     connect(file, &QLineEdit::editingFinished, dialog, replan);
     connect(browse, &QPushButton::clicked, dialog, [this, dialog, file, latest, replan] {
         const QString start = file->text().isEmpty() ? QFileInfo(latest).path() : file->text();
-        const QString f = QFileDialog::getOpenFileName(dialog, tr("备份文件"), start);
+        const QString f = QFileDialog::getOpenFileName(dialog, tr("Backup file"), start);
         if (f.isEmpty())
             return;
         file->setText(f);
@@ -1072,8 +1072,8 @@ void MainWindow::saveBackupDir()
     m_helper->call(S("set_backup_dir"), QJsonObject{{S("dir"), dir.isEmpty() ? QJsonValue() : QJsonValue(dir)}},
                    [this, dir](const QJsonValue &, const QString &err) {
                        if (!err.isEmpty())
-                           return showError(tr("备份位置"), err);
-                       statusBar()->showMessage(tr("备份位置已保存"), 4000);
+                           return showError(tr("Backup location"), err);
+                       statusBar()->showMessage(tr("Backup location saved"), 4000);
                        log(S("Backup location: ") + (dir.isEmpty() ? S("default") : dir));
                        refreshAll();
                    });
@@ -1084,28 +1084,28 @@ void MainWindow::openBackupDir()
     const QString dir = ui->backupDirEdit->text().trimmed().isEmpty() ? ui->backupDirEdit->placeholderText()
                                                                       : ui->backupDirEdit->text().trimmed();
     if (!QFileInfo(dir).isDir()) {
-        statusBar()->showMessage(tr("文件夹不存在：%1").arg(dir), 6000);
+        statusBar()->showMessage(tr("The folder does not exist: %1").arg(dir), 6000);
         return;
     }
     if (!QDesktopServices::openUrl(QUrl::fromLocalFile(dir)))
-        statusBar()->showMessage(tr("无法打开 %1").arg(dir), 6000);
+        statusBar()->showMessage(tr("Cannot open %1").arg(dir), 6000);
 }
 
 void MainWindow::exportLog()
 {
     const QString name = QDir::home().filePath(
         S("luks-assistant-%1.txt").arg(QDateTime::currentDateTime().toString(S("yyyyMMdd-HHmmss"))));
-    const QString path = QFileDialog::getSaveFileName(this, tr("导出日志"), name, tr("文本文件 (*.txt)"));
+    const QString path = QFileDialog::getSaveFileName(this, tr("Export logs"), name, tr("Text files (*.txt)"));
     if (path.isEmpty())
         return;
     QFile f(path);
     if (!f.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
-        showError(tr("导出日志"), f.errorString());
+        showError(tr("Export logs"), f.errorString());
         return;
     }
     f.write(ui->logView->toPlainText().toUtf8());
     f.write("\n");
-    statusBar()->showMessage(tr("已导出到 %1").arg(path), 6000);
+    statusBar()->showMessage(tr("Exported to %1").arg(path), 6000);
 }
 
 void MainWindow::changeLanguage(int index)
@@ -1124,5 +1124,5 @@ void MainWindow::changeTheme(int index)
     AppSettings::setTheme(static_cast<AppSettings::Theme>(index));
     AppSettings::applyStyle();
     // the platform theme (colours, fonts, dialogs) is chosen at start-up
-    statusBar()->showMessage(tr("重新启动 Luks Assistant 后完全生效"), 8000);
+    statusBar()->showMessage(tr("Takes full effect after restarting Luks Assistant"), 8000);
 }

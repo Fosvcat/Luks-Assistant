@@ -37,7 +37,9 @@ impl Config {
 pub fn set_backup_dir(paths: &mut crate::ctx::Paths, dir: Option<PathBuf>) -> Result<()> {
     if let Some(d) = &dir {
         if !d.is_absolute() {
-            return Err(crate::Error::Invalid(tx!("备份目录必须是绝对路径")));
+            return Err(crate::Error::Invalid(tx!(
+                "The backup directory must be an absolute path"
+            )));
         }
     }
     let mut cfg = Config::load(&paths.etc_dir);

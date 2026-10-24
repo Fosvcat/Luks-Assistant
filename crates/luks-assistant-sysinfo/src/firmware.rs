@@ -26,11 +26,11 @@ impl Firmware {
 
     pub fn secure_boot_label(&self) -> &'static str {
         match (self.uefi, self.secure_boot, self.setup_mode) {
-            (false, _, _) => t!("传统 BIOS"),
-            (true, Some(true), _) => t!("已开启"),
-            (true, Some(false), Some(true)) => t!("未开启（Setup Mode）"),
-            (true, Some(false), _) => t!("未开启"),
-            (true, None, _) => t!("未知"),
+            (false, _, _) => t!("Legacy BIOS"),
+            (true, Some(true), _) => t!("enabled"),
+            (true, Some(false), Some(true)) => t!("disabled (Setup Mode)"),
+            (true, Some(false), _) => t!("disabled"),
+            (true, None, _) => t!("unknown"),
         }
     }
 }

@@ -19,33 +19,15 @@
 
 namespace {
 
-/// Terminal messages before Qt starts: Chinese under a zh_* locale (as the
-/// TUI decides), English otherwise.
-const char *bilingual(const char *zh, const char *en)
+QByteArray usage()
 {
-    for (const char *v : {"LUKS_ASSISTANT_LANG", "LC_ALL", "LC_MESSAGES", "LANG"}) {
-        const char *s = std::getenv(v);
-        if (s && *s)
-            return std::strncmp(s, "zh", 2) == 0 ? zh : en;
-    }
-    return en;
-}
-
-const char *usage()
-{
-    return bilingual("用法: Luks-Assistant-GUI [--gui | --tui] [设备或镜像文件...]\n"
-                     "\n"
-                     "  桌面环境中启动时打开图形界面；在终端中或没有图形环境时打开终端界面。\n"
-                     "\n"
-                     "  --gui        强制图形界面（通过 pkexec 获取管理员权限）\n"
-                     "  --tui        强制终端界面（Luks-Assistant-TUI）\n",
-                     "Usage: Luks-Assistant-GUI [--gui | --tui] [device or image file...]\n"
-                     "\n"
-                     "  Opens the graphical interface in a desktop session, the terminal\n"
-                     "  interface from a terminal or without a display.\n"
-                     "\n"
-                     "  --gui        force the graphical interface (administrator rights via pkexec)\n"
-                     "  --tui        force the terminal interface (Luks-Assistant-TUI)\n");
+    return AppSettings::cliTr("Usage: Luks-Assistant-GUI [--gui | --tui] [device or image file...]\n"
+                              "\n"
+                              "  Opens the graphical interface in a desktop session, the terminal\n"
+                              "  interface from a terminal or without a display.\n"
+                              "\n"
+                              "  --gui        force the graphical interface (administrator rights via pkexec)\n"
+                              "  --tui        force the terminal interface (Luks-Assistant-TUI)\n");
 }
 
 bool hasDisplay()
@@ -80,7 +62,7 @@ std::string selfDir()
     if (access(sibling.c_str(), X_OK) == 0)
         execv(sibling.c_str(), argv.data());
     execvp(name.c_str(), argv.data());
-    std::fprintf(stderr, bilingual("无法启动 Luks-Assistant-TUI: %s\n", "Cannot start Luks-Assistant-TUI: %s\n"),
+    std::fprintf(stderr, AppSettings::cliTr("Cannot start Luks-Assistant-TUI: %s\n").constData(),
                  std::strerror(errno));
     std::exit(127);
 }
@@ -105,7 +87,7 @@ int main(int argc, char *argv[])
     }
     for (const std::string &a : rest) {
         if (!forceTui && (a == "-h" || a == "--help")) {
-            std::fputs(usage(), stdout);
+            std::fputs(usage().constData(), stdout);
             return 0;
         }
         if (a == "-V" || a == "--version") {
@@ -119,8 +101,7 @@ int main(int argc, char *argv[])
     if (forceTui || (!forceGui && (terminal || !hasDisplay())))
         runTui(rest);
     if (!hasDisplay()) {
-        std::fputs(bilingual("没有图形环境（WAYLAND_DISPLAY / DISPLAY 未设置），请使用 Luks-Assistant-TUI\n",
-                             "No display (WAYLAND_DISPLAY / DISPLAY not set); use Luks-Assistant-TUI\n"),
+        std::fputs(AppSettings::cliTr("No display (WAYLAND_DISPLAY / DISPLAY not set); use Luks-Assistant-TUI\n").constData(),
                    stderr);
         return 1;
     }

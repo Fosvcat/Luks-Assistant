@@ -1,0 +1,2805 @@
+# Chinese (Simplified) translation of Luks Assistant.
+msgid ""
+msgstr ""
+"Project-Id-Version: Luks Assistant\n"
+"Last-Translator: Fosvcat\n"
+"Language-Team: Chinese (Simplified)\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: crates/luks-assistant-core/src/config.rs:41
+msgid "The backup directory must be an absolute path"
+msgstr "备份目录必须是绝对路径"
+
+#: crates/luks-assistant-core/src/device.rs:112
+msgid "{} unlocked → {}"
+msgstr "{} 已解锁 → {}"
+
+#: crates/luks-assistant-core/src/device.rs:113
+msgid "{} locked"
+msgstr "{} 未解锁"
+
+#: crates/luks-assistant-core/src/device.rs:116
+msgid "Mapping"
+msgstr "解密映射"
+
+#: crates/luks-assistant-core/src/error.rs:27
+msgid "Cannot start {}: {}"
+msgstr "无法启动 {}: {}"
+
+#: crates/luks-assistant-core/src/error.rs:33
+msgid "{} failed (exit code {}): {}"
+msgstr "{} 失败 (退出码 {}): {}"
+
+#: crates/luks-assistant-core/src/error.rs:34
+msgid "Parse error: {}"
+msgstr "解析失败: {}"
+
+#: crates/luks-assistant-core/src/error.rs:35
+msgid "Blocked: {}"
+msgstr "已阻止：{}"
+
+#: crates/luks-assistant-core/src/error.rs:36
+msgid "Not supported: {}"
+msgstr "不支持: {}"
+
+#: crates/luks-assistant-core/src/exec.rs:129
+msgid "{}=<hidden> "
+msgstr "{}=<已隐藏> "
+
+#: crates/luks-assistant-core/src/exec.rs:169
+msgid "(no output)"
+msgstr "(无输出)"
+
+#: crates/luks-assistant-core/src/exec.rs:202
+msgid "Key data too large"
+msgstr "密钥数据过大"
+
+#: crates/luks-assistant-core/src/exec.rs:440
+msgid "{} timed out"
+msgstr "{} 超时"
+
+#: crates/luks-assistant-core/src/exec.rs:445
+msgid "Input needed: {}"
+msgstr "需要输入：{}"
+
+#: crates/luks-assistant-core/src/forms.rs:257
+#: crates/luks-assistant-core/src/forms.rs:510
+msgid "Authenticate with"
+msgstr "验证方式"
+
+#: crates/luks-assistant-core/src/forms.rs:258
+#: crates/luks-assistant-core/src/forms.rs:261
+#: crates/luks-assistant-core/src/forms.rs:511
+#: crates/luks-assistant-core/src/notes.rs:46
+#: crates/luks-assistant-core/src/notes.rs:53
+#: crates/luks-assistant-core/src/ops.rs:480
+#: crates/luks-assistant-core/src/ops.rs:612
+#: crates/luks-assistant-core/src/slots.rs:42
+msgid "Password"
+msgstr "密码"
+
+#: crates/luks-assistant-core/src/forms.rs:258
+#: crates/luks-assistant-core/src/forms.rs:264
+#: crates/luks-assistant-core/src/forms.rs:326
+#: crates/luks-assistant-core/src/forms.rs:502
+#: crates/luks-assistant-core/src/forms.rs:512
+#: crates/luks-assistant-core/src/notes.rs:47
+#: crates/luks-assistant-core/src/notes.rs:54
+#: crates/luks-assistant-core/src/slots.rs:43
+msgid "Key file"
+msgstr "密钥文件"
+
+#: crates/luks-assistant-core/src/forms.rs:271
+msgid "Note"
+msgstr "备注"
+
+#: crates/luks-assistant-core/src/forms.rs:271
+msgid "Up to 64 characters"
+msgstr "最多 64 字"
+
+#: crates/luks-assistant-core/src/forms.rs:274
+msgid "Store note"
+msgstr "备注位置"
+
+#: crates/luks-assistant-core/src/forms.rs:285
+msgid "pbkdf2 (GRUB compatible)"
+msgstr "pbkdf2（兼容 GRUB）"
+
+#: crates/luks-assistant-core/src/forms.rs:298
+msgid "Password or recovery key of any slot"
+msgstr "任一槽位的密码或恢复密钥"
+
+#: crates/luks-assistant-core/src/forms.rs:315
+#: crates/luks-assistant-core/src/forms.rs:857
+msgid "Add password"
+msgstr "添加密码"
+
+#: crates/luks-assistant-core/src/forms.rs:317
+#: crates/luks-assistant-core/src/forms.rs:456
+#: crates/luks-assistant-core/src/ops.rs:747
+#: crates/luks-assistant-core/src/ops.rs:841
+msgid "New password"
+msgstr "新密码"
+
+#: crates/luks-assistant-core/src/forms.rs:318
+#: crates/luks-assistant-core/src/forms.rs:457
+msgid "Confirm new password"
+msgstr "确认新密码"
+
+#: crates/luks-assistant-core/src/forms.rs:319
+#: crates/luks-assistant-core/src/forms.rs:327
+#: crates/luks-assistant-core/src/forms.rs:341
+#: gui/src/mainwindow.cpp:632
+#: gui/src/mainwindow.ui
+msgid "Slot"
+msgstr "槽位"
+
+#: crates/luks-assistant-core/src/forms.rs:319
+#: crates/luks-assistant-core/src/forms.rs:327
+#: crates/luks-assistant-core/src/forms.rs:341
+msgid "Empty: chosen automatically"
+msgstr "留空自动选择"
+
+#: crates/luks-assistant-core/src/forms.rs:324
+#: crates/luks-assistant-core/src/forms.rs:858
+msgid "Add key file"
+msgstr "添加密钥文件"
+
+#: crates/luks-assistant-core/src/forms.rs:332
+#: crates/luks-assistant-core/src/forms.rs:860
+msgid "Generate key file"
+msgstr "生成密钥文件"
+
+#: crates/luks-assistant-core/src/forms.rs:337
+msgid "Save to"
+msgstr "保存到"
+
+#: crates/luks-assistant-core/src/forms.rs:340
+msgid "Size (bytes)"
+msgstr "大小（字节）"
+
+#: crates/luks-assistant-core/src/forms.rs:351
+#: crates/luks-assistant-core/src/forms.rs:832
+#: crates/luks-assistant-core/src/ops.rs:871
+msgid "Regenerate recovery key"
+msgstr "重新生成恢复密钥"
+
+#: crates/luks-assistant-core/src/forms.rs:353
+#: crates/luks-assistant-core/src/forms.rs:866
+#: crates/luks-assistant-core/src/ops.rs:873
+msgid "Generate recovery key"
+msgstr "生成恢复密钥"
+
+#: crates/luks-assistant-core/src/forms.rs:361
+#: crates/luks-assistant-core/src/forms.rs:392
+#: crates/luks-assistant-core/src/forms.rs:435
+msgid "Needs systemd-cryptenroll"
+msgstr "需要 systemd-cryptenroll"
+
+#: crates/luks-assistant-core/src/forms.rs:372
+#: crates/luks-assistant-core/src/forms.rs:407
+msgid "Require PIN"
+msgstr "需要 PIN"
+
+#: crates/luks-assistant-core/src/forms.rs:376
+msgid "Confirm PIN"
+msgstr "确认 PIN"
+
+#: crates/luks-assistant-core/src/forms.rs:382
+#: crates/luks-assistant-core/src/forms.rs:836
+msgid "Re-enroll TPM2"
+msgstr "重新录入 TPM2"
+
+#: crates/luks-assistant-core/src/forms.rs:384
+#: crates/luks-assistant-core/src/forms.rs:869
+msgid "Enroll TPM2"
+msgstr "录入 TPM2"
+
+#: crates/luks-assistant-core/src/forms.rs:400
+msgid "Security key PIN"
+msgstr "安全密钥 PIN"
+
+#: crates/luks-assistant-core/src/forms.rs:401
+msgid "Leave empty if the key has no PIN"
+msgstr "密钥未设置 PIN 时留空"
+
+#: crates/luks-assistant-core/src/forms.rs:412
+msgid "Require touch"
+msgstr "需要触摸"
+
+#: crates/luks-assistant-core/src/forms.rs:417
+msgid "Require user verification"
+msgstr "需要用户验证"
+
+#: crates/luks-assistant-core/src/forms.rs:425
+#: crates/luks-assistant-core/src/forms.rs:840
+msgid "Re-enroll FIDO2"
+msgstr "重新录入 FIDO2"
+
+#: crates/luks-assistant-core/src/forms.rs:427
+#: crates/luks-assistant-core/src/forms.rs:870
+msgid "Enroll FIDO2"
+msgstr "录入 FIDO2"
+
+#: crates/luks-assistant-core/src/forms.rs:439
+msgid "Smart card PIN"
+msgstr "智能卡 PIN"
+
+#: crates/luks-assistant-core/src/forms.rs:441
+msgid "Token URI"
+msgstr "令牌 URI"
+
+#: crates/luks-assistant-core/src/forms.rs:446
+#: crates/luks-assistant-core/src/forms.rs:844
+msgid "Re-enroll PKCS#11"
+msgstr "重新录入 PKCS#11"
+
+#: crates/luks-assistant-core/src/forms.rs:448
+#: crates/luks-assistant-core/src/forms.rs:872
+msgid "Enroll PKCS#11"
+msgstr "录入 PKCS#11"
+
+#: crates/luks-assistant-core/src/forms.rs:454
+#: crates/luks-assistant-core/src/ops.rs:831
+msgid "Change the password of slot {}"
+msgstr "修改槽位 {} 的密码"
+
+#: crates/luks-assistant-core/src/forms.rs:455
+msgid "Current password of this slot"
+msgstr "该槽位当前的密码"
+
+#: crates/luks-assistant-core/src/forms.rs:462
+#: crates/luks-assistant-core/src/ops.rs:1303
+msgid "Convert slot {} to Argon2id"
+msgstr "把槽位 {} 转换为 Argon2id"
+
+#: crates/luks-assistant-core/src/forms.rs:463
+#: crates/luks-assistant-core/src/ops.rs:1321
+msgid "Password of this slot"
+msgstr "该槽位的密码"
+
+#: crates/luks-assistant-core/src/forms.rs:467
+msgid "Note of slot {}"
+msgstr "槽位 {} 的备注"
+
+#: crates/luks-assistant-core/src/forms.rs:480
+msgid "Priority of slot {}"
+msgstr "槽位 {} 的优先级"
+
+#: crates/luks-assistant-core/src/forms.rs:483
+#: crates/luks-assistant-core/src/view.rs:391
+#: crates/luks-assistant-tui/src/ui.rs:324
+msgid "Priority"
+msgstr "优先级"
+
+#: crates/luks-assistant-core/src/forms.rs:484
+#: crates/luks-assistant-core/src/header.rs:41
+#: crates/luks-assistant-core/src/header.rs:49
+msgid "Ignore"
+msgstr "忽略"
+
+#: crates/luks-assistant-core/src/forms.rs:484
+#: crates/luks-assistant-core/src/header.rs:42
+#: crates/luks-assistant-core/src/header.rs:50
+msgid "Normal"
+msgstr "普通"
+
+#: crates/luks-assistant-core/src/forms.rs:484
+#: crates/luks-assistant-core/src/header.rs:43
+#: crates/luks-assistant-core/src/header.rs:51
+msgid "Prefer"
+msgstr "优先"
+
+#: crates/luks-assistant-core/src/forms.rs:492
+msgid "Delete slot {}"
+msgstr "删除槽位 {}"
+
+#: crates/luks-assistant-core/src/forms.rs:493
+msgid "Password or recovery key of another slot"
+msgstr "其它槽位的密码或恢复密钥"
+
+#: crates/luks-assistant-core/src/forms.rs:499
+#: crates/luks-assistant-core/src/ops.rs:600
+msgid "Already unlocked ({})"
+msgstr "已经解锁（{}）"
+
+#: crates/luks-assistant-core/src/forms.rs:502
+msgid "Password / recovery key"
+msgstr "密码 / 恢复密钥"
+
+#: crates/luks-assistant-core/src/forms.rs:516
+msgid "Token PIN"
+msgstr "令牌 PIN"
+
+#: crates/luks-assistant-core/src/forms.rs:523
+#: crates/luks-assistant-tui/src/app.rs:794
+#: crates/luks-assistant-tui/src/ui.rs:236
+#: gui/src/formdialog.cpp:181
+#: gui/src/mainwindow.cpp:664
+#: gui/src/mainwindow.cpp:886
+#: gui/src/mainwindow.ui
+msgid "Unlock"
+msgstr "解锁"
+
+#: crates/luks-assistant-core/src/forms.rs:525
+#: crates/luks-assistant-tui/src/app.rs:636
+#: crates/luks-assistant-tui/src/app.rs:638
+#: crates/luks-assistant-tui/src/app.rs:644
+#: crates/luks-assistant-tui/src/app.rs:794
+#: crates/luks-assistant-tui/src/app.rs:816
+#: crates/luks-assistant-tui/src/ui.rs:244
+#: gui/src/formdialog.cpp:180
+#: gui/src/mainwindow.cpp:893
+#: gui/src/mainwindow.cpp:895
+#: gui/src/mainwindow.ui
+msgid "Verify"
+msgstr "验证"
+
+#: crates/luks-assistant-core/src/forms.rs:533
+#: crates/luks-assistant-core/src/ops.rs:1241
+msgid "The volume is locked; the TRIM flag cannot be written"
+msgstr "卷未解锁，无法写入 TRIM 标志"
+
+#: crates/luks-assistant-core/src/forms.rs:539
+msgid "Current: {}"
+msgstr "当前：{}"
+
+#: crates/luks-assistant-core/src/forms.rs:539
+msgid "on"
+msgstr "已开启"
+
+#: crates/luks-assistant-core/src/forms.rs:539
+msgid "off"
+msgstr "已关闭"
+
+#: crates/luks-assistant-core/src/forms.rs:544
+msgid "Disable TRIM pass-through"
+msgstr "关闭 TRIM 穿透"
+
+#: crates/luks-assistant-core/src/forms.rs:546
+msgid "Enable TRIM pass-through"
+msgstr "开启 TRIM 穿透"
+
+#: crates/luks-assistant-core/src/forms.rs:556
+msgid "Restore this program's backup: {}"
+msgstr "恢复本程序的备份文件：{}"
+
+#: crates/luks-assistant-core/src/forms.rs:560
+#: gui/src/mainwindow.cpp:1012
+msgid "no backup found"
+msgstr "未找到备份"
+
+#: crates/luks-assistant-core/src/forms.rs:563
+#: crates/luks-assistant-core/src/ops.rs:1431
+msgid "Restore header"
+msgstr "恢复头部"
+
+#: crates/luks-assistant-core/src/forms.rs:567
+msgid "Source"
+msgstr "来源"
+
+#: crates/luks-assistant-core/src/forms.rs:568
+#: gui/src/mainwindow.cpp:1013
+msgid "Choose a backup file to restore"
+msgstr "指定要恢复的备份文件"
+
+#: crates/luks-assistant-core/src/forms.rs:578
+#: gui/src/mainwindow.cpp:1051
+msgid "Backup file"
+msgstr "备份文件"
+
+#: crates/luks-assistant-core/src/forms.rs:583
+#: gui/src/mainwindow.cpp:324
+#: gui/src/mainwindow.cpp:1075
+#: gui/src/mainwindow.ui
+msgid "Backup location"
+msgstr "备份位置"
+
+#: crates/luks-assistant-core/src/forms.rs:587
+msgid "Directory"
+msgstr "目录"
+
+#: crates/luks-assistant-core/src/forms.rs:590
+msgid "Empty = {}"
+msgstr "留空 = {}"
+
+#: crates/luks-assistant-core/src/forms.rs:609
+#: crates/luks-assistant-core/src/forms.rs:795
+msgid "Choose the key file"
+msgstr "请选择密钥文件"
+
+#: crates/luks-assistant-core/src/forms.rs:615
+#: crates/luks-assistant-core/src/forms.rs:802
+msgid "Enter the password"
+msgstr "请输入密码"
+
+#: crates/luks-assistant-core/src/forms.rs:635
+msgid "The two entries do not match"
+msgstr "两次输入不一致"
+
+#: crates/luks-assistant-core/src/forms.rs:648
+msgid "The slot must be a number"
+msgstr "槽位必须是数字"
+
+#: crates/luks-assistant-core/src/forms.rs:688
+msgid "The size must be a number"
+msgstr "大小必须是数字"
+
+#: crates/luks-assistant-core/src/forms.rs:762
+#: gui/src/mainwindow.cpp:1031
+msgid "This program has saved no backup of this volume."
+msgstr "没有找到本程序为这个卷保存的备份。"
+
+#: crates/luks-assistant-core/src/forms.rs:764
+#: gui/src/mainwindow.cpp:1031
+msgid "Choose a backup file."
+msgstr "请选择备份文件。"
+
+#: crates/luks-assistant-core/src/forms.rs:826
+msgid "Change password"
+msgstr "修改密码"
+
+#: crates/luks-assistant-core/src/forms.rs:828
+msgid "Convert to Argon2id"
+msgstr "转换为 Argon2id"
+
+#: crates/luks-assistant-core/src/forms.rs:849
+msgid "Edit note"
+msgstr "编辑备注"
+
+#: crates/luks-assistant-core/src/forms.rs:850
+msgid "Set priority"
+msgstr "设置优先级"
+
+#: crates/luks-assistant-core/src/forms.rs:851
+msgid "Delete slot"
+msgstr "删除槽位"
+
+#: crates/luks-assistant-core/src/guard.rs:34
+msgid "Slot numbers must be between 0 and {}"
+msgstr "槽位编号必须在 0-{} 之间"
+
+#: crates/luks-assistant-core/src/guard.rs:38
+msgid "Slot {} is in use"
+msgstr "槽位 {} 已被占用"
+
+#: crates/luks-assistant-core/src/guard.rs:43
+msgid "All 32 slots are in use"
+msgstr "32 个槽位已满"
+
+#: crates/luks-assistant-core/src/guard.rs:56
+msgid "The new password cannot be empty"
+msgstr "新密码不能为空"
+
+#: crates/luks-assistant-core/src/guard.rs:60
+msgid "Passwords cannot be longer than {} bytes"
+msgstr "密码不能超过 {} 字节"
+
+#: crates/luks-assistant-core/src/guard.rs:65
+msgid "Passwords must be valid UTF-8 text"
+msgstr "密码必须是有效的 UTF-8 文本"
+
+#: crates/luks-assistant-core/src/guard.rs:69
+msgid "Passwords cannot contain line breaks or control characters"
+msgstr "密码不能包含换行或控制字符"
+
+#: crates/luks-assistant-core/src/guard.rs:74
+msgid "The password is shorter than 8 characters"
+msgstr "密码少于 8 个字符"
+
+#: crates/luks-assistant-core/src/guard.rs:78
+msgid "The password has non-ASCII characters and may be impossible to type at boot"
+msgstr "密码含非 ASCII 字符，开机时可能无法输入"
+
+#: crates/luks-assistant-core/src/guard.rs:82
+msgid "The password starts or ends with a space"
+msgstr "密码首尾有空格"
+
+#: crates/luks-assistant-core/src/guard.rs:91
+#: crates/luks-assistant-core/src/guard.rs:151
+#: crates/luks-assistant-core/src/guard.rs:164
+#: crates/luks-assistant-core/src/ops.rs:823
+#: crates/luks-assistant-core/src/ops.rs:975
+#: crates/luks-assistant-core/src/ops.rs:1287
+msgid "Slot {} is empty"
+msgstr "槽位 {} 是空的"
+
+#: crates/luks-assistant-core/src/guard.rs:94
+msgid "This slot is being used for re-encryption"
+msgstr "该槽位正用于重加密"
+
+#: crates/luks-assistant-core/src/guard.rs:97
+msgid "This is the last slot; it cannot be deleted"
+msgstr "这是最后一个槽位，不能删除"
+
+#: crates/luks-assistant-core/src/guard.rs:107
+msgid "This is the last password/key file/recovery key slot; it cannot be deleted"
+msgstr "这是最后一个密码/密钥文件/恢复密钥槽位，不能删除"
+
+#: crates/luks-assistant-core/src/guard.rs:113
+msgid "The credential used is the slot being deleted; use the credential of another slot"
+msgstr "验证用的凭据就是要删除的槽位，请用其它槽位的凭据"
+
+#: crates/luks-assistant-core/src/guard.rs:118
+msgid "This slot is managed by another tool ({})"
+msgstr "该槽位由其它工具管理（{}）"
+
+#: crates/luks-assistant-core/src/guard.rs:128
+msgid "Token {} is bound to several slots; only slot {} is removed"
+msgstr "令牌 {} 关联多个槽位，只删除槽位 {}"
+
+#: crates/luks-assistant-core/src/guard.rs:134
+msgid "This device holds the root file system"
+msgstr "这是根分区所在设备"
+
+#: crates/luks-assistant-core/src/guard.rs:142
+msgid "Only one password/recovery key slot will be left"
+msgstr "删除后只剩一个密码/恢复密钥槽位"
+
+#: crates/luks-assistant-core/src/guard.rs:153
+msgid "Slot {} is “{}”; only {} slots can be replaced"
+msgstr "槽位 {} 是“{}”，只能替换{}槽位"
+
+#: crates/luks-assistant-core/src/guard.rs:158
+msgid "Invalid slot {}"
+msgstr "无效的槽位 {}"
+
+#: crates/luks-assistant-core/src/guard.rs:178
+msgid "This is the last password slot that is not ignored; the password would no longer unlock at boot"
+msgstr "这是最后一个未被忽略的密码槽位，开机时将无法用密码解锁"
+
+#: crates/luks-assistant-core/src/guard.rs:181
+msgid "The slot will no longer be tried at boot"
+msgstr "开机时将不再尝试该槽位"
+
+#: crates/luks-assistant-core/src/guard.rs:190
+msgid "There is no password/recovery key slot at the moment"
+msgstr "当前没有任何密码/恢复密钥槽位"
+
+#: crates/luks-assistant-core/src/header.rs:72
+msgid "pbkdf2-{} {} iterations"
+msgstr "pbkdf2-{} {} 次迭代"
+
+#: crates/luks-assistant-core/src/header.rs:205
+msgid "Version/UUID missing from luksDump output"
+msgstr "luksDump 输出中缺少 Version/UUID"
+
+#: crates/luks-assistant-core/src/header.rs:253
+msgid "JSON metadata: {}"
+msgstr "JSON 元数据: {}"
+
+#: crates/luks-assistant-core/src/header.rs:400
+msgid "Exporting JSON metadata needs cryptsetup ≥ 2.4"
+msgstr "需要 cryptsetup ≥ 2.4 才能导出 JSON 元数据"
+
+#: crates/luks-assistant-core/src/health.rs:20
+msgid "Critical"
+msgstr "严重"
+
+#: crates/luks-assistant-core/src/health.rs:21
+msgid "Warning"
+msgstr "警告"
+
+#: crates/luks-assistant-core/src/health.rs:22
+msgid "Info"
+msgstr "提示"
+
+#: crates/luks-assistant-core/src/health.rs:53
+msgid "Read-only device"
+msgstr "只读设备"
+
+#: crates/luks-assistant-core/src/health.rs:60
+msgid "No password/recovery key slot"
+msgstr "没有任何密码/恢复密钥槽位"
+
+#: crates/luks-assistant-core/src/health.rs:61
+msgid "Only hardware tokens can unlock it; add a password or a recovery key."
+msgstr "只剩硬件令牌可以解锁，请添加密码或恢复密钥。"
+
+#: crates/luks-assistant-core/src/health.rs:67
+msgid "Only one password/recovery key slot"
+msgstr "只有一个密码/恢复密钥槽位"
+
+#: crates/luks-assistant-core/src/health.rs:68
+msgid "Slot {} is the only fallback for unlocking."
+msgstr "槽位 {} 是唯一的备用解锁方式。"
+
+#: crates/luks-assistant-core/src/health.rs:77
+msgid "Orphaned token {} ({})"
+msgstr "孤立令牌 {}（{}）"
+
+#: crates/luks-assistant-core/src/health.rs:78
+msgid "Not bound to any slot (usually left behind by luksKillSlot)."
+msgstr "未关联任何槽位（通常是 luksKillSlot 的遗留）。"
+
+#: crates/luks-assistant-core/src/health.rs:86
+msgid "Token {} is bound to several slots {}"
+msgstr "令牌 {} 关联了多个槽位 {}"
+
+#: crates/luks-assistant-core/src/health.rs:90
+msgid "systemd-cryptenroll --wipe-slot would also wipe the other slots."
+msgstr "systemd-cryptenroll --wipe-slot 会连带擦除其它槽位。"
+
+#: crates/luks-assistant-core/src/health.rs:100
+msgid "Slot {} is bound to several tokens {}"
+msgstr "槽位 {} 关联了多个令牌 {}"
+
+#: crates/luks-assistant-core/src/health.rs:104
+msgid "Usually created by another tool."
+msgstr "通常由其它工具创建。"
+
+#: crates/luks-assistant-core/src/health.rs:115
+msgid "The TPM2 policy of slot {} does not match the current PCRs"
+msgstr "槽位 {} 的 TPM2 策略与当前 PCR 不匹配"
+
+#: crates/luks-assistant-core/src/health.rs:118
+msgid "{}."
+msgstr "{}。"
+
+#: crates/luks-assistant-core/src/health.rs:123
+msgid "Cannot tell the TPM2 state of slot {}"
+msgstr "无法判断槽位 {} 的 TPM2 状态"
+
+#: crates/luks-assistant-core/src/health.rs:134
+msgid "Slot {} uses PBKDF2"
+msgstr "槽位 {} 使用 PBKDF2"
+
+#: crates/luks-assistant-core/src/health.rs:135
+msgid "It can be converted to Argon2id from the slot menu."
+msgstr "可在槽位菜单中转换为 Argon2id。"
+
+#: crates/luks-assistant-core/src/health.rs:144
+msgid "Slot {} is managed by another tool ({})"
+msgstr "槽位 {} 由其它工具管理（{}）"
+
+#: crates/luks-assistant-core/src/health.rs:145
+msgid "Luks Assistant does not change its tokens."
+msgstr "Luks Assistant 不修改其令牌。"
+
+#: crates/luks-assistant-core/src/health.rs:159
+msgid "(local)"
+msgstr "(本机)"
+
+#: crates/luks-assistant-core/src/health.rs:169
+msgid "Stale notes"
+msgstr "存在过期备注"
+
+#: crates/luks-assistant-core/src/health.rs:170
+msgid "Slot {} was removed or rewritten."
+msgstr "槽位 {} 已被删除或改写。"
+
+#: crates/luks-assistant-core/src/health.rs:178
+msgid "Running out of slots"
+msgstr "槽位即将用尽"
+
+#: crates/luks-assistant-core/src/health.rs:179
+msgid "The 32 slots are almost full."
+msgstr "32 个槽位快满了。"
+
+#: crates/luks-assistant-core/src/notes.rs:68
+#: crates/luks-assistant-core/src/notes.rs:75
+msgid "In the header"
+msgstr "存入头部"
+
+#: crates/luks-assistant-core/src/notes.rs:69
+#: crates/luks-assistant-core/src/notes.rs:76
+msgid "On this machine (/etc/)"
+msgstr "存在本机 /etc/"
+
+#: crates/luks-assistant-core/src/notes.rs:212
+msgid "Notes are limited to {} characters"
+msgstr "备注最多 {} 个字符"
+
+#: crates/luks-assistant-core/src/notes.rs:218
+msgid "Notes cannot contain control characters or line breaks"
+msgstr "备注不能包含控制字符或换行"
+
+#: crates/luks-assistant-core/src/notes.rs:250
+msgid "Not enough space in the header JSON area (about {} / {} bytes)"
+msgstr "头部 JSON 区空间不足（约 {} / {} 字节）"
+
+#: crates/luks-assistant-core/src/ops.rs:46
+msgid "systemd < 252 cannot authenticate with a key file; use a password"
+msgstr "systemd < 252 不支持用密钥文件验证，请用密码"
+
+#: crates/luks-assistant-core/src/ops.rs:54
+msgid "Enter an existing password"
+msgstr "请输入现有密码"
+
+#: crates/luks-assistant-core/src/ops.rs:57
+msgid "Key file not found: {}"
+msgstr "密钥文件不存在: {}"
+
+#: crates/luks-assistant-core/src/ops.rs:344
+msgid "Needs systemd-cryptenroll (systemd ≥ 248)"
+msgstr "需要 systemd-cryptenroll (systemd ≥ 248)"
+
+#: crates/luks-assistant-core/src/ops.rs:373
+msgid "Create the backup directory {}"
+msgstr "创建备份目录 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:377
+#: crates/luks-assistant-core/src/ops.rs:675
+#: crates/luks-assistant-core/src/ops.rs:682
+msgid "Back up the LUKS header"
+msgstr "备份 LUKS 头部"
+
+#: crates/luks-assistant-core/src/ops.rs:390
+msgid "Hand the backup over to user {}"
+msgstr "把备份交给用户 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:426
+msgid "Record the slot type in the header ({})"
+msgstr "在头部记录槽位类型（{}）"
+
+#: crates/luks-assistant-core/src/ops.rs:430
+#: crates/luks-assistant-core/src/ops.rs:991
+msgid "Save the note “{}” ({})"
+msgstr "保存备注“{}”（{}）"
+
+#: crates/luks-assistant-core/src/ops.rs:446
+msgid "Check that slot {} exists"
+msgstr "验证槽位 {} 已存在"
+
+#: crates/luks-assistant-core/src/ops.rs:447
+msgid "Check that slot {} was removed"
+msgstr "验证槽位 {} 已删除"
+
+#: crates/luks-assistant-core/src/ops.rs:448
+msgid "Check that the new slot was written"
+msgstr "验证新槽位已写入"
+
+#: crates/luks-assistant-core/src/ops.rs:484
+#: crates/luks-assistant-helper/src/main.rs:173
+#: crates/luks-assistant-tui/src/app.rs:554
+msgid "Wrong password or key file"
+msgstr "密码或密钥文件不正确"
+
+#: crates/luks-assistant-core/src/ops.rs:487
+msgid "cryptsetup did not report which slot unlocked"
+msgstr "cryptsetup 没有报告解锁的槽位"
+
+#: crates/luks-assistant-core/src/ops.rs:628
+msgid "The volume is not unlocked"
+msgstr "卷没有解锁"
+
+#: crates/luks-assistant-core/src/ops.rs:632
+msgid "This volume holds the running system and cannot be locked"
+msgstr "这是当前系统所在的卷，不能锁定"
+
+#: crates/luks-assistant-core/src/ops.rs:642
+msgid "The required device (TPM or security key) was not found"
+msgstr "找不到所需设备（TPM 或安全密钥）"
+
+#: crates/luks-assistant-core/src/ops.rs:666
+msgid "No usable TPM 2.0 device found"
+msgstr "没有检测到可用的 TPM 2.0 设备"
+
+#: crates/luks-assistant-core/src/ops.rs:679
+#: crates/luks-assistant-core/src/ops.rs:767
+msgid "{} already exists"
+msgstr "{} 已存在"
+
+#: crates/luks-assistant-core/src/ops.rs:693
+msgid "The backup plus any old password decrypts the data; keep it safe"
+msgstr "备份文件加上任一旧密码即可解密数据，请妥善保管"
+
+#: crates/luks-assistant-core/src/ops.rs:700
+#: crates/luks-assistant-helper/src/main.rs:332
+#: crates/luks-assistant-tui/src/app.rs:726
+msgid "No old backups to clean up"
+msgstr "没有可清理的旧备份"
+
+#: crates/luks-assistant-core/src/ops.rs:702
+msgid "Clean up old header backups"
+msgstr "清理旧的头部备份"
+
+#: crates/luks-assistant-core/src/ops.rs:710
+msgid "Only the newest backup {} is kept; the other {} will be deleted"
+msgstr "只保留最新的备份 {}，其余 {} 个将被删除"
+
+#: crates/luks-assistant-core/src/ops.rs:716
+msgid "Delete {}"
+msgstr "删除 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:737
+msgid "Add a password in slot {}"
+msgstr "在槽位 {} 添加密码"
+
+#: crates/luks-assistant-core/src/ops.rs:740
+msgid "PBKDF2 resists brute force less well than Argon2id"
+msgstr "PBKDF2 抗暴力破解能力弱于 Argon2id"
+
+#: crates/luks-assistant-core/src/ops.rs:746
+#: crates/luks-assistant-core/src/ops.rs:794
+#: crates/luks-assistant-core/src/ops.rs:1271
+msgid "existing password"
+msgstr "现有密码"
+
+#: crates/luks-assistant-core/src/ops.rs:748
+msgid "Write the new password to slot {}"
+msgstr "写入新密码到槽位 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:763
+msgid "Add a key file in slot {}"
+msgstr "在槽位 {} 添加密钥文件"
+
+#: crates/luks-assistant-core/src/ops.rs:771
+msgid "Key files should be between 16 bytes and 8 MiB"
+msgstr "密钥文件大小应在 16 字节到 8 MiB 之间"
+
+#: crates/luks-assistant-core/src/ops.rs:775
+msgid "A new key file {} will be created (mode 0400). Back it up to a safe place"
+msgstr "将生成新密钥文件 {}（权限 0400）。请把它备份到安全的位置"
+
+#: crates/luks-assistant-core/src/ops.rs:784
+msgid "Create a {}-byte random key file {}"
+msgstr "生成 {} 字节随机密钥文件 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:796
+msgid "Write the key file to slot {}"
+msgstr "把密钥文件写入槽位 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:826
+msgid "Slot {} is “{}”; only password/key file slots can be changed"
+msgstr "槽位 {} 是“{}”，只能修改密码/密钥文件槽位"
+
+#: crates/luks-assistant-core/src/ops.rs:840
+msgid "old password"
+msgstr "旧密码"
+
+#: crates/luks-assistant-core/src/ops.rs:843
+msgid "Replace slot {} with the new password"
+msgstr "用新密码替换槽位 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:847
+msgid "Update the note for the new key material"
+msgstr "更新备注以对应新的密钥材料"
+
+#: crates/luks-assistant-core/src/ops.rs:876
+msgid "The recovery key is shown only once"
+msgstr "恢复密钥只显示一次"
+
+#: crates/luks-assistant-core/src/ops.rs:884
+msgid "Generate and write a recovery key"
+msgstr "生成并写入恢复密钥"
+
+#: crates/luks-assistant-core/src/ops.rs:891
+#: crates/luks-assistant-core/src/ops.rs:943
+#: crates/luks-assistant-core/src/ops.rs:1066
+#: crates/luks-assistant-core/src/ops.rs:1133
+#: crates/luks-assistant-core/src/ops.rs:1180
+msgid "Remove the note of slot {}"
+msgstr "删除槽位 {} 的备注"
+
+#: crates/luks-assistant-core/src/ops.rs:902
+msgid "Delete slot {} ({})"
+msgstr "删除槽位 {}（{}）"
+
+#: crates/luks-assistant-core/src/ops.rs:914
+msgid "Wipe slot {} and its token"
+msgstr "擦除槽位 {} 及其令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:919
+msgid "Wipe slot {}"
+msgstr "擦除槽位 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:929
+msgid "Remove leftover token {} ({})"
+msgstr "删除遗留令牌 {}（{}）"
+
+#: crates/luks-assistant-core/src/ops.rs:954
+msgid "Set the priority of slot {} to “{}”"
+msgstr "把槽位 {} 的优先级设为“{}”"
+
+#: crates/luks-assistant-core/src/ops.rs:959
+msgid "Change the priority"
+msgstr "修改优先级"
+
+#: crates/luks-assistant-core/src/ops.rs:977
+msgid "Edit the note of slot {}"
+msgstr "编辑槽位 {} 的备注"
+
+#: crates/luks-assistant-core/src/ops.rs:985
+msgid "The header is not encrypted; anyone can read the notes"
+msgstr "头部未加密，备注对任何人可见"
+
+#: crates/luks-assistant-core/src/ops.rs:989
+msgid "Remove the note"
+msgstr "删除备注"
+
+#: crates/luks-assistant-core/src/ops.rs:1022
+msgid "PCR numbers must be between 0 and 23"
+msgstr "PCR 编号必须在 0-23 之间"
+
+#: crates/luks-assistant-core/src/ops.rs:1026
+msgid "Re-enroll TPM2 (replacing slot {}, PCR {})"
+msgstr "重新录入 TPM2（替换槽位 {}，PCR {}）"
+
+#: crates/luks-assistant-core/src/ops.rs:1030
+msgid "Enroll TPM2 (PCR {})"
+msgstr "录入 TPM2（PCR {}）"
+
+#: crates/luks-assistant-core/src/ops.rs:1043
+msgid "TPM2 + PIN needs systemd ≥ 251"
+msgstr "TPM2 + PIN 需要 systemd ≥ 251"
+
+#: crates/luks-assistant-core/src/ops.rs:1046
+msgid "The PIN cannot be empty"
+msgstr "PIN 不能为空"
+
+#: crates/luks-assistant-core/src/ops.rs:1061
+msgid "Enroll the TPM2 token"
+msgstr "录入 TPM2 令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:1071
+msgid "Record the current PCR values as the baseline"
+msgstr "记录当前 PCR 值作为基准"
+
+#: crates/luks-assistant-core/src/ops.rs:1097
+msgid "Re-enroll the FIDO2 security key"
+msgstr "重新录入 FIDO2 安全密钥"
+
+#: crates/luks-assistant-core/src/ops.rs:1099
+msgid "Enroll a FIDO2 security key"
+msgstr "录入 FIDO2 安全密钥"
+
+#: crates/luks-assistant-core/src/ops.rs:1103
+msgid "Touch the security key when asked"
+msgstr "执行时请触摸安全密钥"
+
+#: crates/luks-assistant-core/src/ops.rs:1126
+msgid "Enroll the FIDO2 token"
+msgstr "录入 FIDO2 令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:1159
+msgid "Enroll a PKCS#11 smart card"
+msgstr "录入 PKCS#11 智能卡"
+
+#: crates/luks-assistant-core/src/ops.rs:1173
+msgid "Enroll the PKCS#11 token"
+msgstr "录入 PKCS#11 令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:1193
+msgid "Token {} does not exist"
+msgstr "令牌 {} 不存在"
+
+#: crates/luks-assistant-core/src/ops.rs:1196
+msgid "Token {} is still bound to slots {}"
+msgstr "令牌 {} 仍关联槽位 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1203
+msgid "This is the Luks Assistant notes token"
+msgstr "这是 Luks Assistant 的备注令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:1206
+msgid "Remove orphaned token {} ({})"
+msgstr "删除孤立令牌 {}（{}）"
+
+#: crates/luks-assistant-core/src/ops.rs:1209
+msgid "Remove the token"
+msgstr "删除令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:1220
+msgid "No stale notes"
+msgstr "没有过期的备注"
+
+#: crates/luks-assistant-core/src/ops.rs:1222
+msgid "Clean up stale notes"
+msgstr "清理过期备注"
+
+#: crates/luks-assistant-core/src/ops.rs:1228
+#: crates/luks-assistant-tui/src/app.rs:365
+msgid "Slot {} ({})"
+msgstr "槽位 {}（{}）"
+
+#: crates/luks-assistant-core/src/ops.rs:1230
+msgid ", "
+msgstr "、"
+
+#: crates/luks-assistant-core/src/ops.rs:1232
+msgid "Remove the notes of {}"
+msgstr "删除 {} 的备注"
+
+#: crates/luks-assistant-core/src/ops.rs:1246
+msgid "TRIM pass-through is already on"
+msgstr "TRIM 穿透已经是开启状态"
+
+#: crates/luks-assistant-core/src/ops.rs:1248
+msgid "TRIM pass-through is already off"
+msgstr "TRIM 穿透已经是关闭状态"
+
+#: crates/luks-assistant-core/src/ops.rs:1255
+msgid "Enable TRIM pass-through (stored in the header)"
+msgstr "开启 TRIM 穿透（写入头部）"
+
+#: crates/luks-assistant-core/src/ops.rs:1257
+msgid "Disable TRIM pass-through (stored in the header)"
+msgstr "关闭 TRIM 穿透（写入头部）"
+
+#: crates/luks-assistant-core/src/ops.rs:1261
+msgid "TRIM reveals used space and the file system type"
+msgstr "TRIM 会暴露已用空间和文件系统类型"
+
+#: crates/luks-assistant-core/src/ops.rs:1263
+msgid "The mkinitcpio encrypt hook ignores this flag; the :allow-discards boot option is still needed"
+msgstr "mkinitcpio encrypt 钩子不读取此标志，仍需启动参数 :allow-discards"
+
+#: crates/luks-assistant-core/src/ops.rs:1273
+msgid "Refresh the mapping and store the persistent flag"
+msgstr "刷新映射并写入持久标志"
+
+#: crates/luks-assistant-core/src/ops.rs:1277
+msgid "Check the header flag"
+msgstr "验证头部标志"
+
+#: crates/luks-assistant-core/src/ops.rs:1290
+msgid "Slot {} is “{}”; token slots need no conversion"
+msgstr "槽位 {} 是“{}”，令牌槽位不需要转换"
+
+#: crates/luks-assistant-core/src/ops.rs:1298
+msgid "Slot {} already uses {}"
+msgstr "槽位 {} 已经是 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1305
+msgid "GRUB_ENABLE_CRYPTODISK=y found: GRUB before 2.12 cannot use Argon2, so booting fails if GRUB unlocks with this slot"
+msgstr "检测到 GRUB_ENABLE_CRYPTODISK=y：GRUB 2.12 之前不支持 Argon2，若 GRUB 用此槽位解锁将无法启动"
+
+#: crates/luks-assistant-core/src/ops.rs:1322
+msgid "Convert slot {}"
+msgstr "转换槽位 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1325
+msgid "Update the note fingerprint"
+msgstr "更新备注指纹"
+
+#: crates/luks-assistant-core/src/ops.rs:1376
+msgid "{} is not a regular file"
+msgstr "{} 不是普通文件"
+
+#: crates/luks-assistant-core/src/ops.rs:1381
+msgid "The key file is empty"
+msgstr "密钥文件是空的"
+
+#: crates/luks-assistant-core/src/ops.rs:1385
+msgid "The key file exceeds cryptsetup's default limit of 8 MiB"
+msgstr "密钥文件超过 cryptsetup 默认上限 8 MiB"
+
+#: crates/luks-assistant-core/src/ops.rs:1390
+msgid "{} is readable by other users"
+msgstr "{} 对其他用户可读"
+
+#: crates/luks-assistant-core/src/ops.rs:1397
+msgid "{} does not exist"
+msgstr "{} 不存在"
+
+#: crates/luks-assistant-core/src/ops.rs:1406
+msgid "{} is not a LUKS header backup"
+msgstr "{} 不是 LUKS 头部备份"
+
+#: crates/luks-assistant-core/src/ops.rs:1413
+msgid "The backup UUID ({}) does not match the device ({})"
+msgstr "备份 UUID ({}) 与设备 ({}) 不一致"
+
+#: crates/luks-assistant-core/src/ops.rs:1421
+msgid "Restore the LUKS header from {}"
+msgstr "从 {} 恢复 LUKS 头部"
+
+#: crates/luks-assistant-core/src/ops.rs:1426
+msgid "Keys added after the backup stop working; keys removed since come back"
+msgstr "备份之后新增的密钥将失效，之后删除的密钥会恢复"
+
+#: crates/luks-assistant-core/src/ops.rs:1427
+msgid "The current header is backed up first"
+msgstr "会先备份当前头部"
+
+#: crates/luks-assistant-core/src/ops.rs:1483
+msgid "No newly written slot found"
+msgstr "没有检测到新写入的槽位"
+
+#: crates/luks-assistant-core/src/ops.rs:1502
+msgid "Another Luks Assistant instance is running an operation"
+msgstr "另一个 Luks Assistant 实例正在执行操作"
+
+#: crates/luks-assistant-core/src/ops.rs:1535
+msgid "Reading the header failed: {}"
+msgstr "读取头部失败: {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1555
+msgid "{}: {}"
+msgstr "{}：{}"
+
+#: crates/luks-assistant-core/src/ops.rs:1643
+msgid "Created {}"
+msgstr "已生成 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1650
+msgid "Slot {} {}"
+msgstr "槽位 {} {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1653
+msgid "present"
+msgstr "存在"
+
+#: crates/luks-assistant-core/src/ops.rs:1655
+msgid "removed"
+msgstr "已删除"
+
+#: crates/luks-assistant-core/src/ops.rs:1660
+msgid "Slot {} is not in the expected state"
+msgstr "槽位 {} 状态与预期不符"
+
+#: crates/luks-assistant-core/src/ops.rs:1677
+#: crates/luks-assistant-core/src/ops.rs:1731
+msgid "Slot {} does not exist"
+msgstr "槽位 {} 不存在"
+
+#: crates/luks-assistant-core/src/ops.rs:1755
+msgid "{} (slot {})"
+msgstr "{}（槽位 {}）"
+
+#: crates/luks-assistant-core/src/ops.rs:1785
+msgid "The TRIM flag in the header is not as expected"
+msgstr "头部 TRIM 标志与预期不符"
+
+#: crates/luks-assistant-core/src/ops.rs:1795
+msgid "Slot {} has no TPM2 token"
+msgstr "槽位 {} 没有 TPM2 令牌"
+
+#: crates/luks-assistant-core/src/ops.rs:1803
+msgid "PCR {} recorded; {}"
+msgstr "PCR {} 已记录；{}"
+
+#: crates/luks-assistant-core/src/ops.rs:1830
+msgid "Write {}"
+msgstr "写入 {}"
+
+#: crates/luks-assistant-core/src/ops.rs:1833
+msgid "No change"
+msgstr "无变化"
+
+#: crates/luks-assistant-core/src/pcr.rs:61
+msgid "SRTM / firmware code"
+msgstr "SRTM / 固件代码"
+
+#: crates/luks-assistant-core/src/pcr.rs:62
+msgid "Core UEFI firmware code of the mainboard"
+msgstr "主板 UEFI 固件核心代码"
+
+#: crates/luks-assistant-core/src/pcr.rs:63
+msgid "Updating BIOS/UEFI or CPU microcode"
+msgstr "更新 BIOS/UEFI、CPU 微码"
+
+#: crates/luks-assistant-core/src/pcr.rs:67
+msgid "Firmware configuration"
+msgstr "固件配置"
+
+#: crates/luks-assistant-core/src/pcr.rs:68
+msgid "Mainboard firmware configuration and policies"
+msgstr "主板固件的配置和策略"
+
+#: crates/luks-assistant-core/src/pcr.rs:69
+msgid "Changing firmware settings or hardware"
+msgstr "修改固件设置、更换硬件"
+
+#: crates/luks-assistant-core/src/pcr.rs:73
+msgid "Option ROM code"
+msgstr "Option ROM 代码"
+
+#: crates/luks-assistant-core/src/pcr.rs:74
+msgid "Firmware of graphics, network and other expansion cards"
+msgstr "显卡、网卡等外部设备固件"
+
+#: crates/luks-assistant-core/src/pcr.rs:75
+#: crates/luks-assistant-core/src/pcr.rs:81
+msgid "Replacing or updating expansion card firmware"
+msgstr "更换或更新外部设备固件"
+
+#: crates/luks-assistant-core/src/pcr.rs:79
+msgid "Option ROM configuration"
+msgstr "Option ROM 配置"
+
+#: crates/luks-assistant-core/src/pcr.rs:80
+msgid "Configuration data of expansion card firmware"
+msgstr "外部设备固件的配置数据"
+
+#: crates/luks-assistant-core/src/pcr.rs:85
+msgid "Boot loader code"
+msgstr "引导程序代码"
+
+#: crates/luks-assistant-core/src/pcr.rs:86
+msgid "Boot manager / the booted EFI programs themselves"
+msgstr "启动管理器 / 引导的 EFI 程序本身"
+
+#: crates/luks-assistant-core/src/pcr.rs:87
+msgid "Updating the boot loader, UKI or kernel EFI files"
+msgstr "更新引导程序、UKI 或内核 EFI 文件"
+
+#: crates/luks-assistant-core/src/pcr.rs:91
+msgid "Boot configuration"
+msgstr "引导配置"
+
+#: crates/luks-assistant-core/src/pcr.rs:92
+msgid "Boot entries and the GPT partition table"
+msgstr "启动项配置与 GPT 分区表"
+
+#: crates/luks-assistant-core/src/pcr.rs:93
+msgid "Changing the UEFI boot order or the partition table"
+msgstr "修改 UEFI 启动顺序、分区表"
+
+#: crates/luks-assistant-core/src/pcr.rs:97
+msgid "Power events"
+msgstr "电源事件"
+
+#: crates/luks-assistant-core/src/pcr.rs:98
+msgid "Platform power state"
+msgstr "平台电源状态"
+
+#: crates/luks-assistant-core/src/pcr.rs:99
+msgid "Sleep, wake-up and similar events"
+msgstr "睡眠、唤醒等事件"
+
+#: crates/luks-assistant-core/src/pcr.rs:103
+msgid "Secure Boot policy"
+msgstr "安全启动策略"
+
+#: crates/luks-assistant-core/src/pcr.rs:104
+msgid "Secure Boot state and certificate databases"
+msgstr "安全启动开关与证书数据库"
+
+#: crates/luks-assistant-core/src/pcr.rs:105
+msgid "Turning Secure Boot on or off, updating db/dbx/KEK"
+msgstr "开关安全启动、更新 db/dbx/KEK"
+
+#: crates/luks-assistant-core/src/pcr.rs:109
+msgid "GRUB commands"
+msgstr "GRUB 命令"
+
+#: crates/luks-assistant-core/src/pcr.rs:110
+msgid "Commands and arguments GRUB runs"
+msgstr "GRUB 执行的命令和参数"
+
+#: crates/luks-assistant-core/src/pcr.rs:111
+msgid "Editing grub.cfg, changing the theme"
+msgstr "修改 grub.cfg、更换主题"
+
+#: crates/luks-assistant-core/src/pcr.rs:115
+msgid "Files GRUB reads"
+msgstr "GRUB 读取的文件"
+
+#: crates/luks-assistant-core/src/pcr.rs:116
+msgid "Kernel, initramfs and other files GRUB reads"
+msgstr "GRUB 读取的内核、initramfs 等文件"
+
+#: crates/luks-assistant-core/src/pcr.rs:117
+msgid "Updating the kernel or initramfs"
+msgstr "更新内核或 initramfs"
+
+#: crates/luks-assistant-core/src/pcr.rs:122
+msgid "Programs and libraries loaded at run time"
+msgstr "运行时加载的程序和库"
+
+#: crates/luks-assistant-core/src/pcr.rs:123
+msgid "Keeps changing at run time"
+msgstr "运行期间持续变化"
+
+#: crates/luks-assistant-core/src/pcr.rs:127
+msgid "UKI contents"
+msgstr "UKI 内容"
+
+#: crates/luks-assistant-core/src/pcr.rs:128
+msgid "Sections of the unified kernel image"
+msgstr "统一内核镜像的各个段"
+
+#: crates/luks-assistant-core/src/pcr.rs:129
+msgid "Updating the UKI"
+msgstr "更新 UKI"
+
+#: crates/luks-assistant-core/src/pcr.rs:133
+msgid "UKI arguments / credentials"
+msgstr "UKI 参数 / 凭据"
+
+#: crates/luks-assistant-core/src/pcr.rs:134
+msgid "Kernel command line and system credentials passed to the UKI"
+msgstr "传给 UKI 的内核参数和系统凭据"
+
+#: crates/luks-assistant-core/src/pcr.rs:135
+msgid "Changing the kernel command line"
+msgstr "修改内核参数"
+
+#: crates/luks-assistant-core/src/pcr.rs:139
+msgid "System extensions"
+msgstr "系统扩展"
+
+#: crates/luks-assistant-core/src/pcr.rs:140
+msgid "systemd-sysext images"
+msgstr "systemd-sysext 镜像"
+
+#: crates/luks-assistant-core/src/pcr.rs:141
+msgid "Changing extension images"
+msgstr "更改扩展镜像"
+
+#: crates/luks-assistant-core/src/pcr.rs:146
+msgid "shim's Machine Owner Keys"
+msgstr "shim 的 Machine Owner Key"
+
+#: crates/luks-assistant-core/src/pcr.rs:147
+msgid "Enrolling/deleting MOKs"
+msgstr "注册/删除 MOK"
+
+#: crates/luks-assistant-core/src/pcr.rs:151
+msgid "machine-id / system identity"
+msgstr "machine-id / 系统身份"
+
+#: crates/luks-assistant-core/src/pcr.rs:152
+msgid "machine-id and other identity data"
+msgstr "machine-id 等身份信息"
+
+#: crates/luks-assistant-core/src/pcr.rs:153
+msgid "Changing /etc/machine-id; systemd may extend it after unlocking"
+msgstr "修改 /etc/machine-id，解锁后可能被 systemd 扩展"
+
+#: crates/luks-assistant-core/src/pcr.rs:157
+msgid "Debug"
+msgstr "调试"
+
+#: crates/luks-assistant-core/src/pcr.rs:158
+msgid "Debugging"
+msgstr "调试用途"
+
+#: crates/luks-assistant-core/src/pcr.rs:159
+msgid "root can extend it at will"
+msgstr "root 可随意扩展"
+
+#: crates/luks-assistant-core/src/pcr.rs:164
+msgid "Dynamic measurement (Intel TXT / AMD SKINIT)"
+msgstr "动态度量 (Intel TXT / AMD SKINIT)"
+
+#: crates/luks-assistant-core/src/pcr.rs:165
+#: crates/luks-assistant-core/src/pcr.rs:167
+#: crates/luks-assistant-core/src/pcr.rs:168
+#: crates/luks-assistant-core/src/pcr.rs:169
+#: crates/luks-assistant-core/src/pcr.rs:170
+#: crates/luks-assistant-core/src/pcr.rs:171
+msgid "Usually unused"
+msgstr "通常未使用"
+
+#: crates/luks-assistant-core/src/pcr.rs:167
+#: crates/luks-assistant-core/src/pcr.rs:168
+#: crates/luks-assistant-core/src/pcr.rs:169
+#: crates/luks-assistant-core/src/pcr.rs:170
+#: crates/luks-assistant-core/src/pcr.rs:171
+msgid "Dynamic measurement"
+msgstr "动态度量"
+
+#: crates/luks-assistant-core/src/pcr.rs:174
+msgid "Application specific"
+msgstr "应用专用"
+
+#: crates/luks-assistant-core/src/pcr.rs:175
+msgid "Written by user space/applications (systemd, fwupd, …)"
+msgstr "用户/应用写入（systemd、fwupd 等）"
+
+#: crates/luks-assistant-core/src/pcr.rs:176
+msgid "Can be reset to all zeros"
+msgstr "可被重置为全零"
+
+#: crates/luks-assistant-core/src/pcr.rs:186
+msgid "No PCRs selected: any system with access to this TPM can unlock"
+msgstr "未选择 PCR：任何能访问这颗 TPM 的系统都能解锁"
+
+#: crates/luks-assistant-core/src/pcr.rs:192
+msgid "PCR 0: breaks after BIOS/microcode updates"
+msgstr "PCR 0：BIOS/微码更新后失效"
+
+#: crates/luks-assistant-core/src/pcr.rs:193
+msgid "PCR 2/3: break when expansion card firmware changes"
+msgstr "PCR 2/3：外部设备固件变化后失效"
+
+#: crates/luks-assistant-core/src/pcr.rs:194
+msgid "PCR 4: breaks after boot loader/UKI updates"
+msgstr "PCR 4：引导程序/UKI 更新后失效"
+
+#: crates/luks-assistant-core/src/pcr.rs:195
+msgid "PCR 8/9: break after GRUB config, kernel or initramfs updates"
+msgstr "PCR 8/9：GRUB 配置、内核或 initramfs 更新后失效"
+
+#: crates/luks-assistant-core/src/pcr.rs:196
+msgid "PCR 10 (IMA) keeps changing at run time; unusable"
+msgstr "PCR 10 (IMA) 运行期间持续变化，不可用"
+
+#: crates/luks-assistant-core/src/pcr.rs:197
+msgid "PCR 11: breaks after UKI updates"
+msgstr "PCR 11：UKI 更新后失效"
+
+#: crates/luks-assistant-core/src/pcr.rs:198
+msgid "PCR 12: breaks when the kernel command line changes"
+msgstr "PCR 12：内核参数变化后失效"
+
+#: crates/luks-assistant-core/src/pcr.rs:199
+msgid "PCR 15: systemd may extend it after unlocking"
+msgstr "PCR 15：systemd 可能在解锁后扩展它"
+
+#: crates/luks-assistant-core/src/pcr.rs:200
+msgid "PCR 16/23 can be changed from user space; no security"
+msgstr "PCR 16/23 可被用户态改写，无安全性"
+
+#: crates/luks-assistant-core/src/pcr.rs:201
+msgid "PCR 17-22 are only used by DRTM"
+msgstr "PCR 17-22 仅用于 DRTM"
+
+#: crates/luks-assistant-core/src/pcr.rs:209
+msgid "Secure Boot is off; PCR 7 protects little"
+msgstr "安全启动未开启，PCR 7 保护有限"
+
+#: crates/luks-assistant-core/src/pcr.rs:212
+msgid "Including PCR 7 is recommended"
+msgstr "建议包含 PCR 7"
+
+#: crates/luks-assistant-core/src/pcr.rs:222
+msgid "Invalid PCR number: {}"
+msgstr "无效的 PCR 编号: {}"
+
+#: crates/luks-assistant-core/src/pcr.rs:224
+msgid "PCR number out of range: {}"
+msgstr "PCR 编号超出范围: {}"
+
+#: crates/luks-assistant-core/src/pcr.rs:296
+#: crates/luks-assistant-core/src/view.rs:331
+#: crates/luks-assistant-tui/src/ui.rs:48
+#: crates/luks-assistant-tui/src/ui.rs:218
+msgid "none"
+msgstr "无"
+
+#: crates/luks-assistant-core/src/pcr.rs:307
+msgid " + signed policy (PCR {})"
+msgstr " + 签名策略(PCR {})"
+
+#: crates/luks-assistant-core/src/pcr.rs:350
+msgid "No current value for PCR {}"
+msgstr "缺少 PCR {} 的当前值"
+
+#: crates/luks-assistant-core/src/pcr.rs:386
+msgid "PCRs match"
+msgstr "PCR 匹配"
+
+#: crates/luks-assistant-core/src/pcr.rs:388
+msgid "PCR {} changed"
+msgstr "PCR {} 已变化"
+
+#: crates/luks-assistant-core/src/pcr.rs:390
+#: crates/luks-assistant-tui/src/ui.rs:294
+msgid "PCRs changed"
+msgstr "PCR 已变化"
+
+#: crates/luks-assistant-core/src/pcr.rs:391
+msgid "Cannot tell: {}"
+msgstr "无法判断: {}"
+
+#: crates/luks-assistant-core/src/pcr.rs:467
+msgid "uses a pcrlock policy"
+msgstr "使用 pcrlock 策略"
+
+#: crates/luks-assistant-core/src/pcr.rs:470
+msgid "uses a signed PCR policy"
+msgstr "使用签名 PCR 策略"
+
+#: crates/luks-assistant-core/src/pcr.rs:473
+msgid "The token has no tpm2-policy-hash"
+msgstr "令牌中没有 tpm2-policy-hash"
+
+#: crates/luks-assistant-core/src/pcr.rs:476
+msgid "Cannot read the {} PCRs"
+msgstr "无法读取 {} PCR"
+
+#: crates/luks-assistant-core/src/slots.rs:41
+#: crates/luks-assistant-core/src/slots.rs:158
+#: crates/luks-assistant-tui/src/ui.rs:319
+#: gui/src/mainwindow.cpp:639
+#: gui/src/mainwindow.cpp:716
+msgid "Empty"
+msgstr "空闲"
+
+#: crates/luks-assistant-core/src/slots.rs:44
+msgid "Password/key file"
+msgstr "密码/密钥文件"
+
+#: crates/luks-assistant-core/src/slots.rs:45
+#: gui/src/dialogs.cpp:173
+msgid "Recovery key"
+msgstr "恢复密钥"
+
+#: crates/luks-assistant-core/src/slots.rs:49
+msgid "Token:{}"
+msgstr "令牌:{}"
+
+#: crates/luks-assistant-core/src/slots.rs:50
+msgid "Re-encryption"
+msgstr "重加密"
+
+#: crates/luks-assistant-core/src/slots.rs:51
+msgid "LUKS1 key"
+msgstr "LUKS1 密钥"
+
+#: crates/luks-assistant-core/src/slots.rs:122
+msgid "touch"
+msgstr "触摸"
+
+#: crates/luks-assistant-core/src/slots.rs:123
+msgid "user verification"
+msgstr "用户验证"
+
+#: crates/luks-assistant-core/src/slots.rs:129
+msgid "no extra requirements"
+msgstr "无额外要求"
+
+#: crates/luks-assistant-core/src/slots.rs:131
+msgid "requires {}"
+msgstr "需要 {}"
+
+#: crates/luks-assistant-core/src/slots.rs:316
+msgid "LUKS1 is not supported, only LUKS2"
+msgstr "不支持 LUKS1，仅支持 LUKS2"
+
+#: crates/luks-assistant-core/src/slots.rs:320
+msgid "The header has mandatory requirements {}; read-only"
+msgstr "头部有强制要求 {}，只读"
+
+#: crates/luks-assistant-core/src/view.rs:154
+#: crates/luks-assistant-tui/src/ui.rs:417
+msgid "not installed"
+msgstr "未安装"
+
+#: crates/luks-assistant-core/src/view.rs:165
+msgid "no TPM"
+msgstr "无 TPM"
+
+#: crates/luks-assistant-core/src/view.rs:168
+msgid "{} · kernel {} · systemd {} · cryptsetup {} · {} · Secure Boot {}"
+msgstr "{} · 内核 {} · systemd {} · cryptsetup {} · {} · 安全启动 {}"
+
+#: crates/luks-assistant-core/src/view.rs:177
+#: crates/luks-assistant-tui/src/ui.rs:420
+msgid "Distribution"
+msgstr "发行版"
+
+#: crates/luks-assistant-core/src/view.rs:178
+#: crates/luks-assistant-tui/src/ui.rs:421
+msgid "Family"
+msgstr "系列"
+
+#: crates/luks-assistant-core/src/view.rs:179
+#: crates/luks-assistant-tui/src/ui.rs:422
+msgid "Kernel"
+msgstr "内核"
+
+#: crates/luks-assistant-core/src/view.rs:180
+#: crates/luks-assistant-tui/src/ui.rs:423
+msgid "Host name"
+msgstr "主机名"
+
+#: crates/luks-assistant-core/src/view.rs:184
+#: crates/luks-assistant-tui/src/ui.rs:427
+msgid "Firmware"
+msgstr "固件"
+
+#: crates/luks-assistant-core/src/view.rs:187
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:91
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:92
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:93
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:95
+#: crates/luks-assistant-tui/src/ui.rs:430
+msgid "Secure Boot"
+msgstr "安全启动"
+
+#: crates/luks-assistant-core/src/view.rs:192
+#: crates/luks-assistant-tui/src/ui.rs:436
+msgid "Version"
+msgstr "版本"
+
+#: crates/luks-assistant-core/src/view.rs:196
+#: crates/luks-assistant-tui/src/ui.rs:440
+msgid "Device"
+msgstr "设备"
+
+#: crates/luks-assistant-core/src/view.rs:204
+#: crates/luks-assistant-tui/src/ui.rs:447
+msgid "Driver"
+msgstr "驱动"
+
+#: crates/luks-assistant-core/src/view.rs:208
+#: crates/luks-assistant-tui/src/ui.rs:449
+msgid "Description"
+msgstr "描述"
+
+#: crates/luks-assistant-core/src/view.rs:213
+#: crates/luks-assistant-core/src/view.rs:425
+#: crates/luks-assistant-tui/src/ui.rs:357
+#: gui/src/mainwindow.cpp:384
+msgid "Status"
+msgstr "状态"
+
+#: crates/luks-assistant-core/src/view.rs:213
+#: gui/src/mainwindow.cpp:524
+msgid "Not detected"
+msgstr "未检测到"
+
+#: crates/luks-assistant-core/src/view.rs:216
+#: crates/luks-assistant-tui/src/ui.rs:457
+msgid "Override"
+msgstr "覆盖"
+
+#: crates/luks-assistant-core/src/view.rs:252
+#: crates/luks-assistant-tui/src/app.rs:380
+msgid "{}  image file"
+msgstr "{}  镜像文件"
+
+#: crates/luks-assistant-core/src/view.rs:329
+#: crates/luks-assistant-tui/src/ui.rs:1211
+msgid "Selected PCRs {}"
+msgstr "已选 PCR {}"
+
+#: crates/luks-assistant-core/src/view.rs:339
+msgid "PCR {} {}: {}; changes: {}"
+msgstr "PCR {} {}：{}；改变：{}"
+
+#: crates/luks-assistant-core/src/view.rs:372
+msgid "⚠ PCRs changed"
+msgstr "⚠ PCR 已变化"
+
+#: crates/luks-assistant-core/src/view.rs:388
+#: crates/luks-assistant-tui/src/ui.rs:321
+#: crates/luks-assistant-tui/src/ui.rs:495
+#: gui/src/mainwindow.cpp:381
+msgid "Type"
+msgstr "类型"
+
+#: crates/luks-assistant-core/src/view.rs:394
+#: crates/luks-assistant-tui/src/ui.rs:327
+msgid "Slot encryption"
+msgstr "槽位加密"
+
+#: crates/luks-assistant-core/src/view.rs:395
+#: crates/luks-assistant-tui/src/ui.rs:328
+msgid "{}  {} bits"
+msgstr "{}  {} 位"
+
+#: crates/luks-assistant-core/src/view.rs:401
+#: crates/luks-assistant-tui/src/ui.rs:333
+msgid "Token"
+msgstr "令牌"
+
+#: crates/luks-assistant-core/src/view.rs:411
+#: crates/luks-assistant-tui/src/ui.rs:337
+msgid "Header note"
+msgstr "头部备注"
+
+#: crates/luks-assistant-core/src/view.rs:412
+#: crates/luks-assistant-tui/src/ui.rs:338
+msgid "Local note"
+msgstr "本机备注"
+
+#: crates/luks-assistant-core/src/view.rs:428
+#: crates/luks-assistant-tui/src/ui.rs:367
+msgid "Policy hash"
+msgstr "策略哈希"
+
+#: crates/luks-assistant-core/src/view.rs:483
+msgid "LUKS{} · {} · {}/32 used"
+msgstr "LUKS{} · {} · 已用 {}/32"
+
+#: crates/luks-assistant-core/src/view.rs:489
+#: crates/luks-assistant-tui/src/ui.rs:389
+msgid "{} · sector {} · JSON {}/{} bytes"
+msgstr "{} · 扇区 {} · JSON {}/{} 字节"
+
+#: crates/luks-assistant-helper/src/main.rs:142
+#: crates/luks-assistant-helper/src/main.rs:182
+#: crates/luks-assistant-tui/src/app.rs:567
+#: crates/luks-assistant-tui/src/app.rs:644
+msgid "No {} token"
+msgstr "没有 {} 令牌"
+
+#: crates/luks-assistant-helper/src/main.rs:158
+msgid "{} verification failed: {}"
+msgstr "{} 验证失败：{}"
+
+#: crates/luks-assistant-helper/src/main.rs:176
+#: crates/luks-assistant-helper/src/main.rs:197
+#: crates/luks-assistant-tui/src/app.rs:557
+msgid "Unlocking failed: {}"
+msgstr "解锁失败：{}"
+
+#: crates/luks-assistant-helper/src/main.rs:201
+#: crates/luks-assistant-tui/src/app.rs:583
+msgid "Unlocked {} → {}"
+msgstr "已解锁 {} → {}"
+
+#: crates/luks-assistant-helper/src/main.rs:220
+msgid "Slot {} ({}) verified"
+msgstr "槽位 {}（{}）验证成功"
+
+#: crates/luks-assistant-helper/src/main.rs:237
+msgid "Slot {} ({} token {}) verified"
+msgstr "槽位 {}（{} 令牌 {}）验证成功"
+
+#: crates/luks-assistant-helper/src/main.rs:339
+msgid "Plan {} does not exist or has already run"
+msgstr "计划 {} 不存在或已执行"
+
+#: crates/luks-assistant-helper/src/main.rs:342
+msgid "The confirmation text is wrong"
+msgstr "确认文字不正确"
+
+#: crates/luks-assistant-helper/src/main.rs:416
+msgid "Luks-Assistant-Helper needs root privileges"
+msgstr "Luks-Assistant-Helper 需要 root 权限"
+
+#: crates/luks-assistant-helper/src/main.rs:442
+msgid "Invalid request: {}"
+msgstr "无效请求: {}"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:72
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:82
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:84
+msgid "TPM 2.0 device"
+msgstr "TPM 2.0 设备"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:75
+msgid "{} available"
+msgstr "{} 可用"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:82
+msgid "not TPM 2.0"
+msgstr "不是 TPM 2.0"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:84
+msgid "No TPM detected"
+msgstr "未检测到 TPM"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:91
+#: crates/luks-assistant-sysinfo/src/firmware.rs:29
+msgid "Legacy BIOS"
+msgstr "传统 BIOS"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:92
+#: crates/luks-assistant-sysinfo/src/firmware.rs:30
+msgid "enabled"
+msgstr "已开启"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:93
+#: crates/luks-assistant-sysinfo/src/firmware.rs:32
+msgid "disabled"
+msgstr "未开启"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:97
+msgid "Cannot read the SecureBoot variable"
+msgstr "无法读取 SecureBoot 变量"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:118
+msgid "usually does not support systemd-cryptenroll tokens; the password is still needed at boot"
+msgstr "一般不支持 systemd-cryptenroll 令牌，开机时仍需输入密码"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:126
+msgid "supports systemd-tpm2 / systemd-fido2 tokens"
+msgstr "支持 systemd-tpm2 / systemd-fido2 令牌"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:131
+msgid "initramfs generator"
+msgstr "initramfs 生成器"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:133
+msgid "not recognized"
+msgstr "未识别"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:173
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:179
+msgid "cryptsetup token plugins"
+msgstr "cryptsetup 令牌插件"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:175
+msgid "libcryptsetup-token-systemd-*.so not found"
+msgstr "未找到 libcryptsetup-token-systemd-*.so"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:181
+msgid "Installed: {}"
+msgstr "已安装: {}"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:231
+msgid "No HOOKS= setting found"
+msgstr "没有找到 HOOKS= 配置"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:240
+msgid "systemd + sd-encrypt. HOOKS=({})"
+msgstr "systemd + sd-encrypt。HOOKS=({})"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:247
+msgid "sd-encrypt is present but the systemd hook is missing. HOOKS=({})"
+msgstr "有 sd-encrypt 但缺少 systemd 钩子。HOOKS=({})"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:257
+msgid "The encrypt hook does not support tokens; switch to systemd + sd-encrypt. HOOKS=({})"
+msgstr "encrypt 钩子不支持令牌，需改用 systemd + sd-encrypt。HOOKS=({})"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:265
+msgid "No encryption hook. HOOKS=({})"
+msgstr "没有加密钩子。HOOKS=({})"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:303
+msgid "tpm2-tss module added{}"
+msgstr "已添加 tpm2-tss 模块{}"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:305
+msgid "and the fido2 module"
+msgstr "和 fido2 模块"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:314
+msgid "fido2 module added (tpm2-tss not added)"
+msgstr "已添加 fido2 模块（未添加 tpm2-tss）"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:324
+msgid "tpm2-tss / fido2 modules not added explicitly (hostonly may include them)"
+msgstr "未显式添加 tpm2-tss / fido2 模块（hostonly 可能自动包含）"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:326
+msgid "tpm2-tss module not found"
+msgstr "未找到 tpm2-tss 模块"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:367
+msgid "Entry {} sets no tpm2-device= / fido2-device= (tokens are usually tried anyway)"
+msgstr "条目 {} 未指定 tpm2-device= / fido2-device=（通常会自动尝试令牌）"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:375
+msgid "Entry {} is configured: {}"
+msgstr "条目 {} 已配置: {}"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:382
+msgid "No entry for this device"
+msgstr "没有该设备的条目"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:391
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:399
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:420
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:422
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:425
+msgid "Kernel command line"
+msgstr "内核参数"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:393
+msgid "{}: encrypt hook syntax, no token support"
+msgstr "{}：encrypt 钩子写法，不支持令牌"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:401
+msgid "No rd.luks.* options"
+msgstr "没有 rd.luks.* 参数"
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:427
+msgid "{} (does not contain this device's UUID)"
+msgstr "{}（未包含该设备 UUID）"
+
+#: crates/luks-assistant-sysinfo/src/firmware.rs:31
+msgid "disabled (Setup Mode)"
+msgstr "未开启（Setup Mode）"
+
+#: crates/luks-assistant-sysinfo/src/firmware.rs:33
+msgid "unknown"
+msgstr "未知"
+
+#: crates/luks-assistant-sysinfo/src/os.rs:20
+msgid "Arch family"
+msgstr "Arch 系"
+
+#: crates/luks-assistant-sysinfo/src/os.rs:21
+msgid "Fedora/RHEL family"
+msgstr "Fedora/RHEL 系"
+
+#: crates/luks-assistant-sysinfo/src/os.rs:22
+msgid "Debian/Ubuntu family"
+msgstr "Debian/Ubuntu 系"
+
+#: crates/luks-assistant-sysinfo/src/os.rs:23
+msgid "openSUSE family"
+msgstr "openSUSE 系"
+
+#: crates/luks-assistant-sysinfo/src/os.rs:24
+msgid "Other"
+msgstr "其它"
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:138
+msgid "JSON header dump (cryptsetup ≥ 2.4)"
+msgstr "JSON 头部导出 (cryptsetup ≥ 2.4)"
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:141
+msgid "FIDO2 PIN/touch/verification options (≥ 249)"
+msgstr "FIDO2 PIN/触摸/验证选项 (≥ 249)"
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:146
+msgid "Authenticate with a key file, --unlock-key-file (≥ 252)"
+msgstr "用密钥文件验证 --unlock-key-file (≥ 252)"
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:149
+msgid "TPM2 signed PCR policies (≥ 252)"
+msgstr "TPM2 签名 PCR 策略 (≥ 252)"
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:109
+msgid "{} does not exist (no TPM, or a kernel older than 5.12 without the PCR sysfs interface)"
+msgstr "{} 不存在（没有 TPM，或内核早于 5.12 不提供 PCR sysfs 接口）"
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:120
+msgid "{}: cannot parse"
+msgstr "{}: 无法解析"
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:134
+msgid "tpm2-tools (tpm2_pcrread) is not installed"
+msgstr "未安装 tpm2-tools (tpm2_pcrread)"
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:136
+msgid "tpm2_pcrread failed: {}"
+msgstr "tpm2_pcrread 失败: {}"
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:166
+msgid "No {} bank in tpm2_pcrread output"
+msgstr "tpm2_pcrread 输出中没有 {} bank"
+
+#: crates/luks-assistant-tui/src/app.rs:33
+msgid "1 Slots"
+msgstr "1 槽位"
+
+#: crates/luks-assistant-tui/src/app.rs:34
+msgid "2 System"
+msgstr "2 系统信息"
+
+#: crates/luks-assistant-tui/src/app.rs:35
+msgid "3 Self-check"
+msgstr "3 自我检查"
+
+#: crates/luks-assistant-tui/src/app.rs:36
+msgid "4 Headers"
+msgstr "4 头部管理"
+
+#: crates/luks-assistant-tui/src/app.rs:37
+msgid "5 Logs"
+msgstr "5 日志"
+
+#: crates/luks-assistant-tui/src/app.rs:38
+msgid "6 About"
+msgstr "6 关于"
+
+#: crates/luks-assistant-tui/src/app.rs:244
+msgid "No LUKS volumes found"
+msgstr "没有找到 LUKS 卷"
+
+#: crates/luks-assistant-tui/src/app.rs:263
+msgid "Reading failed: {}"
+msgstr "读取失败: {}"
+
+#: crates/luks-assistant-tui/src/app.rs:330
+msgid "Refreshed"
+msgstr "已刷新"
+
+#: crates/luks-assistant-tui/src/app.rs:363
+msgid "Slot {}"
+msgstr "槽位 {}"
+
+#: crates/luks-assistant-tui/src/app.rs:448
+#: gui/src/mainwindow.cpp:838
+msgid "Not possible"
+msgstr "无法执行"
+
+#: crates/luks-assistant-tui/src/app.rs:460
+#: gui/src/mainwindow.cpp:1098
+#: gui/src/mainwindow.cpp:1103
+msgid "Export logs"
+msgstr "导出日志"
+
+#: crates/luks-assistant-tui/src/app.rs:464
+#: gui/src/mainwindow.cpp:385
+msgid "File"
+msgstr "文件"
+
+#: crates/luks-assistant-tui/src/app.rs:480
+msgid "Logs exported: {}"
+msgstr "日志已导出：{}"
+
+#: crates/luks-assistant-tui/src/app.rs:508
+#: crates/luks-assistant-tui/src/app.rs:528
+#: crates/luks-assistant-tui/src/app.rs:600
+#: crates/luks-assistant-tui/src/app.rs:707
+#: crates/luks-assistant-tui/src/app.rs:750
+msgid "Root needed: sudo Luks-Assistant-TUI"
+msgstr "需要 root：sudo Luks-Assistant-TUI"
+
+#: crates/luks-assistant-tui/src/app.rs:519
+msgid "Backup location: {}"
+msgstr "备份位置: {}"
+
+#: crates/luks-assistant-tui/src/app.rs:569
+msgid "Unlocking…"
+msgstr "正在解锁…"
+
+#: crates/luks-assistant-tui/src/app.rs:600
+#: crates/luks-assistant-tui/src/app.rs:616
+#: crates/luks-assistant-tui/src/ui.rs:234
+#: gui/src/mainwindow.cpp:664
+#: gui/src/mainwindow.cpp:698
+msgid "Lock"
+msgstr "锁定"
+
+#: crates/luks-assistant-tui/src/app.rs:608
+msgid "Locked {}"
+msgstr "已锁定 {}"
+
+#: crates/luks-assistant-tui/src/app.rs:636
+msgid "✓ Slot {} ({}) verified"
+msgstr "✓ 槽位 {}（{}）验证成功"
+
+#: crates/luks-assistant-tui/src/app.rs:646
+msgid "Verifying {}…"
+msgstr "正在验证 {}…"
+
+#: crates/luks-assistant-tui/src/app.rs:684
+#: crates/luks-assistant-tui/src/app.rs:750
+#: crates/luks-assistant-tui/src/app.rs:771
+#: gui/src/mainwindow.cpp:821
+#: gui/src/mainwindow.cpp:992
+msgid "Back up"
+msgstr "备份"
+
+#: crates/luks-assistant-tui/src/app.rs:685
+#: crates/luks-assistant-tui/src/ui.rs:710
+#: gui/src/mainwindow.cpp:824
+#: gui/src/mainwindow.ui
+msgid "Restore…"
+msgstr "恢复…"
+
+#: crates/luks-assistant-tui/src/app.rs:686
+#: gui/src/mainwindow.cpp:822
+msgid "Clean up old backups"
+msgstr "清理旧备份"
+
+#: crates/luks-assistant-tui/src/app.rs:707
+#: crates/luks-assistant-tui/src/app.rs:730
+#: crates/luks-assistant-tui/src/ui.rs:711
+#: gui/src/mainwindow.cpp:978
+#: gui/src/mainwindow.ui
+msgid "Clean up"
+msgstr "清理"
+
+#: crates/luks-assistant-tui/src/app.rs:767
+msgid "No volume selected"
+msgstr "未选择任何卷"
+
+#: crates/luks-assistant-tui/src/app.rs:818
+msgid "✓ Slot {} ({} token {}) verified"
+msgstr "✓ 槽位 {}（{} 令牌 {}）验证成功"
+
+#: crates/luks-assistant-tui/src/app.rs:835
+msgid "✗ Unlock failed: {}"
+msgstr "✗ 解锁失败：{}"
+
+#: crates/luks-assistant-tui/src/app.rs:839
+msgid ""
+"✗ {} verification failed\n"
+"{}"
+msgstr ""
+"✗ {} 验证失败\n"
+"{}"
+
+#: crates/luks-assistant-tui/src/app.rs:854
+msgid "{} operations"
+msgstr "{} 项操作"
+
+#: crates/luks-assistant-tui/src/app.rs:867
+msgid "  Backup: {}"
+msgstr "  备份: {}"
+
+#: crates/luks-assistant-tui/src/app.rs:884
+msgid "  Error: {}"
+msgstr "  错误: {}"
+
+#: crates/luks-assistant-tui/src/app.rs:903
+msgid "succeeded"
+msgstr "成功"
+
+#: crates/luks-assistant-tui/src/app.rs:905
+#: gui/src/dialogs.cpp:258
+msgid "failed"
+msgstr "失败"
+
+#: crates/luks-assistant-tui/src/app.rs:994
+msgid "Add"
+msgstr "添加"
+
+#: crates/luks-assistant-tui/src/app.rs:1107
+msgid "Cancelled"
+msgstr "已取消"
+
+#: crates/luks-assistant-tui/src/app.rs:1110
+msgid "Running…"
+msgstr "正在执行…"
+
+#: crates/luks-assistant-tui/src/app.rs:1367
+msgid ""
+"\n"
+"=== Luks Assistant: follow the prompts (PIN / touch the security key) ===\n"
+msgstr ""
+"\n"
+"=== Luks Assistant：请按提示操作（PIN / 触摸安全密钥）===\n"
+
+#: crates/luks-assistant-tui/src/app.rs:1372
+msgid ""
+"\n"
+"=== Press Enter to return ==="
+msgstr ""
+"\n"
+"=== 按回车返回 ==="
+
+#: crates/luks-assistant-tui/src/lib.rs:17
+msgid ""
+"Usage: Luks-Assistant-TUI [options] [device or image file]\n"
+"\n"
+"  Without arguments, lists every LUKS device lsblk finds.\n"
+"\n"
+"Options:\n"
+"  --dump [device]   print the slot model as JSON and exit (debugging)\n"
+"  --boot-check      print the boot unlock check and exit\n"
+"  -h, --help        show this help\n"
+"  -V, --version     show the version\n"
+"\n"
+"Environment (development):\n"
+"  LUKS_ASSISTANT_LANG          en or zh_CN (default: from the locale)\n"
+"  LUKS_ASSISTANT_TPM2_DEVICE   TPM device or TCTI, e.g. swtpm:host=127.0.0.1,port=2321\n"
+"  LUKS_ASSISTANT_ETC_DIR       notes directory (default /etc/luks-assistant)\n"
+"  LUKS_ASSISTANT_STATE_DIR     backups/snapshots/logs directory (default /var/lib/luks-assistant)\n"
+msgstr ""
+"用法: Luks-Assistant-TUI [选项] [设备或镜像文件]\n"
+"\n"
+"  不带参数时列出 lsblk 找到的所有 LUKS 设备。\n"
+"\n"
+"选项:\n"
+"  --dump [设备]   以 JSON 输出槽位模型后退出（调试用）\n"
+"  --boot-check    输出开机解锁检查结果后退出\n"
+"  -h, --help      显示帮助\n"
+"  -V, --version   显示版本\n"
+"\n"
+"环境变量（开发用）:\n"
+"  LUKS_ASSISTANT_LANG          en 或 zh_CN（默认跟随 locale）\n"
+"  LUKS_ASSISTANT_TPM2_DEVICE   TPM 设备或 TCTI，例如 swtpm:host=127.0.0.1,port=2321\n"
+"  LUKS_ASSISTANT_ETC_DIR       备注目录（默认 /etc/luks-assistant）\n"
+"  LUKS_ASSISTANT_STATE_DIR     备份/快照/日志目录（默认 /var/lib/luks-assistant）\n"
+
+#: crates/luks-assistant-tui/src/lib.rs:53
+msgid ""
+"Unknown option: {}\n"
+"\n"
+"{}"
+msgstr ""
+"未知选项: {}\n"
+"\n"
+"{}"
+
+#: crates/luks-assistant-tui/src/lib.rs:62
+#: gui/src/mainwindow.cpp:470
+msgid "Ready"
+msgstr "就绪"
+
+#: crates/luks-assistant-tui/src/lib.rs:77
+msgid "No LUKS devices found"
+msgstr "没有找到 LUKS 设备"
+
+#: crates/luks-assistant-tui/src/lib.rs:112
+msgid "read-only (changes need sudo)"
+msgstr "只读（写操作需要 sudo）"
+
+#: crates/luks-assistant-tui/src/ui.rs:180
+#: gui/src/mainwindow.cpp:379
+msgid "Refresh"
+msgstr "刷新"
+
+#: crates/luks-assistant-tui/src/ui.rs:193
+msgid "←↑↓→ select  Enter actions  a add  d delete  n note  e edit  v verify  u unlock/lock  D disk  ? help  q quit"
+msgstr "←↑↓→ 选择  Enter 操作  a 添加  d 删除  n 备注  e 修改  v 验证  u 解锁/锁定  D 磁盘  ? 帮助  q 退出"
+
+#: crates/luks-assistant-tui/src/ui.rs:196
+msgid "p show all PCR measurements  Tab/1-6 switch  F5 refresh  q quit"
+msgstr "p 显示所有的 PCR 度量  Tab/1-6 切换  F5 刷新  q 退出"
+
+#: crates/luks-assistant-tui/src/ui.rs:197
+msgid "↑↓ select  Tab/1-6 switch  F5 refresh  q quit"
+msgstr "↑↓ 选择  Tab/1-6 切换  F5 刷新  q 退出"
+
+#: crates/luks-assistant-tui/src/ui.rs:199
+msgid "↑↓ select  Space check  Enter menu  a all  i invert  x clear  r restore  p clean up  b back up checked  c backup location"
+msgstr "↑↓ 选择  空格 勾选  Enter 菜单  a 全选  i 反选  x 清空  r 恢复  p 清理  b 备份所选  c 备份位置"
+
+#: crates/luks-assistant-tui/src/ui.rs:201
+msgid "↑↓ scroll  x export  Tab/1-6 switch  q quit"
+msgstr "↑↓ 滚动  x 导出  Tab/1-6 切换  q 退出"
+
+#: crates/luks-assistant-tui/src/ui.rs:202
+msgid "Tab/1-6 pages  F5 refresh  q quit"
+msgstr "Tab/1-6 切换  F5 刷新  q 退出"
+
+#: crates/luks-assistant-tui/src/ui.rs:221
+msgid "Disk "
+msgstr "磁盘 "
+
+#: crates/luks-assistant-tui/src/ui.rs:227
+#: gui/src/mainwindow.cpp:663
+msgid "Status: unlocked"
+msgstr "状态：已解锁"
+
+#: crates/luks-assistant-tui/src/ui.rs:229
+#: gui/src/mainwindow.cpp:663
+msgid "Status: locked"
+msgstr "状态：锁定"
+
+#: crates/luks-assistant-tui/src/ui.rs:255
+msgid " Slots "
+msgstr " 槽位 "
+
+#: crates/luks-assistant-tui/src/ui.rs:360
+msgid "  press e to re-enroll"
+msgstr "  按 e 重新录入"
+
+#: crates/luks-assistant-tui/src/ui.rs:387
+#: gui/src/mainwindow.cpp:385
+msgid "Volume"
+msgstr "卷"
+
+#: crates/luks-assistant-tui/src/ui.rs:402
+msgid " Slot {} "
+msgstr " 槽位 {} "
+
+#: crates/luks-assistant-tui/src/ui.rs:454
+#: crates/luks-assistant-tui/src/ui.rs:469
+msgid "  Not detected"
+msgstr "  未检测到"
+
+#: crates/luks-assistant-tui/src/ui.rs:460
+#: gui/src/mainwindow.cpp:520
+msgid "FIDO2 security keys"
+msgstr "FIDO2 安全密钥"
+
+#: crates/luks-assistant-tui/src/ui.rs:461
+#: gui/src/mainwindow.cpp:520
+msgid "PKCS#11 smart cards"
+msgstr "PKCS#11 智能卡"
+
+#: crates/luks-assistant-tui/src/ui.rs:473
+#: gui/src/mainwindow.cpp:528
+msgid "Features"
+msgstr "功能"
+
+#: crates/luks-assistant-tui/src/ui.rs:483
+msgid " System "
+msgstr " 系统 "
+
+#: crates/luks-assistant-tui/src/ui.rs:492
+#: gui/src/mainwindow.cpp:381
+msgid "Name"
+msgstr "名称"
+
+#: crates/luks-assistant-tui/src/ui.rs:493
+#: gui/src/mainwindow.cpp:381
+msgid "Size"
+msgstr "大小"
+
+#: crates/luks-assistant-tui/src/ui.rs:494
+#: gui/src/mainwindow.cpp:381
+msgid "Encryption"
+msgstr "加密"
+
+#: crates/luks-assistant-tui/src/ui.rs:497
+#: gui/src/mainwindow.cpp:381
+msgid "Mount point"
+msgstr "挂载点"
+
+#: crates/luks-assistant-tui/src/ui.rs:536
+msgid " Disks · LUKS {}/{} "
+msgstr " 磁盘 · LUKS {}/{} "
+
+#: crates/luks-assistant-tui/src/ui.rs:544
+#: gui/src/mainwindow.ui
+msgid "Show all PCR measurements"
+msgstr "显示所有的 PCR 度量"
+
+#: crates/luks-assistant-tui/src/ui.rs:594
+msgid "* used by a TPM2 slot"
+msgstr "* 已被 TPM2 槽位使用"
+
+#: crates/luks-assistant-tui/src/ui.rs:619
+msgid " Problems and warnings "
+msgstr " 问题与警告 "
+
+#: crates/luks-assistant-tui/src/ui.rs:623
+msgid "✓ No problems"
+msgstr "✓ 没有问题"
+
+#: crates/luks-assistant-tui/src/ui.rs:682
+msgid " Hardware unlock availability "
+msgstr " 硬件解锁可用性 "
+
+#: crates/luks-assistant-tui/src/ui.rs:695
+msgid " Backup location: "
+msgstr " 备份位置: "
+
+#: crates/luks-assistant-tui/src/ui.rs:700
+msgid "  (c to change)"
+msgstr "  (c 修改)"
+
+#: crates/luks-assistant-tui/src/ui.rs:707
+#: gui/src/mainwindow.ui
+msgid "Select all"
+msgstr "全选"
+
+#: crates/luks-assistant-tui/src/ui.rs:708
+#: gui/src/mainwindow.ui
+msgid "Invert"
+msgstr "反选"
+
+#: crates/luks-assistant-tui/src/ui.rs:709
+#: gui/src/mainwindow.ui
+msgid "Clear"
+msgstr "清空"
+
+#: crates/luks-assistant-tui/src/ui.rs:714
+msgid "Back up selected ({})"
+msgstr "备份所选 ({})"
+
+#: crates/luks-assistant-tui/src/ui.rs:728
+msgid " LUKS volumes "
+msgstr " LUKS 卷 "
+
+#: crates/luks-assistant-tui/src/ui.rs:762
+msgid "Last backup {} · {} · {} in total"
+msgstr "最后备份 {} · {} · 共 {} 个"
+
+#: crates/luks-assistant-tui/src/ui.rs:770
+#: gui/src/mainwindow.cpp:785
+msgid "Never backed up"
+msgstr "从未备份"
+
+#: crates/luks-assistant-tui/src/ui.rs:788
+#: gui/src/mainwindow.cpp:451
+msgid "No LUKS volumes"
+msgstr "没有 LUKS 卷"
+
+#: crates/luks-assistant-tui/src/ui.rs:805
+#: gui/src/mainwindow.cpp:389
+msgid "No logs yet"
+msgstr "还没有日志"
+
+#: crates/luks-assistant-tui/src/ui.rs:812
+msgid " Logs"
+msgstr " 日志 "
+
+#: crates/luks-assistant-tui/src/ui.rs:901
+msgid " Disks "
+msgstr " 磁盘 "
+
+#: crates/luks-assistant-tui/src/ui.rs:968
+msgid "Type {} and press Enter to confirm"
+msgstr "输入 {} 后按 Enter 确认"
+
+#: crates/luks-assistant-tui/src/ui.rs:976
+msgid "Enter run · Esc cancel"
+msgstr "Enter 执行 · Esc 取消"
+
+#: crates/luks-assistant-tui/src/ui.rs:982
+msgid " Confirm "
+msgstr " 确认 "
+
+#: crates/luks-assistant-tui/src/ui.rs:1017
+msgid "Recovery key · slot {}"
+msgstr "恢复密钥 · 槽位 {}"
+
+#: crates/luks-assistant-tui/src/ui.rs:1026
+msgid "Shown only once; store it offline"
+msgstr "只显示这一次，请离线保存"
+
+#: crates/luks-assistant-tui/src/ui.rs:1028
+msgid "press y to close"
+msgstr "按 y 关闭"
+
+#: crates/luks-assistant-tui/src/ui.rs:1051
+msgid ""
+"Slots\n"
+"  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu\n"
+"  a add   e edit/re-enroll   d delete   n note\n"
+"  v verify   u unlock/lock   D choose disk\n"
+"System\n"
+"  p show all PCR measurements\n"
+"Headers\n"
+"  Space check   a all   i invert   x clear\n"
+"  r restore   p clean up (keep the newest backup)   b back up checked\n"
+"  Enter/right click back up, restore or clean up one volume   c backup location\n"
+"Logs\n"
+"  x export as txt\n"
+"Global\n"
+"  Tab / 1-6 switch page   F5 refresh   q quit"
+msgstr ""
+"槽位\n"
+"  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单\n"
+"  a 添加   e 修改/重新录入   d 删除   n 备注\n"
+"  v 验证   u 解锁/锁定   D 选择磁盘\n"
+"系统信息\n"
+"  p 显示所有的 PCR 度量\n"
+"头部管理\n"
+"  空格 勾选   a 全选   i 反选   x 清空\n"
+"  r 恢复   p 清理（只留最新备份）   b 备份所选\n"
+"  Enter/右键 单个卷的备份、恢复与清理   c 备份位置\n"
+"日志\n"
+"  x 导出为 txt\n"
+"全局\n"
+"  Tab / 1-6 切换页面   F5 刷新   q 退出"
+
+#: crates/luks-assistant-tui/src/ui.rs:1070
+msgid " Help "
+msgstr " 帮助 "
+
+#: crates/luks-assistant-tui/src/ui.rs:1164
+msgid " Tab/↑↓ move  Space/←→ choose  Enter OK  Esc cancel "
+msgstr " Tab/↑↓ 切换  空格/←→ 选择  Enter 确定  Esc 取消 "
+
+#: crates/luks-assistant-tui/src/ui.rs:1201
+msgid "PCR {} {}: {}"
+msgstr "PCR {} {}：{}"
+
+#: crates/luks-assistant-tui/src/ui.rs:1203
+msgid "  Changes: {}"
+msgstr "  改变：{}"
+
+#: crates/luks-assistant-tui/src/ui.rs:1206
+msgid "  Current: {}"
+msgstr "  当前：{}"
+
+#: gui/src/dialogs.cpp:46
+msgid "The following steps will run. Commands are equivalents with passwords hidden."
+msgstr "将执行以下步骤。命令为等效命令，其中的密码已隐藏。"
+
+#: gui/src/dialogs.cpp:64
+#: gui/src/formdialog.cpp:184
+msgid "Cancel"
+msgstr "取消"
+
+#: gui/src/dialogs.cpp:65
+msgid "Run"
+msgstr "执行"
+
+#: gui/src/dialogs.cpp:116
+msgid "%1 operations"
+msgstr "%1 项操作"
+
+#: gui/src/dialogs.cpp:122
+msgid "Type <b>%1</b> to confirm:"
+msgstr "输入 <b>%1</b> 以确认："
+
+#: gui/src/dialogs.cpp:178
+msgid "The recovery key was written to slot %1. It is shown only this once; write it down or print it and keep it offline."
+msgstr "恢复密钥已写入槽位 %1。它只显示这一次，请抄写或打印后离线保存。"
+
+#: gui/src/dialogs.cpp:191
+#: gui/src/mainwindow.cpp:252
+#: gui/src/mainwindow.cpp:255
+#: gui/src/mainwindow.cpp:263
+#: gui/src/mainwindow.cpp:266
+msgid "Copy"
+msgstr "复制"
+
+#: gui/src/dialogs.cpp:196
+msgid "I have saved this recovery key"
+msgstr "我已保存这个恢复密钥"
+
+#: gui/src/dialogs.cpp:199
+msgid "Close"
+msgstr "关闭"
+
+#: gui/src/dialogs.cpp:218
+msgid "  Backup: %1"
+msgstr "  备份: %1"
+
+#: gui/src/dialogs.cpp:232
+msgid "  Error: %1"
+msgstr "  错误: %1"
+
+#: gui/src/dialogs.cpp:258
+msgid "Done"
+msgstr "完成"
+
+#: gui/src/formdialog.cpp:102
+#: gui/src/mainwindow.cpp:1019
+#: gui/src/mainwindow.ui
+msgid "Browse…"
+msgstr "浏览…"
+
+#: gui/src/formdialog.cpp:182
+msgid "Save"
+msgstr "保存"
+
+#: gui/src/formdialog.cpp:183
+msgid "Next"
+msgstr "下一步"
+
+#: gui/src/helperclient.cpp:59
+msgid "Luks-Assistant-Helper not found"
+msgstr "找不到 Luks-Assistant-Helper"
+
+#: gui/src/helperclient.cpp:93
+msgid "Cannot start the backend: %1"
+msgstr "无法启动后端：%1"
+
+#: gui/src/helperclient.cpp:116
+msgid "The backend is not running"
+msgstr "后端未运行"
+
+#: gui/src/helperclient.cpp:159
+msgid "Administrator authentication was cancelled"
+msgstr "已取消管理员认证"
+
+#: gui/src/helperclient.cpp:161
+msgid "Authentication failed or pkexec is not available"
+msgstr "认证失败或 pkexec 不可用"
+
+#: gui/src/helperclient.cpp:163
+msgid "The backend has exited"
+msgstr "后端已退出"
+
+#: gui/src/helperclient.cpp:163
+msgid "The backend has exited: %1"
+msgstr "后端已退出：%1"
+
+#: gui/src/main.cpp:24
+msgid ""
+"Usage: Luks-Assistant-GUI [--gui | --tui] [device or image file...]\n"
+"\n"
+"  Opens the graphical interface in a desktop session, the terminal\n"
+"  interface from a terminal or without a display.\n"
+"\n"
+"  --gui        force the graphical interface (administrator rights via pkexec)\n"
+"  --tui        force the terminal interface (Luks-Assistant-TUI)\n"
+msgstr ""
+"用法: Luks-Assistant-GUI [--gui | --tui] [设备或镜像文件...]\n"
+"\n"
+"  桌面环境中启动时打开图形界面；在终端中或没有图形环境时打开终端界面。\n"
+"\n"
+"  --gui        强制图形界面（通过 pkexec 获取管理员权限）\n"
+"  --tui        强制终端界面（Luks-Assistant-TUI）\n"
+
+#: gui/src/main.cpp:65
+msgid "Cannot start Luks-Assistant-TUI: %s\n"
+msgstr "无法启动 Luks-Assistant-TUI: %s\n"
+
+#: gui/src/main.cpp:104
+msgid "No display (WAYLAND_DISPLAY / DISPLAY not set); use Luks-Assistant-TUI\n"
+msgstr "没有图形环境（WAYLAND_DISPLAY / DISPLAY 未设置），请使用 Luks-Assistant-TUI\n"
+
+#: gui/src/mainwindow.cpp:253
+#: gui/src/mainwindow.cpp:264
+#: gui/src/mainwindow.cpp:267
+#: gui/src/mainwindow.cpp:649
+msgid "%1: %2"
+msgstr "%1：%2"
+
+#: gui/src/mainwindow.cpp:261
+msgid "Copy PCR value"
+msgstr "复制 PCR 值"
+
+#: gui/src/mainwindow.cpp:344
+msgid "Backend not connected; click “Refresh” to retry"
+msgstr "后端未连接，点击“刷新”重试"
+
+#: gui/src/mainwindow.cpp:345
+msgid "Cannot start the backend"
+msgstr "无法启动后端"
+
+#: gui/src/mainwindow.cpp:380
+#: gui/src/mainwindow.cpp:384
+msgid "Item"
+msgstr "项目"
+
+#: gui/src/mainwindow.cpp:380
+msgid "Value"
+msgstr "值"
+
+#: gui/src/mainwindow.cpp:382
+msgid "Current value"
+msgstr "当前值"
+
+#: gui/src/mainwindow.cpp:382
+msgid "Purpose"
+msgstr "用途"
+
+#: gui/src/mainwindow.cpp:383
+msgid "Level"
+msgstr "级别"
+
+#: gui/src/mainwindow.cpp:383
+msgid "Problem"
+msgstr "问题"
+
+#: gui/src/mainwindow.cpp:383
+msgid "Explanation"
+msgstr "说明"
+
+#: gui/src/mainwindow.cpp:384
+msgid "Details"
+msgstr "详情"
+
+#: gui/src/mainwindow.cpp:385
+msgid "Last backup"
+msgstr "最后备份"
+
+#: gui/src/mainwindow.cpp:385
+msgid "Count"
+msgstr "数量"
+
+#: gui/src/mainwindow.cpp:404
+msgid "Requesting administrator rights…"
+msgstr "正在请求管理员权限…"
+
+#: gui/src/mainwindow.cpp:431
+msgid "Reading…"
+msgstr "正在读取…"
+
+#: gui/src/mainwindow.cpp:437
+msgid "Reading failed"
+msgstr "读取失败"
+
+#: gui/src/mainwindow.cpp:459
+msgid "Reading failed: %1"
+msgstr "读取失败：%1"
+
+#: gui/src/mainwindow.cpp:518
+#: gui/src/mainwindow.ui
+msgid "System"
+msgstr "系统"
+
+#: gui/src/mainwindow.cpp:578
+msgid ""
+"%1\n"
+"Changes: %2"
+msgstr ""
+"%1\n"
+"改变：%2"
+
+#: gui/src/mainwindow.cpp:701
+msgid "Locked"
+msgstr "已锁定"
+
+#: gui/src/mainwindow.cpp:711
+msgid "Slot %1"
+msgstr "槽位 %1"
+
+#: gui/src/mainwindow.cpp:721
+msgid "%1:"
+msgstr "%1："
+
+#: gui/src/mainwindow.cpp:725
+msgid "Volume:"
+msgstr "卷："
+
+#: gui/src/mainwindow.cpp:751
+msgid "No problems found"
+msgstr "没有发现问题"
+
+#: gui/src/mainwindow.cpp:898
+#: gui/src/mainwindow.cpp:1076
+msgid "Backup location saved"
+msgstr "备份位置已保存"
+
+#: gui/src/mainwindow.cpp:917
+msgid "Running… (touch the security key if asked)"
+msgstr "正在执行…（如有需要请触摸安全密钥）"
+
+#: gui/src/mainwindow.cpp:926
+msgid "Execution failed"
+msgstr "执行失败"
+
+#: gui/src/mainwindow.cpp:1012
+msgid "Restore this program's backup: %1"
+msgstr "恢复本程序的备份文件：%1"
+
+#: gui/src/mainwindow.cpp:1087
+msgid "The folder does not exist: %1"
+msgstr "文件夹不存在：%1"
+
+#: gui/src/mainwindow.cpp:1091
+msgid "Cannot open %1"
+msgstr "无法打开 %1"
+
+#: gui/src/mainwindow.cpp:1098
+msgid "Text files (*.txt)"
+msgstr "文本文件 (*.txt)"
+
+#: gui/src/mainwindow.cpp:1108
+msgid "Exported to %1"
+msgstr "已导出到 %1"
+
+#: gui/src/mainwindow.cpp:1127
+msgid "Takes full effect after restarting Luks Assistant"
+msgstr "重新启动 Luks Assistant 后完全生效"
+
+#: gui/src/mainwindow.ui
+msgctxt "tab"
+msgid "Slots"
+msgstr "槽位"
+
+#: gui/src/mainwindow.ui
+#: gui/src/mainwindow.ui
+msgid "Disk"
+msgstr "磁盘"
+
+#: gui/src/mainwindow.ui
+msgid "Check a password, key file or hardware token without changing anything"
+msgstr "验证密码、密钥文件或硬件令牌，不做任何修改"
+
+#: gui/src/mainwindow.ui
+msgid "Slot 0"
+msgstr "槽位 0"
+
+#: gui/src/mainwindow.ui
+msgctxt "tab"
+msgid "System"
+msgstr "系统信息"
+
+#: gui/src/mainwindow.ui
+msgid "Self-check"
+msgstr "自我检查"
+
+#: gui/src/mainwindow.ui
+msgid "Problems and warnings"
+msgstr "问题与警告"
+
+#: gui/src/mainwindow.ui
+msgid "Hardware unlock availability"
+msgstr "硬件解锁可用性"
+
+#: gui/src/mainwindow.ui
+msgid "Headers"
+msgstr "头部管理"
+
+#: gui/src/mainwindow.ui
+msgid "Open folder"
+msgstr "打开文件夹"
+
+#: gui/src/mainwindow.ui
+msgid "Keep only the newest header backup of each selected volume and delete the older ones"
+msgstr "每个所选卷只保留最新的头部备份，删除其余旧备份"
+
+#: gui/src/mainwindow.ui
+msgid "Back up selected"
+msgstr "备份所选"
+
+#: gui/src/mainwindow.ui
+msgid "Logs"
+msgstr "日志"
+
+#: gui/src/mainwindow.ui
+msgid "Export…"
+msgstr "导出…"
+
+#: gui/src/mainwindow.ui
+msgid "About"
+msgstr "关于"
+
+#: gui/src/mainwindow.ui
+msgid "Language"
+msgstr "语言"
+
+#: gui/src/mainwindow.ui
+#: gui/src/mainwindow.ui
+msgid "System default"
+msgstr "跟随系统"
+
+#: gui/src/mainwindow.ui
+msgid "Theme"
+msgstr "主题"
+
+#: gui/src/mainwindow.ui
+msgid "Qt (native)"
+msgstr "Qt（原生）"

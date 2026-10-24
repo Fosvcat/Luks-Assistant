@@ -38,17 +38,17 @@ impl Priority {
 
     pub fn text(self) -> Text {
         match self {
-            Priority::Ignore => tx!("忽略"),
-            Priority::Normal => tx!("普通"),
-            Priority::Prefer => tx!("优先"),
+            Priority::Ignore => tx!("Ignore"),
+            Priority::Normal => tx!("Normal"),
+            Priority::Prefer => tx!("Prefer"),
         }
     }
 
     pub fn label(self) -> &'static str {
         match self {
-            Priority::Ignore => t!("忽略"),
-            Priority::Normal => t!("普通"),
-            Priority::Prefer => t!("优先"),
+            Priority::Ignore => t!("Ignore"),
+            Priority::Normal => t!("Normal"),
+            Priority::Prefer => t!("Prefer"),
         }
     }
 }
@@ -69,7 +69,7 @@ impl Kdf {
     pub fn summary(&self) -> String {
         match self.kind.as_str() {
             "pbkdf2" => t!(
-                "pbkdf2-{} {} 次迭代",
+                "pbkdf2-{} {} iterations",
                 self.hash.as_deref().unwrap_or("?"),
                 self.iterations.unwrap_or(0)
             ),
@@ -201,7 +201,9 @@ pub fn parse_text_dump(text: &str) -> Result<TextInfo> {
         }
     }
     if info.version == 0 || info.uuid.is_empty() {
-        return Err(Error::Parse(tx!("luksDump 输出中缺少 Version/UUID")));
+        return Err(Error::Parse(tx!(
+            "Version/UUID missing from luksDump output"
+        )));
     }
     Ok(info)
 }
@@ -248,7 +250,7 @@ fn objects(v: &Value, key: &str) -> Vec<(u32, Value)> {
 /// Build a header from the text dump info and the JSON metadata.
 pub fn parse(info: TextInfo, json: &str) -> Result<Header> {
     let v: Value = serde_json::from_str(json)
-        .map_err(|e| Error::Parse(tx!("JSON 元数据: {}", e.to_string())))?;
+        .map_err(|e| Error::Parse(tx!("JSON metadata: {}", e.to_string())))?;
     let keyslots = objects(&v, "keyslots")
         .into_iter()
         .map(|(id, k)| {
@@ -395,7 +397,7 @@ pub fn read(ctx: &Ctx, device: &Path) -> Result<Header> {
     }
     if !ctx.caps.json_dump {
         return Err(Error::Unsupported(tx!(
-            "需要 cryptsetup ≥ 2.4 才能导出 JSON 元数据"
+            "Exporting JSON metadata needs cryptsetup ≥ 2.4"
         )));
     }
     let json = ctx
@@ -425,7 +427,7 @@ pub(crate) mod tests {
     "1":{"type":"systemd-tpm2","keyslots":["2"],"tpm2-blob":"AAAA","tpm2-pcrs":[0,7],"tpm2-pcr-bank":"sha256","tpm2-primary-alg":"ecc","tpm2-policy-hash":"44f59fc517b8e3f33c65335139f041a99aab7dd77be06f4f912508e6a8f2166c","tpm2-pin":false,"tpm2_pcrlock":false},
     "2":{"type":"systemd-fido2","keyslots":["3"],"fido2-credential":"AAAA","fido2-salt":"AAAA","fido2-rp":"io.systemd.cryptsetup","fido2-clientPin-required":true,"fido2-up-required":true,"fido2-uv-required":false},
     "7":{"type":"orphan-test","keyslots":[]},
-    "31":{"type":"luks-assistant-notes","keyslots":[],"version":1,"notes":{"0":{"text":"主密码","kind":"passphrase","fp":"AAAAsaltzero0000","updated":1}}}
+    "31":{"type":"luks-assistant-notes","keyslots":[],"version":1,"notes":{"0":{"text":"main password","kind":"passphrase","fp":"AAAAsaltzero0000","updated":1}}}
   },
   "segments":{"0":{"type":"crypt","offset":"16777216","size":"dynamic","iv_tweak":"0","encryption":"aes-xts-plain64","sector_size":512}},
   "digests":{"0":{"type":"pbkdf2","keyslots":["0","1","2","3","5"],"segments":["0"],"hash":"sha256","iterations":1000,"salt":"x","digest":"y"}},

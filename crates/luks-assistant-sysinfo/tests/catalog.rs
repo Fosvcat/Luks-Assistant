@@ -1,10 +1,17 @@
-//! The English catalog `i18n/en.tsv` must cover every Chinese string of the
-//! Rust crates (inside `t!`/`tx!`/`n!`) and of the Qt GUI (inside `tr()`),
-//! with the same placeholders, and hold nothing else.
+//! Translations are GNU gettext catalogs. This test extracts the English
+//! source strings of the Rust crates (`t!`/`tx!`/`n!`) and of the Qt GUI
+//! (`tr()`, `cliTr()` and `.ui` files), and checks that
 //!
-//! On failure the missing entries are printed as TSV lines to fill in.
+//! * the sources hold no non-English text outside those strings,
+//! * `po/luks-assistant.pot` is the extracted template,
+//! * every `po/<lang>.po` translates all of it with the same placeholders.
+//!
+//! `UPDATE_PO=1 cargo test -p luks-assistant-sysinfo --test catalog` rewrites
+//! the template and merges it into the `.po` files: new strings get an empty
+//! translation to fill in, strings no longer used are dropped.
 
-use std::collections::{BTreeMap, BTreeSet};
+use luks_assistant_sysinfo::i18n::parse_po;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 fn root() -> PathBuf {
@@ -173,20 +180,6 @@ fn literals(src: &str, rust: bool) -> Vec<Lit> {
     out
 }
 
-fn escape(s: &str) -> String {
-    s.replace('\\', "\\\\")
-        .replace('\n', "\\n")
-        .replace('\t', "\\t")
-}
-
-fn ends_with_call(before: &str, names: &[&str]) -> bool {
-    let b = before.trim_end();
-    names.iter().any(|n| {
-        b.strip_suffix(n)
-            .is_some_and(|rest| !rest.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
-    })
-}
-
 /// `{}` count and `%N` markers.
 fn placeholders(s: &str) -> (usize, Vec<String>) {
     let chars: Vec<char> = s.chars().collect();
@@ -199,15 +192,80 @@ fn placeholders(s: &str) -> (usize, Vec<String>) {
     (s.matches("{}").count(), pct)
 }
 
+fn ends_with_call(before: &str, names: &[&str]) -> bool {
+    let b = before.trim_end();
+    names.iter().any(|n| {
+        b.strip_suffix(n)
+            .is_some_and(|rest| !rest.ends_with(|c: char| c.is_alphanumeric() || c == '_'))
+    })
+}
+
+/// (msgctxt, msgid)
+type Key = (Option<String>, String);
+
+fn po_quote(s: &str) -> String {
+    let esc = |s: &str| {
+        s.replace('\\', "\\\\")
+            .replace('"', "\\\"")
+            .replace('\t', "\\t")
+            .replace('\n', "\\n")
+    };
+    if s.contains('\n') && s.trim_end_matches('\n').contains('\n') {
+        let mut out = String::from("\"\"");
+        for part in s.split_inclusive('\n') {
+            out.push_str(&format!("\n\"{}\"", esc(part)));
+        }
+        out
+    } else {
+        format!("\"{}\"", esc(s))
+    }
+}
+
+fn entry(out: &mut String, key: &Key, refs: &[String], msgstr: &str) {
+    out.push('\n');
+    for r in refs {
+        out.push_str(&format!("#: {r}\n"));
+    }
+    if let Some(c) = &key.0 {
+        out.push_str(&format!("msgctxt {}\n", po_quote(c)));
+    }
+    out.push_str(&format!("msgid {}\n", po_quote(&key.1)));
+    out.push_str(&format!("msgstr {}\n", po_quote(msgstr)));
+}
+
+/// The header entry of a .po file (everything before the first `#:`).
+fn po_header(src: &str) -> String {
+    let head = src.find("\n#: ").map(|i| &src[..i]).unwrap_or(src);
+    format!("{}\n", head.trim_end())
+}
+
+const POT_HEADER: &str = r#"# Luks Assistant: translatable strings (generated, do not edit).
+# Update with: UPDATE_PO=1 cargo test -p luks-assistant-sysinfo --test catalog
+msgid ""
+msgstr ""
+"Project-Id-Version: Luks Assistant\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"#;
+
 #[test]
 fn catalog_matches_sources() {
     let root = root();
-    let mut used: BTreeMap<String, String> = BTreeMap::new(); // key → where
+    // key → locations, in order of first appearance
+    let mut used: Vec<(Key, Vec<String>)> = Vec::new();
+    let mut add = |key: Key, at: String| match used.iter_mut().find(|(k, _)| *k == key) {
+        Some((_, refs)) => refs.push(at),
+        None => used.push((key, vec![at])),
+    };
     let mut errors = Vec::new();
     let rel = |p: &Path| p.strip_prefix(&root).unwrap().display().to_string();
 
     let mut rs = Vec::new();
     files(&root.join("crates"), &["rs"], &mut rs);
+    rs.sort();
     for p in rs
         .iter()
         .filter(|p| p.components().any(|c| c.as_os_str() == "src"))
@@ -215,43 +273,36 @@ fn catalog_matches_sources() {
         let src = std::fs::read_to_string(p).unwrap();
         let code = src.split("#[cfg(test)]").next().unwrap();
         for l in literals(code, true) {
-            if !l.cjk {
-                continue;
-            }
             let at = format!("{}:{}", rel(p), l.line);
             if ends_with_call(&l.before, &["t!(", "tx!(", "n!("]) {
-                used.entry(escape(&l.value)).or_insert(at);
-            } else {
-                errors.push(format!(
-                    "{at}: Chinese text outside t!/tx!/n!: {:?}",
-                    l.value
-                ));
+                add((None, l.value), at);
+            } else if l.cjk {
+                errors.push(format!("{at}: not English: {:?}", l.value));
             }
         }
     }
 
     let mut cpp = Vec::new();
     files(&root.join("gui/src"), &["cpp", "h"], &mut cpp);
+    cpp.sort();
     for p in &cpp {
         let src = std::fs::read_to_string(p).unwrap();
         for l in literals(&src, false) {
-            if !l.cjk {
-                continue;
-            }
             let at = format!("{}:{}", rel(p), l.line);
-            if ends_with_call(&l.before, &["tr("]) {
-                used.entry(escape(&l.value)).or_insert(at);
-            } else if !ends_with_call(&l.before, &["bilingual("]) {
-                errors.push(format!("{at}: Chinese text outside tr(): {:?}", l.value));
+            if ends_with_call(&l.before, &["tr(", "cliTr("]) {
+                add((None, l.value), at);
+            } else if l.cjk {
+                errors.push(format!("{at}: not English: {:?}", l.value));
             }
         }
     }
 
     let mut ui = Vec::new();
     files(&root.join("gui/src"), &["ui"], &mut ui);
+    ui.sort();
     for p in &ui {
         let src = std::fs::read_to_string(p).unwrap();
-        // <string>…</string> and <string comment="c">…</string> (key "…@c");
+        // <string>…</string> and <string comment="c">…</string> (msgctxt c);
         // notr="true" strings are not translated.
         for part in src.split("<string").skip(1) {
             let Some((attrs, rest)) = part.split_once('>') else {
@@ -263,7 +314,8 @@ fn catalog_matches_sources() {
             let comment = attrs
                 .split("comment=\"")
                 .nth(1)
-                .and_then(|c| c.split('"').next());
+                .and_then(|c| c.split('"').next())
+                .map(str::to_owned);
             let v = rest.split("</string>").next().unwrap();
             let v = v
                 .replace("&lt;", "<")
@@ -271,53 +323,71 @@ fn catalog_matches_sources() {
                 .replace("&quot;", "\"")
                 .replace("&amp;", "&");
             if v.chars().any(is_cjk) {
-                let key = match comment {
-                    Some(c) => format!("{}@{c}", escape(&v)),
-                    None => escape(&v),
-                };
-                used.entry(key).or_insert_with(|| rel(p));
+                errors.push(format!("{}: not English: {v:?}", rel(p)));
+            } else if v.chars().any(char::is_alphabetic) {
+                add((comment, v), rel(p));
             }
         }
     }
 
-    let tsv = std::fs::read_to_string(root.join("i18n/en.tsv")).unwrap();
-    let mut catalog: BTreeMap<String, String> = BTreeMap::new();
-    for (n, line) in tsv.lines().enumerate() {
-        if line.starts_with('#') || line.is_empty() {
-            continue;
-        }
-        let Some((zh, en)) = line.split_once('\t') else {
-            errors.push(format!("en.tsv:{}: no tab", n + 1));
-            continue;
-        };
-        if en.trim().is_empty() || en.chars().any(is_cjk) {
-            errors.push(format!("en.tsv:{}: no English for {zh:?}", n + 1));
-        }
-        if placeholders(zh) != placeholders(en) {
-            errors.push(format!(
-                "en.tsv:{}: placeholders differ: {zh:?} / {en:?}",
-                n + 1
-            ));
-        }
-        if catalog.insert(zh.to_owned(), en.to_owned()).is_some() {
-            errors.push(format!("en.tsv:{}: duplicate {zh:?}", n + 1));
-        }
+    let mut pot = String::from(POT_HEADER);
+    for (key, refs) in &used {
+        entry(&mut pot, key, refs, "");
+    }
+    let update = std::env::var("UPDATE_PO").is_ok_and(|v| v == "1");
+    let pot_path = root.join("po/luks-assistant.pot");
+    if update {
+        std::fs::write(&pot_path, &pot).unwrap();
+    } else if std::fs::read_to_string(&pot_path).ok().as_deref() != Some(pot.as_str()) {
+        errors.push("po/luks-assistant.pot is out of date: run UPDATE_PO=1 cargo test -p luks-assistant-sysinfo --test catalog".into());
     }
 
-    let stale: BTreeSet<_> = catalog.keys().filter(|k| !used.contains_key(*k)).collect();
-    for k in &stale {
-        errors.push(format!("en.tsv: unused entry {k:?}"));
-    }
-    let missing: Vec<_> = used.keys().filter(|k| !catalog.contains_key(*k)).collect();
-    if !missing.is_empty() {
-        eprintln!("---- missing catalog entries ----");
-        for k in &missing {
-            eprintln!("{k}\t\t# {}", used[*k]);
+    let mut pos = Vec::new();
+    files(&root.join("po"), &["po"], &mut pos);
+    pos.sort();
+    for p in &pos {
+        let name = rel(p);
+        let src = std::fs::read_to_string(p).unwrap();
+        let mut have: BTreeMap<Key, String> = BTreeMap::new();
+        for (ctxt, id, s) in parse_po(&src) {
+            if have.insert((ctxt.clone(), id.clone()), s).is_some() {
+                errors.push(format!("{name}: duplicate {id:?}"));
+            }
         }
-        errors.push(format!(
-            "{} strings missing from i18n/en.tsv",
-            missing.len()
-        ));
+        if update {
+            let mut out = po_header(&src);
+            for (key, refs) in &used {
+                entry(
+                    &mut out,
+                    key,
+                    refs,
+                    have.get(key).map(String::as_str).unwrap_or(""),
+                );
+            }
+            std::fs::write(p, &out).unwrap();
+            continue;
+        }
+        let mut missing = 0;
+        for (key, refs) in &used {
+            match have.get(key) {
+                None => {
+                    missing += 1;
+                    eprintln!("{name}: untranslated {:?} ({})", key.1, refs[0]);
+                }
+                Some(s) if placeholders(s) != placeholders(&key.1) => {
+                    errors.push(format!("{name}: placeholders differ: {:?} / {s:?}", key.1))
+                }
+                Some(_) => {}
+            }
+        }
+        if missing > 0 {
+            errors.push(format!("{name}: {missing} strings untranslated"));
+        }
+        for key in have.keys() {
+            if !used.iter().any(|(k, _)| k == key) {
+                errors.push(format!("{name}: unused entry {:?}", key.1));
+            }
+        }
     }
     assert!(errors.is_empty(), "\n{}", errors.join("\n"));
 }

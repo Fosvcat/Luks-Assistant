@@ -45,7 +45,7 @@ fn pad(s: &str, w: usize) -> String {
 
 fn pcr_list(p: &[u8]) -> String {
     if p.is_empty() {
-        t!("无").into()
+        t!("none").into()
     } else {
         pcr::format_list(p)
     }
@@ -177,7 +177,7 @@ fn draw_tabs(f: &mut Frame, app: &mut App, area: Rect) {
     }
     f.render_widget(Paragraph::new(Line::from(spans)), area);
     // the refresh button sits at the right end, as in the GUI
-    let label = format!("[ ⟳ {} ]", t!("刷新"));
+    let label = format!("[ ⟳ {} ]", t!("Refresh"));
     let w = label.width() as u16;
     if area.width > w {
         let r = Rect::new(area.x + area.width - w, area.y, w, 1);
@@ -190,16 +190,16 @@ fn draw_bottom(f: &mut Frame, app: &App, area: Rect) {
     let hints = match app.tab {
         Tab::Slots => {
             t!(
-                "←↑↓→ 选择  Enter 操作  a 添加  d 删除  n 备注  e 修改  v 验证  u 解锁/锁定  D 磁盘  ? 帮助  q 退出"
+                "←↑↓→ select  Enter actions  a add  d delete  n note  e edit  v verify  u unlock/lock  D disk  ? help  q quit"
             )
         }
-        Tab::System => t!("p 显示所有的 PCR 度量  Tab/1-6 切换  F5 刷新  q 退出"),
-        Tab::Check => t!("↑↓ 选择  Tab/1-6 切换  F5 刷新  q 退出"),
+        Tab::System => t!("p show all PCR measurements  Tab/1-6 switch  F5 refresh  q quit"),
+        Tab::Check => t!("↑↓ select  Tab/1-6 switch  F5 refresh  q quit"),
         Tab::Headers => t!(
-            "↑↓ 选择  空格 勾选  Enter 菜单  a 全选  i 反选  x 清空  r 恢复  p 清理  b 备份所选  c 备份位置"
+            "↑↓ select  Space check  Enter menu  a all  i invert  x clear  r restore  p clean up  b back up checked  c backup location"
         ),
-        Tab::Log => t!("↑↓ 滚动  x 导出  Tab/1-6 切换  q 退出"),
-        Tab::About => t!("Tab/1-6 切换  F5 刷新  q 退出"),
+        Tab::Log => t!("↑↓ scroll  x export  Tab/1-6 switch  q quit"),
+        Tab::About => t!("Tab/1-6 pages  F5 refresh  q quit"),
     };
     let line = Line::from(vec![
         Span::styled(format!(" {} ", app.status), Style::new().yellow()),
@@ -213,24 +213,27 @@ fn draw_device_bar(f: &mut Frame, app: &mut App, area: Rect) {
         let size = d.size.clone().unwrap_or_default();
         format!("{} {size}", d.display_name())
     });
-    let disk = format!(" ▼ {} ", trunc(&dev.unwrap_or_else(|| t!("无").into()), 60));
+    let disk = format!(
+        " ▼ {} ",
+        trunc(&dev.unwrap_or_else(|| t!("none").into()), 60)
+    );
     let mut row = Row::new(area);
-    row.push(t!("磁盘 "));
+    row.push(t!("Disk "));
     app.rects.disk = Some(row.push(Span::styled(disk, Style::new().black().on_white())));
     if let Some(ov) = &app.ov {
         let unlocked = ov.device.mapping.is_some();
         row.push("   ");
         row.push(if unlocked {
-            t!("状态：已解锁").green()
+            t!("Status: unlocked").green()
         } else {
-            t!("状态：锁定").yellow()
+            t!("Status: locked").yellow()
         });
         row.push("  ");
         // the running system's own volume cannot be locked
         let lock = if unlocked {
-            format!("🔒 {}", t!("锁定"))
+            format!("🔒 {}", t!("Lock"))
         } else {
-            format!("🔓 {}", t!("解锁"))
+            format!("🔓 {}", t!("Unlock"))
         };
         if unlocked && ov.device.holds_root() {
             row.push(button_off(&lock));
@@ -238,7 +241,7 @@ fn draw_device_bar(f: &mut Frame, app: &mut App, area: Rect) {
             app.rects.lock = Some(row.push(button(&lock)));
         }
         row.push(" ");
-        app.rects.verify = Some(row.push(button(t!("验证"))));
+        app.rects.verify = Some(row.push(button(t!("Verify"))));
     }
     f.render_widget(Paragraph::new(row.line()), area);
 }
@@ -249,7 +252,7 @@ fn draw_slots(f: &mut Frame, app: &mut App, area: Rect) {
     let Some(ov) = &app.ov else {
         let msg = app.load_error.clone().unwrap_or_default();
         f.render_widget(
-            Paragraph::new(msg).block(Block::bordered().title(t!(" 槽位 "))),
+            Paragraph::new(msg).block(Block::bordered().title(t!(" Slots "))),
             rest,
         );
         return;
@@ -288,7 +291,7 @@ fn draw_slots(f: &mut Frame, app: &mut App, area: Rect) {
             format!("{:02} {} {}", s.id, kind_icon(&s.kind), s.kind.label())
         };
         let l2 = match (&s.note, &s.tpm2_status) {
-            (_, Some(TpmStatus::Mismatch { .. })) => t!("PCR 已变化").to_owned(),
+            (_, Some(TpmStatus::Mismatch { .. })) => t!("PCRs changed").to_owned(),
             (Some(n), _) if !n.note.text.is_empty() => n.note.text.clone(),
             (_, Some(TpmStatus::Match)) => {
                 format!("✓ PCR {}", pcr_list(&s.tpm2.as_ref().unwrap().pcrs))
@@ -313,23 +316,26 @@ fn draw_slot_detail(f: &mut Frame, app: &App, area: Rect) {
     let Some(s) = app.selected_slot() else { return };
     let mut lines: Vec<Line> = Vec::new();
     if s.is_empty() {
-        lines.push(Line::from(t!("空闲").dark_gray()));
+        lines.push(Line::from(t!("Empty").dark_gray()));
     } else {
-        lines.push(kv(t!("类型"), s.kind.label()));
+        lines.push(kv(t!("Type"), s.kind.label()));
         if let Some(ks) = &s.keyslot {
             lines.push(kv("KDF", ks.kdf.summary()));
-            lines.push(kv(t!("优先级"), ks.priority.label()));
+            lines.push(kv(t!("Priority"), ks.priority.label()));
             if let Some(e) = &ks.area_encryption {
-                lines.push(kv(t!("槽位加密"), t!("{}  {} 位", e, ks.key_size * 8)));
+                lines.push(kv(
+                    t!("Slot encryption"),
+                    t!("{}  {} bits", e, ks.key_size * 8),
+                ));
             }
         }
         if !s.tokens.is_empty() {
-            lines.push(kv(t!("令牌"), format!("{:?}", s.tokens)));
+            lines.push(kv(t!("Token"), format!("{:?}", s.tokens)));
         }
         // Both stores, so it is clear where a note lives.
         for (label, loc) in [
-            (t!("头部备注"), Location::Header),
-            (t!("本机备注"), Location::Local),
+            (t!("Header note"), Location::Header),
+            (t!("Local note"), Location::Local),
         ] {
             let text = ov
                 .notes
@@ -348,17 +354,17 @@ fn draw_slot_detail(f: &mut Frame, app: &App, area: Rect) {
                     TpmStatus::Unknown(_) => Color::Yellow,
                 };
                 lines.push(Line::from(vec![
-                    Span::styled(pad(t!("状态"), 11), Style::new().dark_gray()),
+                    Span::styled(pad(t!("Status"), 11), Style::new().dark_gray()),
                     Span::styled(st.label(), Style::new().fg(color).bold()),
                     if matches!(st, TpmStatus::Mismatch { .. }) {
-                        t!("  按 e 重新录入").yellow()
+                        t!("  press e to re-enroll").yellow()
                     } else {
                         "".into()
                     },
                 ]));
             }
             if let Some(h) = &t.policy_hash {
-                lines.push(kv(t!("策略哈希"), h.clone()));
+                lines.push(kv(t!("Policy hash"), h.clone()));
             }
         }
         if let Some(fd) = &s.fido2 {
@@ -378,9 +384,9 @@ fn draw_slot_detail(f: &mut Frame, app: &App, area: Rect) {
     lines.push(Line::from(""));
     let seg = ov.header.segments.first();
     lines.push(kv(
-        t!("卷"),
+        t!("Volume"),
         t!(
-            "{} · 扇区 {} · JSON {}/{} 字节",
+            "{} · sector {} · JSON {}/{} bytes",
             seg.and_then(|s| s.encryption.clone()).unwrap_or_default(),
             seg.and_then(|s| s.sector_size).unwrap_or(0),
             ov.header.json_used,
@@ -393,7 +399,7 @@ fn draw_slot_detail(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
-            .block(Block::bordered().title(t!(" 槽位 {} ", s.id))),
+            .block(Block::bordered().title(t!(" Slot {} ", s.id))),
         area,
     );
 }
@@ -408,48 +414,51 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
     let s = &app.sys;
     let ver = |v: Option<luks_assistant_sysinfo::tools::Version>| {
         v.map(|v| v.to_string())
-            .unwrap_or_else(|| t!("未安装").into())
+            .unwrap_or_else(|| t!("not installed").into())
     };
     let mut lines = vec![
-        kv(t!("发行版"), s.os.pretty_name.clone()),
-        kv(t!("系列"), s.os.family.label()),
-        kv(t!("内核"), s.os.kernel.clone()),
-        kv(t!("主机名"), s.os.hostname.clone()),
+        kv(t!("Distribution"), s.os.pretty_name.clone()),
+        kv(t!("Family"), s.os.family.label()),
+        kv(t!("Kernel"), s.os.kernel.clone()),
+        kv(t!("Host name"), s.os.hostname.clone()),
         kv("cryptsetup", ver(s.tools.cryptsetup)),
         kv("systemd", ver(s.tools.systemd)),
-        kv(t!("固件"), if s.firmware.uefi { "UEFI" } else { "BIOS" }),
-        kv(t!("安全启动"), s.firmware.secure_boot_label()),
+        kv(
+            t!("Firmware"),
+            if s.firmware.uefi { "UEFI" } else { "BIOS" },
+        ),
+        kv(t!("Secure Boot"), s.firmware.secure_boot_label()),
         Line::from(""),
         Line::from("TPM".bold()),
     ];
     if s.tpm.present {
         lines.push(kv(
-            t!("版本"),
+            t!("Version"),
             format!("TPM {}.0", s.tpm.version_major.unwrap_or(0)),
         ));
         lines.push(kv(
-            t!("设备"),
+            t!("Device"),
             s.tpm
                 .dev_node
                 .as_ref()
                 .map(|p| p.display().to_string())
                 .unwrap_or_default(),
         ));
-        lines.push(kv(t!("驱动"), s.tpm.driver.clone().unwrap_or_default()));
+        lines.push(kv(t!("Driver"), s.tpm.driver.clone().unwrap_or_default()));
         lines.push(kv(
-            t!("描述"),
+            t!("Description"),
             s.tpm.description.clone().unwrap_or_default(),
         ));
         lines.push(kv("PCR bank", s.tpm.banks.join(", ")));
     } else {
-        lines.push(Line::from(t!("  未检测到").dark_gray()));
+        lines.push(Line::from(t!("  Not detected").dark_gray()));
     }
     if app.ctx.tpm2_device != "auto" {
-        lines.push(kv(t!("覆盖"), app.ctx.tpm2_device.clone()));
+        lines.push(kv(t!("Override"), app.ctx.tpm2_device.clone()));
     }
     for (title, list) in [
-        (t!("FIDO2 安全密钥"), &app.fido2_devices),
-        (t!("PKCS#11 智能卡"), &app.pkcs11_tokens),
+        (t!("FIDO2 security keys"), &app.fido2_devices),
+        (t!("PKCS#11 smart cards"), &app.pkcs11_tokens),
     ] {
         lines.push(Line::from(""));
         lines.push(Line::from(title.bold()));
@@ -457,11 +466,11 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
             Some(d) if !d.is_empty() => {
                 lines.extend(d.iter().map(|x| Line::from(format!("  {x}"))))
             }
-            _ => lines.push(Line::from(t!("  未检测到").dark_gray())),
+            _ => lines.push(Line::from(t!("  Not detected").dark_gray())),
         }
     }
     lines.push(Line::from(""));
-    lines.push(Line::from(t!("功能").bold()));
+    lines.push(Line::from(t!("Features").bold()));
     for (name, ok) in s.caps.describe() {
         lines.push(Line::from(vec![
             if ok { "  ✓ ".green() } else { "  ✗ ".red() },
@@ -471,7 +480,7 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
     f.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
-            .block(Block::bordered().title(t!(" 系统 "))),
+            .block(Block::bordered().title(t!(" System "))),
         left,
     );
 
@@ -480,12 +489,12 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
     let mut dl: Vec<Line> = vec![Line::from(
         format!(
             "{} {} {} {} {} {}",
-            pad(t!("名称"), 16),
-            pad(t!("大小"), 6),
-            pad(t!("加密"), 12),
-            pad(t!("类型"), 4),
+            pad(t!("Name"), 16),
+            pad(t!("Size"), 6),
+            pad(t!("Encryption"), 12),
+            pad(t!("Type"), 4),
             pad("TRIM", 4),
-            t!("挂载点")
+            t!("Mount point")
         )
         .dark_gray(),
     )];
@@ -524,7 +533,7 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
         ]));
     }
     f.render_widget(
-        Paragraph::new(dl).block(Block::bordered().title(t!(" 磁盘 · LUKS {}/{} ", luks, total))),
+        Paragraph::new(dl).block(Block::bordered().title(t!(" Disks · LUKS {}/{} ", luks, total))),
         mid,
     );
 
@@ -532,7 +541,7 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
     let toggle = format!(
         "{} {}",
         if app.show_all_pcrs { "[x]" } else { "[ ]" },
-        t!("显示所有的 PCR 度量")
+        t!("Show all PCR measurements")
     );
     app.rects.all_pcrs = Some(Rect::new(
         right.x + 1,
@@ -582,7 +591,7 @@ fn draw_system(f: &mut Frame, app: &mut App, area: Rect) {
             Span::styled(info.name(), style),
         ]));
     }
-    pl.push(Line::from(t!("* 已被 TPM2 槽位使用").dark_gray()));
+    pl.push(Line::from(t!("* used by a TPM2 slot").dark_gray()));
     f.render_widget(
         Paragraph::new(pl).block(Block::bordered().title(" PCR (sha256) ")),
         right,
@@ -607,11 +616,11 @@ fn draw_check(f: &mut Frame, app: &mut App, area: Rect) {
 
 fn draw_issues(f: &mut Frame, app: &mut App, area: Rect) {
     let [list, detail] = Layout::vertical([Constraint::Min(5), Constraint::Length(6)]).areas(area);
-    let block = Block::bordered().title(t!(" 问题与警告 "));
+    let block = Block::bordered().title(t!(" Problems and warnings "));
     let inner = block.inner(list);
     f.render_widget(block, list);
     if app.issues.is_empty() {
-        f.render_widget(Paragraph::new(t!("✓ 没有问题").green()), inner);
+        f.render_widget(Paragraph::new(t!("✓ No problems").green()), inner);
         return;
     }
     let start = app
@@ -670,7 +679,7 @@ fn draw_boot(f: &mut Frame, app: &App, area: Rect) {
     f.render_widget(
         Paragraph::new(lines)
             .wrap(Wrap { trim: false })
-            .block(Block::bordered().title(t!(" 硬件解锁可用性 "))),
+            .block(Block::bordered().title(t!(" Hardware unlock availability "))),
         area,
     );
 }
@@ -683,26 +692,26 @@ fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
     ])
     .areas(area);
     let line = Line::from(vec![
-        Span::raw(t!(" 备份位置: ")),
+        Span::raw(t!(" Backup location: ")),
         Span::styled(
             app.ctx.paths.backup_root.display().to_string(),
             Style::new().bold(),
         ),
-        Span::styled(t!("  (c 修改)"), Style::new().dark_gray()),
+        Span::styled(t!("  (c to change)"), Style::new().dark_gray()),
     ]);
     f.render_widget(Paragraph::new(line).block(Block::bordered()), head);
 
     let checked = app.checked_volumes().len();
     let mut row = Row::new(buttons);
     for (b, label, on) in [
-        (HeaderButton::All, t!("全选").to_owned(), true),
-        (HeaderButton::Invert, t!("反选").into(), true),
-        (HeaderButton::Clear, t!("清空").into(), true),
-        (HeaderButton::Restore, t!("恢复…").into(), checked == 1),
-        (HeaderButton::Prune, t!("清理").into(), checked > 0),
+        (HeaderButton::All, t!("Select all").to_owned(), true),
+        (HeaderButton::Invert, t!("Invert").into(), true),
+        (HeaderButton::Clear, t!("Clear").into(), true),
+        (HeaderButton::Restore, t!("Restore…").into(), checked == 1),
+        (HeaderButton::Prune, t!("Clean up").into(), checked > 0),
         (
             HeaderButton::Backup,
-            t!("备份所选 ({})", checked),
+            t!("Back up selected ({})", checked),
             checked > 0,
         ),
     ] {
@@ -716,7 +725,7 @@ fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
     }
     f.render_widget(Paragraph::new(row.line()), buttons);
 
-    let block = Block::bordered().title(t!(" LUKS 卷 "));
+    let block = Block::bordered().title(t!(" LUKS volumes "));
     let inner = block.inner(list);
     f.render_widget(block, list);
     let rows_per = 2u16;
@@ -750,7 +759,7 @@ fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
         };
         let last = match files.first() {
             Some(b) => t!(
-                "最后备份 {} · {} · 共 {} 个",
+                "Last backup {} · {} · {} in total",
                 format_time(b.modified),
                 b.path
                     .file_name()
@@ -758,7 +767,7 @@ fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
                     .unwrap_or_default(),
                 files.len()
             ),
-            None => t!("从未备份").into(),
+            None => t!("Never backed up").into(),
         };
         let mut l1 = Line::from(vec![
             Span::styled(format!("{check} "), Style::new().cyan().bold()),
@@ -776,7 +785,7 @@ fn draw_headers(f: &mut Frame, app: &mut App, area: Rect) {
         f.render_widget(Paragraph::new(vec![l1, l2]), rect);
     }
     if app.devices.is_empty() {
-        f.render_widget(Paragraph::new(t!("没有 LUKS 卷").dark_gray()), inner);
+        f.render_widget(Paragraph::new(t!("No LUKS volumes").dark_gray()), inner);
     }
 }
 
@@ -793,14 +802,14 @@ fn draw_log(f: &mut Frame, app: &App, area: Rect) {
         Line::from(""),
     ];
     if app.log.is_empty() {
-        lines.push(Line::from(t!("还没有日志").dark_gray()));
+        lines.push(Line::from(t!("No logs yet").dark_gray()));
     }
     lines.extend(app.log.iter().map(|l| Line::from(l.clone())));
     f.render_widget(
         Paragraph::new(lines)
             .scroll((app.log_scroll, 0))
             .wrap(Wrap { trim: false })
-            .block(Block::bordered().title(t!(" 日志 "))),
+            .block(Block::bordered().title(t!(" Logs"))),
         area,
     );
 }
@@ -889,7 +898,7 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
             let r = centered(area, w.min(area.width), h);
             clear(f, r);
             let block = Block::bordered()
-                .title(t!(" 磁盘 "))
+                .title(t!(" Disks "))
                 .border_style(Color::Cyan);
             let inner = block.inner(r);
             f.render_widget(block, r);
@@ -955,20 +964,22 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
             }
             match plans.iter().find_map(|p| p.confirm_word.as_ref()) {
                 Some(w) => {
-                    lines.push(Line::from(t!("输入 {} 后按 Enter 确认", w).red().bold()));
+                    lines.push(Line::from(
+                        t!("Type {} and press Enter to confirm", w).red().bold(),
+                    ));
                     lines.push(Line::from(vec![
                         "> ".into(),
                         typed.clone().bold(),
                         "▏".into(),
                     ]));
                 }
-                None => lines.push(Line::from(t!("Enter 执行 · Esc 取消").cyan())),
+                None => lines.push(Line::from(t!("Enter run · Esc cancel").cyan())),
             }
             f.render_widget(
                 Paragraph::new(lines)
                     .wrap(Wrap { trim: false })
                     .scroll((*scroll, 0))
-                    .block(Block::bordered().title(t!(" 确认 ")).border_style(color)),
+                    .block(Block::bordered().title(t!(" Confirm ")).border_style(color)),
                 r,
             );
         }
@@ -1003,7 +1014,7 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
             let lines = vec![
                 Line::from(
                     t!(
-                        "恢复密钥 · 槽位 {}",
+                        "Recovery key · slot {}",
                         slot.map(|s| s.to_string()).unwrap_or("?".into())
                     )
                     .green()
@@ -1012,9 +1023,9 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
                 Line::from(""),
                 Line::from(key.clone().bold().yellow()),
                 Line::from(""),
-                Line::from(t!("只显示这一次，请离线保存")),
+                Line::from(t!("Shown only once; store it offline")),
                 Line::from(""),
-                Line::from(t!("按 y 关闭").cyan()),
+                Line::from(t!("press y to close").cyan()),
             ];
             f.render_widget(
                 Paragraph::new(lines).block(Block::bordered().border_style(Color::Yellow)),
@@ -1038,25 +1049,25 @@ fn draw_modal(f: &mut Frame, app: &mut App) {
         }
         Modal::Help => {
             let text = t!("\
-槽位
-  ←↑↓→ hjkl / 点击   选择；双击、右键或 Enter 打开菜单
-  a 添加   e 修改/重新录入   d 删除   n 备注
-  v 验证   u 解锁/锁定   D 选择磁盘
-系统信息
-  p 显示所有的 PCR 度量
-头部管理
-  空格 勾选   a 全选   i 反选   x 清空
-  r 恢复   p 清理（只留最新备份）   b 备份所选
-  Enter/右键 单个卷的备份、恢复与清理   c 备份位置
-日志
-  x 导出为 txt
-全局
-  Tab / 1-6 切换页面   F5 刷新   q 退出");
+Slots
+  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu
+  a add   e edit/re-enroll   d delete   n note
+  v verify   u unlock/lock   D choose disk
+System
+  p show all PCR measurements
+Headers
+  Space check   a all   i invert   x clear
+  r restore   p clean up (keep the newest backup)   b back up checked
+  Enter/right click back up, restore or clean up one volume   c backup location
+Logs
+  x export as txt
+Global
+  Tab / 1-6 switch page   F5 refresh   q quit");
             let w = text.lines().map(|l| l.width()).max().unwrap_or(40) as u16 + 3;
             let r = centered(area, w, text.lines().count() as u16 + 2);
             clear(f, r);
             f.render_widget(
-                Paragraph::new(text).block(Block::bordered().title(t!(" 帮助 "))),
+                Paragraph::new(text).block(Block::bordered().title(t!(" Help "))),
                 r,
             );
         }
@@ -1150,7 +1161,7 @@ fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
     }
     let block = Block::bordered()
         .title(format!(" {} ", form.title))
-        .title_bottom(t!(" Tab/↑↓ 切换  空格/←→ 选择  Enter 确定  Esc 取消 "))
+        .title_bottom(t!(" Tab/↑↓ move  Space/←→ choose  Enter OK  Esc cancel "))
         .border_style(Color::Cyan);
     if !has_pcrs {
         if let Some(e) = &state.error {
@@ -1187,17 +1198,17 @@ fn draw_form(f: &mut Frame, app: &App, state: &FormState, area: Rect) {
         .map(|b| encode_hex(b))
         .unwrap_or_else(|| "—".into());
     msgs.push(Line::from(
-        t!("PCR {} {}：{}", c, info.name(), info.measures()).bold(),
+        t!("PCR {} {}: {}", c, info.name(), info.measures()).bold(),
     ));
-    msgs.push(Line::from(t!("  改变：{}", info.changes()).dark_gray()));
+    msgs.push(Line::from(t!("  Changes: {}", info.changes()).dark_gray()));
     msgs.push(Line::from(
         t!(
-            "  当前：{}",
+            "  Current: {}",
             trunc(&val, (msg_w as usize).saturating_sub(10))
         )
         .dark_gray(),
     ));
-    msgs.push(Line::from(t!("已选 PCR {}", pcr_list(&sel))));
+    msgs.push(Line::from(t!("Selected PCRs {}", pcr_list(&sel))));
     let box_h = 9;
     // Room for every field whatever is shown, plus a hint and a wrapped
     // PCR row: the height only depends on the form.

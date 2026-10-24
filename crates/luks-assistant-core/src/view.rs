@@ -151,7 +151,7 @@ pub struct BackupRow {
 
 fn ver(v: Option<Version>) -> String {
     v.map(|v| v.to_string())
-        .unwrap_or_else(|| t!("未安装").into())
+        .unwrap_or_else(|| t!("not installed").into())
 }
 
 pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
@@ -162,10 +162,10 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
     } else if sys.tpm.is_tpm2() {
         format!("TPM2 ✓ {}", sys.tpm.banks.join("/"))
     } else {
-        t!("无 TPM").into()
+        t!("no TPM").into()
     };
     let summary = t!(
-        "{} · 内核 {} · systemd {} · cryptsetup {} · {} · 安全启动 {}",
+        "{} · kernel {} · systemd {} · cryptsetup {} · {} · Secure Boot {}",
         sys.os.pretty_name,
         sys.os.kernel,
         ver(sys.tools.systemd),
@@ -174,40 +174,46 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
         sys.firmware.secure_boot_label()
     );
     let system = vec![
-        row(t!("发行版"), sys.os.pretty_name.clone()),
-        row(t!("系列"), sys.os.family.label()),
-        row(t!("内核"), sys.os.kernel.clone()),
-        row(t!("主机名"), sys.os.hostname.clone()),
+        row(t!("Distribution"), sys.os.pretty_name.clone()),
+        row(t!("Family"), sys.os.family.label()),
+        row(t!("Kernel"), sys.os.kernel.clone()),
+        row(t!("Host name"), sys.os.hostname.clone()),
         row("cryptsetup", ver(sys.tools.cryptsetup)),
         row("systemd", ver(sys.tools.systemd)),
-        row(t!("固件"), if sys.firmware.uefi { "UEFI" } else { "BIOS" }),
-        row(t!("安全启动"), sys.firmware.secure_boot_label()),
+        row(
+            t!("Firmware"),
+            if sys.firmware.uefi { "UEFI" } else { "BIOS" },
+        ),
+        row(t!("Secure Boot"), sys.firmware.secure_boot_label()),
     ];
     let mut tpm = Vec::new();
     if sys.tpm.present {
         tpm.push(row(
-            t!("版本"),
+            t!("Version"),
             format!("TPM {}.0", sys.tpm.version_major.unwrap_or(0)),
         ));
         tpm.push(row(
-            t!("设备"),
+            t!("Device"),
             sys.tpm
                 .dev_node
                 .as_ref()
                 .map(|p| p.display().to_string())
                 .unwrap_or_default(),
         ));
-        tpm.push(row(t!("驱动"), sys.tpm.driver.clone().unwrap_or_default()));
         tpm.push(row(
-            t!("描述"),
+            t!("Driver"),
+            sys.tpm.driver.clone().unwrap_or_default(),
+        ));
+        tpm.push(row(
+            t!("Description"),
             sys.tpm.description.clone().unwrap_or_default(),
         ));
         tpm.push(row("PCR bank", sys.tpm.banks.join(", ")));
     } else {
-        tpm.push(row(t!("状态"), t!("未检测到")));
+        tpm.push(row(t!("Status"), t!("Not detected")));
     }
     if ctx.tpm2_device != "auto" {
-        tpm.push(row(t!("覆盖"), ctx.tpm2_device.clone()));
+        tpm.push(row(t!("Override"), ctx.tpm2_device.clone()));
     }
     let disks = tree
         .flatten()
@@ -243,7 +249,7 @@ pub fn system_view(ctx: &Ctx, extra: &[PathBuf]) -> SystemView {
         .map(|p| PickEntry {
             depth: 0,
             path: p.to_string_lossy().into_owned(),
-            text: t!("{}  镜像文件", p.display()),
+            text: t!("{}  image file", p.display()),
             selectable: true,
         })
         .collect();
@@ -320,9 +326,9 @@ pub fn pcr_rows(values: Option<&PcrValues>) -> Vec<PcrRow> {
 /// Selected PCRs with their meaning, followed by warnings.
 pub fn pcr_notes(selected: &[u8], secure_boot: Option<bool>) -> Vec<String> {
     let mut v = vec![t!(
-        "已选 PCR {}",
+        "Selected PCRs {}",
         if selected.is_empty() {
-            t!("无").into()
+            t!("none").into()
         } else {
             pcr::format_list(selected)
         }
@@ -330,7 +336,7 @@ pub fn pcr_notes(selected: &[u8], secure_boot: Option<bool>) -> Vec<String> {
     for &p in selected.iter().filter(|p| **p < 24) {
         let info = &pcr::PCRS[p as usize];
         v.push(t!(
-            "PCR {} {}：{}；改变：{}",
+            "PCR {} {}: {}; changes: {}",
             p,
             info.name(),
             info.measures(),
@@ -363,7 +369,7 @@ fn kind_id(k: &SlotKind) -> &'static str {
 
 fn slot_view(ov: &Overview, s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps) -> SlotView {
     let subtitle = match (&s.note, &s.tpm2_status) {
-        (_, Some(TpmStatus::Mismatch { .. })) => t!("⚠ PCR 已变化").to_owned(),
+        (_, Some(TpmStatus::Mismatch { .. })) => t!("⚠ PCRs changed").to_owned(),
         (Some(n), _) if !n.note.text.is_empty() => n.note.text.clone(),
         (_, Some(TpmStatus::Match)) => {
             format!("PCR {}", pcr::format_list(&s.tpm2.as_ref().unwrap().pcrs))
@@ -379,17 +385,20 @@ fn slot_view(ov: &Overview, s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps
     };
     let mut details = Vec::new();
     if !s.is_empty() {
-        details.push(row(t!("类型"), s.kind.label()));
+        details.push(row(t!("Type"), s.kind.label()));
         if let Some(ks) = &s.keyslot {
             details.push(row("KDF", ks.kdf.summary()));
-            details.push(row(t!("优先级"), ks.priority.label()));
+            details.push(row(t!("Priority"), ks.priority.label()));
             if let Some(e) = &ks.area_encryption {
-                details.push(row(t!("槽位加密"), t!("{}  {} 位", e, ks.key_size * 8)));
+                details.push(row(
+                    t!("Slot encryption"),
+                    t!("{}  {} bits", e, ks.key_size * 8),
+                ));
             }
         }
         if !s.tokens.is_empty() {
             details.push(row(
-                t!("令牌"),
+                t!("Token"),
                 s.tokens
                     .iter()
                     .map(u32::to_string)
@@ -399,8 +408,8 @@ fn slot_view(ov: &Overview, s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps
         }
         // Both stores, so it is clear where a note lives.
         for (label, loc) in [
-            (t!("头部备注"), Location::Header),
-            (t!("本机备注"), Location::Local),
+            (t!("Header note"), Location::Header),
+            (t!("Local note"), Location::Local),
         ] {
             let text = ov
                 .notes
@@ -413,10 +422,10 @@ fn slot_view(ov: &Overview, s: &Slot, caps: &luks_assistant_sysinfo::tools::Caps
         if let Some(t) = &s.tpm2 {
             details.push(row("TPM2", t.describe()));
             if let Some(st) = &s.tpm2_status {
-                details.push(row(t!("状态"), st.label()));
+                details.push(row(t!("Status"), st.label()));
             }
             if let Some(h) = &t.policy_hash {
-                details.push(row(t!("策略哈希"), h.clone()));
+                details.push(row(t!("Policy hash"), h.clone()));
             }
         }
         if let Some(f) = &s.fido2 {
@@ -471,13 +480,13 @@ pub fn device_view(ctx: &Ctx, ov: &Overview, issues: &[Issue]) -> DeviceView {
         title: ov.device.display_name(),
         uuid: ov.header.uuid.clone(),
         header: t!(
-            "LUKS{} · {} · 已用 {}/32",
+            "LUKS{} · {} · {}/32 used",
             ov.header.version,
             ov.header.uuid,
             ov.used().count()
         ),
         volume: t!(
-            "{} · 扇区 {} · JSON {}/{} 字节",
+            "{} · sector {} · JSON {}/{} bytes",
             seg.and_then(|s| s.encryption.clone()).unwrap_or_default(),
             seg.and_then(|s| s.sector_size).unwrap_or(0),
             ov.header.json_used,
@@ -560,7 +569,7 @@ mod tests {
         let v = device_view(&ctx, &ov, &crate::health::check(&ov));
         assert_eq!(v.slots.len(), 32);
         assert_eq!(v.slots[0].kind, "passphrase");
-        assert_eq!(v.slots[0].subtitle, "主密码");
+        assert_eq!(v.slots[0].subtitle, "main password");
         assert_eq!(v.slots[2].kind, "tpm2");
         assert_eq!(v.slots[2].state, "unknown");
         assert_eq!(v.slots[4].kind, "empty");
@@ -575,7 +584,7 @@ mod tests {
     #[test]
     fn notes_list_selection() {
         let n = pcr_notes(&[0, 7], Some(true));
-        assert_eq!(n[0], "已选 PCR 0+7");
+        assert_eq!(n[0], "Selected PCRs 0+7");
         assert!(n.iter().any(|l| l.starts_with("⚠ PCR 0")));
     }
 }

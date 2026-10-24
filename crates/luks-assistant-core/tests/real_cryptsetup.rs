@@ -114,11 +114,14 @@ fn passphrase_keyfile_notes_and_removal() {
         new: Secret::from_text("second-pass"),
         slot: Some(3),
         kdf: KdfChoice::Default,
-        note: note("备用密码", Location::Header),
+        note: note("spare password", Location::Header),
     });
     let ov = env.ov();
     assert_eq!(ov.slots[3].kind, SlotKind::Passphrase);
-    assert_eq!(ov.slots[3].note.as_ref().unwrap().note.text, "备用密码");
+    assert_eq!(
+        ov.slots[3].note.as_ref().unwrap().note.text,
+        "spare password"
+    );
     assert_eq!(env.unlocks("second-pass"), Some(3));
     assert!(env.ctx.paths.history_log().exists());
     assert_eq!(
@@ -159,7 +162,11 @@ fn passphrase_keyfile_notes_and_removal() {
     let ov = env.ov();
     let changed = ov
         .used()
-        .find(|s| s.note.as_ref().is_some_and(|n| n.note.text == "备用密码"))
+        .find(|s| {
+            s.note
+                .as_ref()
+                .is_some_and(|n| n.note.text == "spare password")
+        })
         .expect("note kept");
     assert_eq!(changed.kind, SlotKind::Passphrase);
     assert_eq!(env.unlocks("third-pass!"), Some(changed.id));
@@ -171,7 +178,7 @@ fn passphrase_keyfile_notes_and_removal() {
         new: Secret::from_text("pbkdf-pass"),
         slot: Some(7),
         kdf: KdfChoice::Pbkdf2,
-        note: note("旧 KDF", Location::Header),
+        note: note("old KDF", Location::Header),
     });
     assert_eq!(
         env.ov().slots[7].keyslot.as_ref().unwrap().kdf.kind,
@@ -183,7 +190,7 @@ fn passphrase_keyfile_notes_and_removal() {
     });
     let ov = env.ov();
     assert_eq!(ov.slots[7].keyslot.as_ref().unwrap().kdf.kind, "argon2id");
-    assert_eq!(ov.slots[7].note.as_ref().unwrap().note.text, "旧 KDF");
+    assert_eq!(ov.slots[7].note.as_ref().unwrap().note.text, "old KDF");
     assert_eq!(ov.slots[7].kind, SlotKind::Passphrase);
     assert_eq!(env.unlocks("pbkdf-pass"), Some(7));
     // converting again is refused
@@ -218,14 +225,14 @@ fn passphrase_keyfile_notes_and_removal() {
     // local note on slot 0
     env.run(Request::SetNote {
         slot: 0,
-        text: "主密码".into(),
+        text: "main password".into(),
         location: Location::Local,
     });
     let ov = env.ov();
     let n = ov.slots[0].note.as_ref().unwrap();
     assert_eq!(
         (n.note.text.as_str(), n.location),
-        ("主密码", Location::Local)
+        ("main password", Location::Local)
     );
     assert!(env.ctx.paths.local_notes(ov.uuid()).exists());
 
@@ -292,7 +299,7 @@ fn recovery_key_priority_orphans_and_restore() {
     let report = env.run(Request::AddRecoveryKey {
         auth: pw("first-pass"),
         replace: None,
-        note: note("打印在纸上", Location::Header),
+        note: note("printed on paper", Location::Header),
     });
     let first_backup = report.backup_file.clone().expect("backup taken");
     let key = report.recovery_key.expect("recovery key returned");
@@ -415,7 +422,7 @@ fn tpm2_enroll_detect_drift_and_reenroll() {
         pcrs: vec![pcr],
         pin: None,
         replace: None,
-        note: note("本机 TPM", Location::Header),
+        note: note("this machine's TPM", Location::Header),
     });
     let slot = report.new_slot.unwrap();
     let ov = env.ov();
@@ -446,7 +453,7 @@ fn tpm2_enroll_detect_drift_and_reenroll() {
     let s = &ov.slots[new as usize];
     assert_eq!(s.tpm2_status, Some(TpmStatus::Match));
     assert!(s.tpm2.as_ref().unwrap().pin);
-    assert_eq!(s.note.as_ref().unwrap().note.text, "本机 TPM");
+    assert_eq!(s.note.as_ref().unwrap().note.text, "this machine's TPM");
     assert_eq!(s.note.as_ref().unwrap().note.kind, None::<KeyKind>);
 
     // a TPM slot can be removed, the passphrase cannot

@@ -38,17 +38,17 @@ pub enum SlotKind {
 impl SlotKind {
     pub fn text(&self) -> Text {
         match self {
-            SlotKind::Empty => tx!("空"),
-            SlotKind::Passphrase => tx!("密码"),
-            SlotKind::Keyfile => tx!("密钥文件"),
-            SlotKind::Secret => tx!("密码/密钥文件"),
-            SlotKind::Recovery => tx!("恢复密钥"),
+            SlotKind::Empty => tx!("Empty"),
+            SlotKind::Passphrase => tx!("Password"),
+            SlotKind::Keyfile => tx!("Key file"),
+            SlotKind::Secret => tx!("Password/key file"),
+            SlotKind::Recovery => tx!("Recovery key"),
             SlotKind::Tpm2 => Text::plain("TPM2"),
             SlotKind::Fido2 => Text::plain("FIDO2"),
             SlotKind::Pkcs11 => Text::plain("PKCS#11"),
-            SlotKind::OtherToken(t) => tx!("令牌:{}", t),
-            SlotKind::Reencrypt => tx!("重加密"),
-            SlotKind::Luks1 => tx!("LUKS1 密钥"),
+            SlotKind::OtherToken(t) => tx!("Token:{}", t),
+            SlotKind::Reencrypt => tx!("Re-encryption"),
+            SlotKind::Luks1 => tx!("LUKS1 key"),
         }
     }
 
@@ -119,16 +119,16 @@ impl Fido2Token {
         };
         let parts: Vec<String> = [
             flag(self.client_pin, "PIN"),
-            flag(self.user_presence, t!("触摸")),
-            flag(self.user_verification, t!("用户验证")),
+            flag(self.user_presence, t!("touch")),
+            flag(self.user_verification, t!("user verification")),
         ]
         .into_iter()
         .flatten()
         .collect();
         if parts.is_empty() {
-            t!("无额外要求").into()
+            t!("no extra requirements").into()
         } else {
-            t!("需要 {}", parts.join(" + "))
+            t!("requires {}", parts.join(" + "))
         }
     }
 }
@@ -155,7 +155,7 @@ impl Slot {
     /// One-line summary for lists and detail panes.
     pub fn summary(&self) -> String {
         match &self.kind {
-            SlotKind::Empty => t!("空闲").into(),
+            SlotKind::Empty => t!("Empty").into(),
             SlotKind::Tpm2 => self.tpm2.as_ref().map(|t| t.describe()).unwrap_or_default(),
             SlotKind::Fido2 => self
                 .fido2
@@ -313,11 +313,11 @@ impl Overview {
 
     pub fn read_only_reason(&self) -> Option<String> {
         if !self.header.is_luks2() {
-            return Some(t!("不支持 LUKS1，仅支持 LUKS2").into());
+            return Some(t!("LUKS1 is not supported, only LUKS2").into());
         }
         if !self.header.config.requirements.is_empty() {
             return Some(t!(
-                "头部有强制要求 {}，只读",
+                "The header has mandatory requirements {}; read-only",
                 format!("{:?}", self.header.config.requirements)
             ));
         }
@@ -392,7 +392,10 @@ pub(crate) mod tests {
         let ov = sample_overview();
         assert_eq!(ov.slots.len(), 32);
         assert_eq!(ov.slots[0].kind, SlotKind::Passphrase); // from the note
-        assert_eq!(ov.slots[0].note.as_ref().unwrap().note.text, "主密码");
+        assert_eq!(
+            ov.slots[0].note.as_ref().unwrap().note.text,
+            "main password"
+        );
         assert_eq!(ov.slots[1].kind, SlotKind::Recovery);
         assert_eq!(ov.slots[2].kind, SlotKind::Tpm2);
         assert_eq!(ov.slots[2].tokens, vec![1]);
@@ -401,7 +404,7 @@ pub(crate) mod tests {
             Some(TpmStatus::Unknown(_))
         ));
         assert_eq!(ov.slots[3].kind, SlotKind::Fido2);
-        assert_eq!(ov.slots[3].summary(), "需要 PIN + 触摸");
+        assert_eq!(ov.slots[3].summary(), "requires PIN + touch");
         assert_eq!(ov.slots[4].kind, SlotKind::Empty);
         assert_eq!(ov.slots[5].kind, SlotKind::Secret);
         assert_eq!(ov.knowledge_slots(), vec![0, 1, 5]);

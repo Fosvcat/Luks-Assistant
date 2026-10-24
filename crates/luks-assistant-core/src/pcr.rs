@@ -58,117 +58,122 @@ pub const PREFERRED: [u8; 8] = [0, 1, 7, 8, 9, 11, 12, 14];
 pub const PCRS: [PcrInfo; 24] = [
     p(
         0,
-        n!("SRTM / 固件代码"),
-        n!("主板 UEFI 固件核心代码"),
-        n!("更新 BIOS/UEFI、CPU 微码"),
+        n!("SRTM / firmware code"),
+        n!("Core UEFI firmware code of the mainboard"),
+        n!("Updating BIOS/UEFI or CPU microcode"),
     ),
     p(
         1,
-        n!("固件配置"),
-        n!("主板固件的配置和策略"),
-        n!("修改固件设置、更换硬件"),
+        n!("Firmware configuration"),
+        n!("Mainboard firmware configuration and policies"),
+        n!("Changing firmware settings or hardware"),
     ),
     p(
         2,
-        n!("Option ROM 代码"),
-        n!("显卡、网卡等外部设备固件"),
-        n!("更换或更新外部设备固件"),
+        n!("Option ROM code"),
+        n!("Firmware of graphics, network and other expansion cards"),
+        n!("Replacing or updating expansion card firmware"),
     ),
     p(
         3,
-        n!("Option ROM 配置"),
-        n!("外部设备固件的配置数据"),
-        n!("更换或更新外部设备固件"),
+        n!("Option ROM configuration"),
+        n!("Configuration data of expansion card firmware"),
+        n!("Replacing or updating expansion card firmware"),
     ),
     p(
         4,
-        n!("引导程序代码"),
-        n!("启动管理器 / 引导的 EFI 程序本身"),
-        n!("更新引导程序、UKI 或内核 EFI 文件"),
+        n!("Boot loader code"),
+        n!("Boot manager / the booted EFI programs themselves"),
+        n!("Updating the boot loader, UKI or kernel EFI files"),
     ),
     p(
         5,
-        n!("引导配置"),
-        n!("启动项配置与 GPT 分区表"),
-        n!("修改 UEFI 启动顺序、分区表"),
+        n!("Boot configuration"),
+        n!("Boot entries and the GPT partition table"),
+        n!("Changing the UEFI boot order or the partition table"),
     ),
     p(
         6,
-        n!("电源事件"),
-        n!("平台电源状态"),
-        n!("睡眠、唤醒等事件"),
+        n!("Power events"),
+        n!("Platform power state"),
+        n!("Sleep, wake-up and similar events"),
     ),
     p(
         7,
-        n!("安全启动策略"),
-        n!("安全启动开关与证书数据库"),
-        n!("开关安全启动、更新 db/dbx/KEK"),
+        n!("Secure Boot policy"),
+        n!("Secure Boot state and certificate databases"),
+        n!("Turning Secure Boot on or off, updating db/dbx/KEK"),
     ),
     p(
         8,
-        n!("GRUB 命令"),
-        n!("GRUB 执行的命令和参数"),
-        n!("修改 grub.cfg、更换主题"),
+        n!("GRUB commands"),
+        n!("Commands and arguments GRUB runs"),
+        n!("Editing grub.cfg, changing the theme"),
     ),
     p(
         9,
-        n!("GRUB 读取的文件"),
-        n!("GRUB 读取的内核、initramfs 等文件"),
-        n!("更新内核或 initramfs"),
+        n!("Files GRUB reads"),
+        n!("Kernel, initramfs and other files GRUB reads"),
+        n!("Updating the kernel or initramfs"),
     ),
     p(
         10,
         "IMA",
-        n!("运行时加载的程序和库"),
-        n!("运行期间持续变化"),
+        n!("Programs and libraries loaded at run time"),
+        n!("Keeps changing at run time"),
     ),
     p(
         11,
-        n!("UKI 内容"),
-        n!("统一内核镜像的各个段"),
-        n!("更新 UKI"),
+        n!("UKI contents"),
+        n!("Sections of the unified kernel image"),
+        n!("Updating the UKI"),
     ),
     p(
         12,
-        n!("UKI 参数 / 凭据"),
-        n!("传给 UKI 的内核参数和系统凭据"),
-        n!("修改内核参数"),
+        n!("UKI arguments / credentials"),
+        n!("Kernel command line and system credentials passed to the UKI"),
+        n!("Changing the kernel command line"),
     ),
     p(
         13,
-        n!("系统扩展"),
-        n!("systemd-sysext 镜像"),
-        n!("更改扩展镜像"),
+        n!("System extensions"),
+        n!("systemd-sysext images"),
+        n!("Changing extension images"),
     ),
     p(
         14,
         "MOK",
-        n!("shim 的 Machine Owner Key"),
-        n!("注册/删除 MOK"),
+        n!("shim's Machine Owner Keys"),
+        n!("Enrolling/deleting MOKs"),
     ),
     p(
         15,
-        n!("machine-id / 系统身份"),
-        n!("machine-id 等身份信息"),
-        n!("修改 /etc/machine-id，解锁后可能被 systemd 扩展"),
+        n!("machine-id / system identity"),
+        n!("machine-id and other identity data"),
+        n!("Changing /etc/machine-id; systemd may extend it after unlocking"),
     ),
-    p(16, n!("调试"), n!("调试用途"), n!("root 可随意扩展")),
+    p(
+        16,
+        n!("Debug"),
+        n!("Debugging"),
+        n!("root can extend it at will"),
+    ),
     p(
         17,
         "DRTM",
-        n!("动态度量 (Intel TXT / AMD SKINIT)"),
-        n!("通常未使用"),
+        n!("Dynamic measurement (Intel TXT / AMD SKINIT)"),
+        n!("Usually unused"),
     ),
-    p(18, "DRTM", n!("动态度量"), n!("通常未使用")),
-    p(19, "DRTM", n!("动态度量"), n!("通常未使用")),
-    p(20, "DRTM", n!("动态度量"), n!("通常未使用")),
-    p(21, "DRTM", n!("动态度量"), n!("通常未使用")),
-    p(22, "DRTM", n!("动态度量"), n!("通常未使用")),
+    p(18, "DRTM", n!("Dynamic measurement"), n!("Usually unused")),
+    p(19, "DRTM", n!("Dynamic measurement"), n!("Usually unused")),
+    p(20, "DRTM", n!("Dynamic measurement"), n!("Usually unused")),
+    p(21, "DRTM", n!("Dynamic measurement"), n!("Usually unused")),
+    p(22, "DRTM", n!("Dynamic measurement"), n!("Usually unused")),
     p(
         23,
-        n!("应用专用"),
-        n!("用户/应用写入（systemd、fwupd 等）"),
-        n!("可被重置为全零"),
+        n!("Application specific"),
+        n!("Written by user space/applications (systemd, fwupd, …)"),
+        n!("Can be reset to all zeros"),
     ),
 ];
 
@@ -177,21 +182,23 @@ pub const PCRS: [PcrInfo; 24] = [
 pub fn selection_warnings(pcrs: &[u8], secure_boot: Option<bool>) -> Vec<Text> {
     let mut w = Vec::new();
     if pcrs.is_empty() {
-        w.push(tx!("未选择 PCR：任何能访问这颗 TPM 的系统都能解锁"));
+        w.push(tx!(
+            "No PCRs selected: any system with access to this TPM can unlock"
+        ));
         return w;
     }
     for &i in pcrs {
         let msg = match i {
-            0 => tx!("PCR 0：BIOS/微码更新后失效"),
-            2 | 3 => tx!("PCR 2/3：外部设备固件变化后失效"),
-            4 => tx!("PCR 4：引导程序/UKI 更新后失效"),
-            8 | 9 => tx!("PCR 8/9：GRUB 配置、内核或 initramfs 更新后失效"),
-            10 => tx!("PCR 10 (IMA) 运行期间持续变化，不可用"),
-            11 => tx!("PCR 11：UKI 更新后失效"),
-            12 => tx!("PCR 12：内核参数变化后失效"),
-            15 => tx!("PCR 15：systemd 可能在解锁后扩展它"),
-            16 | 23 => tx!("PCR 16/23 可被用户态改写，无安全性"),
-            17..=22 => tx!("PCR 17-22 仅用于 DRTM"),
+            0 => tx!("PCR 0: breaks after BIOS/microcode updates"),
+            2 | 3 => tx!("PCR 2/3: break when expansion card firmware changes"),
+            4 => tx!("PCR 4: breaks after boot loader/UKI updates"),
+            8 | 9 => tx!("PCR 8/9: break after GRUB config, kernel or initramfs updates"),
+            10 => tx!("PCR 10 (IMA) keeps changing at run time; unusable"),
+            11 => tx!("PCR 11: breaks after UKI updates"),
+            12 => tx!("PCR 12: breaks when the kernel command line changes"),
+            15 => tx!("PCR 15: systemd may extend it after unlocking"),
+            16 | 23 => tx!("PCR 16/23 can be changed from user space; no security"),
+            17..=22 => tx!("PCR 17-22 are only used by DRTM"),
             _ => continue,
         };
         if !w.contains(&msg) {
@@ -199,10 +206,10 @@ pub fn selection_warnings(pcrs: &[u8], secure_boot: Option<bool>) -> Vec<Text> {
         }
     }
     if pcrs.contains(&7) && secure_boot == Some(false) {
-        w.push(tx!("安全启动未开启，PCR 7 保护有限"));
+        w.push(tx!("Secure Boot is off; PCR 7 protects little"));
     }
     if !pcrs.contains(&7) {
-        w.push(tx!("建议包含 PCR 7"));
+        w.push(tx!("Including PCR 7 is recommended"));
     }
     w
 }
@@ -212,9 +219,9 @@ pub fn parse_list(s: &str) -> Result<Vec<u8>> {
     for part in s.split(['+', ',', ' ']).filter(|p| !p.is_empty()) {
         let n: u8 = part
             .parse()
-            .map_err(|_| Error::Invalid(tx!("无效的 PCR 编号: {}", part)))?;
+            .map_err(|_| Error::Invalid(tx!("Invalid PCR number: {}", part)))?;
         if n > 23 {
-            return Err(Error::Invalid(tx!("PCR 编号超出范围: {}", n)));
+            return Err(Error::Invalid(tx!("PCR number out of range: {}", n)));
         }
         if !out.contains(&n) {
             out.push(n);
@@ -286,7 +293,7 @@ impl Tpm2Token {
         let mut s = format!(
             "PCR {} ({})",
             if self.pcrs.is_empty() {
-                t!("无").into()
+                t!("none").into()
             } else {
                 format_list(&self.pcrs)
             },
@@ -296,7 +303,10 @@ impl Tpm2Token {
             s.push_str(" + PIN");
         }
         if self.has_pubkey {
-            s.push_str(&t!(" + 签名策略(PCR {})", format_list(&self.pubkey_pcrs)));
+            s.push_str(&t!(
+                " + signed policy (PCR {})",
+                format_list(&self.pubkey_pcrs)
+            ));
         }
         if self.pcrlock {
             s.push_str(" + pcrlock");
@@ -337,7 +347,7 @@ pub fn policy_hash(bank: &str, pcrs: &[u8], values: &PcrValues, pin: bool) -> Re
             select[usize::from(i / 8)] |= 1 << (i % 8);
             let v = values
                 .get(&i)
-                .ok_or_else(|| Error::Invalid(tx!("缺少 PCR {} 的当前值", i)))?;
+                .ok_or_else(|| Error::Invalid(tx!("No current value for PCR {}", i)))?;
             values_hash.update(v);
         }
         let mut h = Sha256::new();
@@ -373,12 +383,12 @@ pub enum TpmStatus {
 impl TpmStatus {
     pub fn text(&self) -> Text {
         match self {
-            TpmStatus::Match => tx!("PCR 匹配"),
+            TpmStatus::Match => tx!("PCRs match"),
             TpmStatus::Mismatch { changed: Some(c) } if !c.is_empty() => {
-                tx!("PCR {} 已变化", format_list(c))
+                tx!("PCR {} changed", format_list(c))
             }
-            TpmStatus::Mismatch { .. } => tx!("PCR 已变化"),
-            TpmStatus::Unknown(why) => tx!("无法判断: {}", why),
+            TpmStatus::Mismatch { .. } => tx!("PCRs changed"),
+            TpmStatus::Unknown(why) => tx!("Cannot tell: {}", why),
         }
     }
 
@@ -454,16 +464,16 @@ impl Snapshots {
 /// Evaluate `tok` against `values` (the current PCRs of `tok.bank`).
 pub fn evaluate(tok: &Tpm2Token, values: Option<&PcrValues>, snapshots: &Snapshots) -> TpmStatus {
     if tok.pcrlock {
-        return TpmStatus::Unknown(t!("使用 pcrlock 策略").into());
+        return TpmStatus::Unknown(t!("uses a pcrlock policy").into());
     }
     if tok.has_pubkey {
-        return TpmStatus::Unknown(t!("使用签名 PCR 策略").into());
+        return TpmStatus::Unknown(t!("uses a signed PCR policy").into());
     }
     let Some(expected) = tok.policy_hash.as_deref() else {
-        return TpmStatus::Unknown(t!("令牌中没有 tpm2-policy-hash").into());
+        return TpmStatus::Unknown(t!("The token has no tpm2-policy-hash").into());
     };
     let Some(values) = values else {
-        return TpmStatus::Unknown(t!("无法读取 {} PCR", tok.bank));
+        return TpmStatus::Unknown(t!("Cannot read the {} PCRs", tok.bank));
     };
     match policy_hash(&tok.bank, &tok.pcrs, values, tok.pin) {
         Ok(h) if encode_hex(&h).eq_ignore_ascii_case(expected) => TpmStatus::Match,
@@ -562,7 +572,7 @@ mod tests {
         assert!(
             selection_warnings(&[], None)[0]
                 .to_string()
-                .contains("未选择")
+                .contains("No PCRs selected")
         );
         assert!(selection_warnings(&[7], Some(true)).is_empty());
         let w = selection_warnings(&[4, 9], Some(true));

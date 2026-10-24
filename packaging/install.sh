@@ -25,7 +25,7 @@ if [ "${1:-}" = "--uninstall" ]; then
           "$DESTDIR$APPDIR/Luks-Assistant.desktop" \
           "$DESTDIR$ICONDIR/luks-assistant.png" "$DESTDIR$PIXMAPDIR/luks-assistant.png" \
           "$DESTDIR$POLKITDIR/io.github.fosvcat.luks-assistant.policy"
-    echo "已卸载（/etc/luks-assistant 与 /var/lib/luks-assistant 中的备注、备份保持不变）"
+    echo "Uninstalled (notes and backups in /etc/luks-assistant and /var/lib/luks-assistant are kept)"
     exit 0
 fi
 
@@ -39,7 +39,7 @@ TUI=$(find_bin Luks-Assistant-TUI)
 GUI=$(find_bin Luks-Assistant-GUI)
 HELPER=$(find_bin Luks-Assistant-Helper)
 
-[ -n "$TUI" ] || { echo "找不到 Luks-Assistant-TUI" >&2; exit 1; }
+[ -n "$TUI" ] || { echo "Luks-Assistant-TUI not found" >&2; exit 1; }
 install -Dm755 "$TUI" "$DESTDIR$BINDIR/Luks-Assistant-TUI"
 if [ -n "$GUI" ] && [ -n "$HELPER" ]; then
     install -Dm755 "$GUI" "$DESTDIR$BINDIR/Luks-Assistant-GUI"
@@ -54,7 +54,7 @@ if [ -n "$GUI" ] && [ -n "$HELPER" ]; then
     sed "s|@LIBEXECDIR@|$LIBEXECDIR|" "$HERE/io.github.fosvcat.luks-assistant.policy.in" \
         > "$DESTDIR$POLKITDIR/io.github.fosvcat.luks-assistant.policy"
     chmod 644 "$DESTDIR$POLKITDIR/io.github.fosvcat.luks-assistant.policy"
-    echo "已安装 Luks-Assistant-GUI、Luks-Assistant-TUI 与 $LIBEXECDIR/Luks-Assistant-Helper"
+    echo "Installed Luks-Assistant-GUI, Luks-Assistant-TUI and $LIBEXECDIR/Luks-Assistant-Helper"
 else
-    echo "已安装 Luks-Assistant-TUI（未找到图形界面二进制）"
+    echo "Installed Luks-Assistant-TUI (no GUI binaries found)"
 fi

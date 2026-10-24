@@ -135,15 +135,18 @@ impl Caps {
     /// Human readable list of (feature, available).
     pub fn describe(&self) -> Vec<(&'static str, bool)> {
         vec![
-            (t!("JSON 头部导出 (cryptsetup ≥ 2.4)"), self.json_dump),
+            (t!("JSON header dump (cryptsetup ≥ 2.4)"), self.json_dump),
             ("systemd-cryptenroll (systemd ≥ 248)", self.cryptenroll),
-            (t!("FIDO2 PIN/触摸/验证选项 (≥ 249)"), self.fido2_options),
+            (
+                t!("FIDO2 PIN/touch/verification options (≥ 249)"),
+                self.fido2_options,
+            ),
             ("TPM2 + PIN (≥ 251)", self.tpm2_pin),
             (
-                t!("用密钥文件验证 --unlock-key-file (≥ 252)"),
+                t!("Authenticate with a key file, --unlock-key-file (≥ 252)"),
                 self.unlock_key_file,
             ),
-            (t!("TPM2 签名 PCR 策略 (≥ 252)"), self.tpm2_public_key),
+            (t!("TPM2 signed PCR policies (≥ 252)"), self.tpm2_public_key),
             ("TPM2 pcrlock (≥ 255)", self.tpm2_pcrlock),
         ]
     }

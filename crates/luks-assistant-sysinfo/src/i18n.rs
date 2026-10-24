@@ -1,5 +1,6 @@
-//! Interface language. Source strings are Chinese; English comes from the
-//! catalog `i18n/en.tsv`, which the Qt GUI uses too.
+//! Interface language. Source strings are English; translations are GNU
+//! gettext catalogs in `po/` (`po/<lang>.po`, template `po/luks-assistant.pot`),
+//! embedded at build time and shared with the Qt GUI.
 //!
 //! * `t!("…")` is a `&'static str` and `t!("… {} …", a)` a `String`, both in
 //!   the current language.
@@ -10,116 +11,217 @@
 //!   [`tr`] where it is shown.
 //!
 //! Placeholders are plain `{}`, filled in order.
+//!
+//! Adding a language: add `po/<code>.po` (start from the template) and a line
+//! to [`CATALOGS`]; `tests/catalog.rs` checks it is complete.
 
 use std::collections::HashMap;
 use std::fmt;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU8, Ordering};
 
+/// Shipped translations: gettext language code and catalog.
+pub const CATALOGS: &[(&str, &str)] = &[("zh_CN", include_str!("../../../po/zh_CN.po"))];
+
+/// English (the source language) or one of [`CATALOGS`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Lang {
-    Zh,
-    En,
-}
+pub struct Lang(u8);
 
 static LANG: AtomicU8 = AtomicU8::new(0);
 
 pub fn set_lang(lang: Lang) {
-    LANG.store(lang as u8, Ordering::Relaxed);
+    LANG.store(lang.0, Ordering::Relaxed);
 }
 
 pub fn lang() -> Lang {
-    if LANG.load(Ordering::Relaxed) == Lang::En as u8 {
-        Lang::En
-    } else {
-        Lang::Zh
-    }
+    Lang(LANG.load(Ordering::Relaxed))
 }
 
 impl Lang {
-    /// `zh…` → Chinese, `en…` → English.
+    pub const EN: Lang = Lang(0);
+
+    /// A locale or language code (`zh_CN.UTF-8`, `zh`, `en_US`, `de-AT`):
+    /// English, a catalog for the same language and region, or else for the
+    /// same language. `None` when nothing matches.
     pub fn from_code(code: &str) -> Option<Lang> {
-        let c = code.trim().to_ascii_lowercase();
-        if c.starts_with("zh") {
-            Some(Lang::Zh)
-        } else if c.starts_with("en") {
-            Some(Lang::En)
-        } else {
-            None
+        let c = code.trim().to_ascii_lowercase().replace('-', "_");
+        let c = c.split(['.', '@']).next().unwrap_or("");
+        let language = c.split('_').next().unwrap_or("");
+        if language == "en" {
+            return Some(Lang::EN);
         }
+        let find = |f: &dyn Fn(&str) -> bool| {
+            CATALOGS
+                .iter()
+                .position(|(k, _)| f(&k.to_ascii_lowercase()))
+                .map(|i| Lang(i as u8 + 1))
+        };
+        find(&|k| k == c)
+            .or_else(|| find(&|k| !language.is_empty() && k.split('_').next() == Some(language)))
     }
 
-    /// `LUKS_ASSISTANT_LANG`, else the locale (`LC_ALL`, `LC_MESSAGES`,
-    /// `LANG`): Chinese for `zh_*`, English otherwise.
+    /// `LUKS_ASSISTANT_LANG`, else the locale as gettext reads it
+    /// (`LANGUAGE`, `LC_ALL`, `LC_MESSAGES`, `LANG`); English by default.
     pub fn from_env() -> Lang {
-        if let Some(l) = std::env::var("LUKS_ASSISTANT_LANG")
-            .ok()
-            .and_then(|v| Lang::from_code(&v))
-        {
+        let var = |k: &str| std::env::var(k).ok().filter(|v| !v.is_empty());
+        if let Some(l) = var("LUKS_ASSISTANT_LANG").and_then(|v| Lang::from_code(&v)) {
             return l;
         }
-        ["LC_ALL", "LC_MESSAGES", "LANG"]
+        let locale = ["LC_ALL", "LC_MESSAGES", "LANG"]
             .iter()
-            .filter_map(|k| std::env::var(k).ok())
-            .find(|v| !v.is_empty())
-            .and_then(|v| Lang::from_code(&v))
-            .unwrap_or(Lang::En)
+            .find_map(|k| var(k));
+        // LANGUAGE is a list of preferences, ignored for the C locale
+        if locale.as_deref().is_some_and(|l| l != "C" && l != "POSIX") {
+            for code in var("LANGUAGE").unwrap_or_default().split(':') {
+                if let Some(l) = Lang::from_code(code) {
+                    return l;
+                }
+            }
+        }
+        locale.and_then(|v| Lang::from_code(&v)).unwrap_or(Lang::EN)
     }
 
+    /// `en` or the catalog's code (`zh_CN`).
     pub fn code(self) -> &'static str {
-        match self {
-            Lang::Zh => "zh",
-            Lang::En => "en",
+        match self.0 {
+            0 => "en",
+            i => CATALOGS.get(i as usize - 1).map(|c| c.0).unwrap_or("en"),
         }
     }
 }
 
-const CATALOG: &str = include_str!("../../../i18n/en.tsv");
-
-fn unescape(s: &'static str) -> &'static str {
-    if !s.contains('\\') {
-        return s;
+/// The strings of a PO file: (msgctxt, msgid, msgstr), without the header,
+/// untranslated and fuzzy entries.
+pub fn parse_po(src: &str) -> Vec<(Option<String>, String, String)> {
+    #[derive(Default)]
+    struct Entry {
+        ctxt: Option<String>,
+        id: Option<String>,
+        plural: bool,
+        str: Option<String>,
+        fuzzy: bool,
     }
-    let mut out = String::with_capacity(s.len());
-    let mut chars = s.chars();
-    while let Some(c) = chars.next() {
-        if c == '\\' {
+    fn quoted(s: &str) -> String {
+        let inner = s
+            .trim()
+            .strip_prefix('"')
+            .and_then(|s| s.strip_suffix('"'))
+            .unwrap_or("");
+        let mut out = String::with_capacity(inner.len());
+        let mut chars = inner.chars();
+        while let Some(c) = chars.next() {
+            if c != '\\' {
+                out.push(c);
+                continue;
+            }
             match chars.next() {
                 Some('n') => out.push('\n'),
                 Some('t') => out.push('\t'),
                 Some(o) => out.push(o),
-                None => out.push('\\'),
+                None => {}
             }
-        } else {
-            out.push(c);
+        }
+        out
+    }
+    // an entry: [#, flags] [msgctxt "…"] msgid "…" msgstr "…", strings
+    // continued on following "…" lines
+    let mut out = Vec::new();
+    let mut e = Entry::default();
+    // which string a continuation line extends: 0 ctxt, 1 id, 2 str, 3 none
+    let mut target = 3;
+    let mut flush = |e: &mut Entry| {
+        let e = std::mem::take(e);
+        if let (Some(id), Some(s)) = (e.id, e.str) {
+            if !id.is_empty() && !s.is_empty() && !e.fuzzy && !e.plural {
+                out.push((e.ctxt, id, s));
+            }
+        }
+    };
+    for line in src.lines().map(str::trim).filter(|l| !l.is_empty()) {
+        let starts_entry = ["#,", "msgctxt ", "msgid "]
+            .iter()
+            .any(|p| line.starts_with(p));
+        if starts_entry && e.str.is_some() {
+            flush(&mut e);
+            target = 3;
+        }
+        if let Some(flags) = line.strip_prefix("#,") {
+            e.fuzzy = flags.split(',').any(|f| f.trim() == "fuzzy");
+        } else if line.starts_with('#') {
+            continue;
+        } else if let Some(rest) = line.strip_prefix("msgctxt ") {
+            e.ctxt = Some(quoted(rest));
+            target = 0;
+        } else if let Some(rest) = line.strip_prefix("msgid ") {
+            e.id = Some(quoted(rest));
+            target = 1;
+        } else if line.starts_with("msgid_plural ") {
+            e.plural = true;
+            target = 3;
+        } else if let Some(rest) = line.strip_prefix("msgstr ") {
+            e.str = Some(quoted(rest));
+            target = 2;
+        } else if line.starts_with("msgstr[") {
+            e.str.get_or_insert_with(String::new);
+            target = 3;
+        } else if line.starts_with('"') {
+            let more = quoted(line);
+            match target {
+                0 => e.ctxt.get_or_insert_with(String::new).push_str(&more),
+                1 => e.id.get_or_insert_with(String::new).push_str(&more),
+                2 => e.str.get_or_insert_with(String::new).push_str(&more),
+                _ => {}
+            }
         }
     }
-    Box::leak(out.into_boxed_str())
+    flush(&mut e);
+    out
 }
 
-/// Chinese → English pairs of the catalog.
-pub fn catalog() -> &'static HashMap<&'static str, &'static str> {
-    static MAP: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
-    MAP.get_or_init(|| {
-        CATALOG
-            .lines()
-            .filter(|l| !l.starts_with('#'))
-            .filter_map(|l| l.split_once('\t'))
-            .map(|(zh, en)| (unescape(zh), unescape(en)))
+/// Lookup key of a string with a context, as gettext forms it.
+pub fn context_key(ctxt: &str, id: &str) -> String {
+    format!("{ctxt}\u{4}{id}")
+}
+
+type Catalog = HashMap<&'static str, &'static str>;
+
+fn catalog(i: usize) -> Option<&'static Catalog> {
+    static MAPS: OnceLock<Vec<Catalog>> = OnceLock::new();
+    MAPS.get_or_init(|| {
+        CATALOGS
+            .iter()
+            .map(|(_, src)| {
+                parse_po(src)
+                    .into_iter()
+                    .map(|(ctxt, id, s)| {
+                        let key = match ctxt {
+                            Some(c) => context_key(&c, &id),
+                            None => id,
+                        };
+                        (
+                            &*Box::leak(key.into_boxed_str()),
+                            &*Box::leak(s.into_boxed_str()),
+                        )
+                    })
+                    .collect()
+            })
             .collect()
     })
+    .get(i)
 }
 
-/// `zh` in `lang` (the Chinese source when the catalog has no entry).
-pub fn tr_in(zh: &'static str, lang: Lang) -> &'static str {
-    match lang {
-        Lang::Zh => zh,
-        Lang::En => catalog().get(zh).copied().unwrap_or(zh),
+/// `source` in `lang` (the English source when the catalog has no entry).
+pub fn tr_in(source: &'static str, lang: Lang) -> &'static str {
+    match lang.0 {
+        0 => source,
+        i => catalog(i as usize - 1)
+            .and_then(|c| c.get(source).copied())
+            .unwrap_or(source),
     }
 }
 
-pub fn tr(zh: &'static str) -> &'static str {
-    tr_in(zh, lang())
+pub fn tr(source: &'static str) -> &'static str {
+    tr_in(source, lang())
 }
 
 /// Replace each `{}` of `template` with the next argument (`{{`/`}}` escape braces).
@@ -155,8 +257,8 @@ enum Repr {
 }
 
 impl Text {
-    pub fn tr(zh: &'static str, args: Vec<Text>) -> Text {
-        Text(Repr::Tr(zh, args))
+    pub fn tr(source: &'static str, args: Vec<Text>) -> Text {
+        Text(Repr::Tr(source, args))
     }
 
     /// Text that is not translated (tool output, paths, user input).
@@ -176,8 +278,8 @@ impl Text {
                 .map(|t| t.render(lang))
                 .collect::<Vec<_>>()
                 .join(&sep.render(lang)),
-            Repr::Tr(zh, args) => fill(
-                tr_in(zh, lang),
+            Repr::Tr(source, args) => fill(
+                tr_in(source, lang),
                 &args.iter().map(|a| a.render(lang)).collect::<Vec<_>>(),
             ),
             Repr::Plain(s) => s.clone(),
@@ -186,7 +288,7 @@ impl Text {
 
     /// For logs, which are always English.
     pub fn en(&self) -> String {
-        self.render(Lang::En)
+        self.render(Lang::EN)
     }
 }
 
@@ -302,21 +404,66 @@ mod tests {
 
     #[test]
     fn text_renders_per_language() {
-        let inner = Text::tr("测试内层", vec![]);
-        let t = crate::tx!("外层 {} {}", inner, "x");
+        let zh = Lang::from_code("zh").unwrap();
+        let inner = Text::tr("Slot", vec![]);
+        let t = crate::tx!("Slot {} ({})", inner, "x");
         assert_eq!(
             t,
-            Text::tr("外层 {} {}", vec![inner.clone(), Text::plain("x")])
+            Text::tr("Slot {} ({})", vec![inner.clone(), Text::plain("x")])
         );
-        assert_eq!(t.render(Lang::Zh), "外层 测试内层 x");
+        assert_eq!(t.en(), "Slot Slot (x)");
+        assert_ne!(t.render(zh), t.en());
         // not in the catalog: the source is used
-        assert_eq!(t.en(), "外层 测试内层 x");
+        assert_eq!(
+            Text::tr("no such string", vec![]).render(zh),
+            "no such string"
+        );
     }
 
     #[test]
     fn language_codes() {
-        assert_eq!(Lang::from_code("zh_CN.UTF-8"), Some(Lang::Zh));
-        assert_eq!(Lang::from_code("en_US"), Some(Lang::En));
+        let zh = Lang::from_code("zh").unwrap();
+        assert_eq!(zh.code(), "zh_CN");
+        assert_eq!(Lang::from_code("zh_CN.UTF-8"), Some(zh));
+        assert_eq!(Lang::from_code("zh-TW"), Some(zh));
+        assert_eq!(Lang::from_code("en_US"), Some(Lang::EN));
         assert_eq!(Lang::from_code("C"), None);
+        assert_eq!(Lang::from_code("xx_YY"), None);
+    }
+
+    #[test]
+    fn po_entries() {
+        let po = r#"
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+
+#: a.rs:1
+msgid "One"
+msgstr "一"
+
+msgctxt "tab"
+msgid "Slots"
+msgstr "槽"
+"位"
+
+#, fuzzy
+msgid "Fuzzy"
+msgstr "模糊"
+
+msgid "Line\nbreak \"q\""
+msgstr "换行\n\"引号\""
+
+msgid "Untranslated"
+msgstr ""
+"#;
+        assert_eq!(
+            parse_po(po),
+            vec![
+                (None, "One".into(), "一".into()),
+                (Some("tab".into()), "Slots".into(), "槽位".into()),
+                (None, "Line\nbreak \"q\"".into(), "换行\n\"引号\"".into()),
+            ]
+        );
     }
 }

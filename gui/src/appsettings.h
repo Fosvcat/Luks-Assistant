@@ -2,6 +2,7 @@
 // ~/.config/Luks-Assistant/Luks-Assistant.conf.
 #pragma once
 
+#include <QByteArray>
 #include <QString>
 
 namespace AppSettings {
@@ -16,8 +17,11 @@ void setLanguage(Language language);
 Theme theme();
 void setTheme(Theme theme);
 
-/// The language in use: "en" or "zh".
+/// The language in use: "en" or the code of a catalog in po/ ("zh_CN").
 QString effectiveLanguage();
+
+/// `english` in the locale's language, for terminal messages before Qt starts.
+QByteArray cliTr(const char *english);
 
 /// Install the translators for the chosen language; widgets receive
 /// QEvent::LanguageChange.

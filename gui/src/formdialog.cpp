@@ -99,7 +99,7 @@ FormDialog::FormDialog(const QJsonObject &form, const QList<int> &offeredPcrs, Q
             row->setContentsMargins(0, 0, 0, 0);
             w.line = new QLineEdit(inner.toString());
             w.line->setPlaceholderText(hint);
-            auto *browse = new QPushButton(tr("浏览…"));
+            auto *browse = new QPushButton(tr("Browse…"));
             row->addWidget(w.line, 1);
             row->addWidget(browse);
             const bool save = w.type == QLatin1String("SaveFile");
@@ -177,11 +177,11 @@ FormDialog::FormDialog(const QJsonObject &form, const QList<int> &offeredPcrs, Q
     m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     // Most forms lead to a plan to confirm; these act at once.
     const QJsonValue kind = form.value(QStringLiteral("kind"));
-    m_buttons->button(QDialogButtonBox::Ok)->setText(kind == QLatin1String("Verify")      ? tr("验证")
-                                                     : kind == QLatin1String("Unlock")    ? tr("解锁")
-                                                     : kind == QLatin1String("BackupDir") ? tr("保存")
-                                                                                          : tr("下一步"));
-    m_buttons->button(QDialogButtonBox::Cancel)->setText(tr("取消"));
+    m_buttons->button(QDialogButtonBox::Ok)->setText(kind == QLatin1String("Verify")      ? tr("Verify")
+                                                     : kind == QLatin1String("Unlock")    ? tr("Unlock")
+                                                     : kind == QLatin1String("BackupDir") ? tr("Save")
+                                                                                          : tr("Next"));
+    m_buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
     connect(m_buttons, &QDialogButtonBox::accepted, this, &FormDialog::submitRequested);
     connect(m_buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     outer->addWidget(m_buttons);

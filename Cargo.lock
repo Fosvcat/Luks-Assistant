@@ -615,7 +615,7 @@ dependencies = [
 
 [[package]]
 name = "luks-assistant-core"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "libc",
  "luks-assistant-sysinfo",
@@ -628,7 +628,7 @@ dependencies = [
 
 [[package]]
 name = "luks-assistant-helper"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "luks-assistant-core",
  "luks-assistant-sysinfo",
@@ -639,7 +639,7 @@ dependencies = [
 
 [[package]]
 name = "luks-assistant-sysinfo"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "libc",
  "serde",
@@ -648,7 +648,7 @@ dependencies = [
 
 [[package]]
 name = "luks-assistant-tui"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "luks-assistant-core",
  "luks-assistant-sysinfo",

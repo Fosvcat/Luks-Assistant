@@ -24,16 +24,16 @@ impl Error {
     pub fn text(&self) -> Text {
         match self {
             Error::Spawn { program, source } => {
-                tx!("无法启动 {}: {}", program, source.to_string())
+                tx!("Cannot start {}: {}", program, source.to_string())
             }
             Error::Command {
                 program,
                 code,
                 message,
-            } => tx!("{} 失败 (退出码 {}): {}", program, *code, message),
-            Error::Parse(m) => tx!("解析失败: {}", m),
-            Error::Blocked(m) => tx!("已阻止：{}", m),
-            Error::Unsupported(m) => tx!("不支持: {}", m),
+            } => tx!("{} failed (exit code {}): {}", program, *code, message),
+            Error::Parse(m) => tx!("Parse error: {}", m),
+            Error::Blocked(m) => tx!("Blocked: {}", m),
+            Error::Unsupported(m) => tx!("Not supported: {}", m),
             Error::Invalid(m) => m.clone(),
             Error::Io(e) => Text::plain(e.to_string()),
         }

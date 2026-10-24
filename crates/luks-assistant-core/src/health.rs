@@ -1,4 +1,4 @@
-//! Header health check ("元数据体检").
+//! Header health check.
 
 use crate::notes::{self, Location};
 use crate::ops::Request;
@@ -17,9 +17,9 @@ pub enum Severity {
 impl Severity {
     pub fn label(self) -> &'static str {
         match self {
-            Severity::Critical => t!("严重"),
-            Severity::Warning => t!("警告"),
-            Severity::Info => t!("提示"),
+            Severity::Critical => t!("Critical"),
+            Severity::Warning => t!("Warning"),
+            Severity::Info => t!("Info"),
         }
     }
 }
@@ -50,22 +50,22 @@ fn issue(
 pub fn check(ov: &Overview) -> Vec<Issue> {
     let mut out = Vec::new();
     if let Some(r) = ov.read_only_reason() {
-        out.push(issue(Severity::Warning, t!("只读设备"), r, None));
+        out.push(issue(Severity::Warning, t!("Read-only device"), r, None));
     }
 
     let knowledge = ov.knowledge_slots();
     if knowledge.is_empty() {
         out.push(issue(
             Severity::Critical,
-            t!("没有任何密码/恢复密钥槽位"),
-            t!("只剩硬件令牌可以解锁，请添加密码或恢复密钥。"),
+            t!("No password/recovery key slot"),
+            t!("Only hardware tokens can unlock it; add a password or a recovery key."),
             None,
         ));
     } else if knowledge.len() == 1 {
         out.push(issue(
             Severity::Warning,
-            t!("只有一个密码/恢复密钥槽位"),
-            t!("槽位 {} 是唯一的备用解锁方式。", knowledge[0]),
+            t!("Only one password/recovery key slot"),
+            t!("Slot {} is the only fallback for unlocking.", knowledge[0]),
             None,
         ));
     }
@@ -74,8 +74,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         if t.keyslots.is_empty() && !notes::is_notes_token(&t.kind) {
             out.push(issue(
                 Severity::Warning,
-                t!("孤立令牌 {}（{}）", t.id, t.kind),
-                t!("未关联任何槽位（通常是 luksKillSlot 的遗留）。"),
+                t!("Orphaned token {} ({})", t.id, t.kind),
+                t!("Not bound to any slot (usually left behind by luksKillSlot)."),
                 Some(Request::RemoveOrphanToken { token: t.id }),
             ));
         }
@@ -83,11 +83,11 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             out.push(issue(
                 Severity::Info,
                 t!(
-                    "令牌 {} 关联了多个槽位 {}",
+                    "Token {} is bound to several slots {}",
                     t.id,
                     format!("{:?}", t.keyslots)
                 ),
-                t!("systemd-cryptenroll --wipe-slot 会连带擦除其它槽位。"),
+                t!("systemd-cryptenroll --wipe-slot would also wipe the other slots."),
                 None,
             ));
         }
@@ -96,8 +96,12 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         if s.tokens.len() > 1 {
             out.push(issue(
                 Severity::Info,
-                t!("槽位 {} 关联了多个令牌 {}", s.id, format!("{:?}", s.tokens)),
-                t!("通常由其它工具创建。"),
+                t!(
+                    "Slot {} is bound to several tokens {}",
+                    s.id,
+                    format!("{:?}", s.tokens)
+                ),
+                t!("Usually created by another tool."),
                 None,
             ));
         }
@@ -107,13 +111,16 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         match &s.tpm2_status {
             Some(TpmStatus::Mismatch { .. }) => out.push(issue(
                 Severity::Warning,
-                t!("槽位 {} 的 TPM2 策略与当前 PCR 不匹配", s.id),
-                t!("{}。", s.tpm2_status.as_ref().unwrap().label()),
+                t!(
+                    "The TPM2 policy of slot {} does not match the current PCRs",
+                    s.id
+                ),
+                t!("{}.", s.tpm2_status.as_ref().unwrap().label()),
                 None,
             )),
             Some(TpmStatus::Unknown(why)) => out.push(issue(
                 Severity::Info,
-                t!("无法判断槽位 {} 的 TPM2 状态", s.id),
+                t!("Cannot tell the TPM2 state of slot {}", s.id),
                 why.clone(),
                 None,
             )),
@@ -124,8 +131,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
                 if ks.kdf.kind == "pbkdf2" {
                     out.push(issue(
                         Severity::Info,
-                        t!("槽位 {} 使用 PBKDF2", s.id),
-                        t!("可在槽位菜单中转换为 Argon2id。"),
+                        t!("Slot {} uses PBKDF2", s.id),
+                        t!("It can be converted to Argon2id from the slot menu."),
                         None,
                     ));
                 }
@@ -134,8 +141,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
         if let SlotKind::OtherToken(t) = &s.kind {
             out.push(issue(
                 Severity::Info,
-                t!("槽位 {} 由其它工具管理（{}）", s.id, t),
-                t!("Luks Assistant 不修改其令牌。"),
+                t!("Slot {} is managed by another tool ({})", s.id, t),
+                t!("Luks Assistant does not change its tokens."),
                 None,
             ));
         }
@@ -149,7 +156,7 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
                 format!(
                     "{s}{}",
                     if *l == Location::Local {
-                        t!("(本机)")
+                        t!("(local)")
                     } else {
                         ""
                     }
@@ -159,8 +166,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
             .join(", ");
         out.push(issue(
             Severity::Info,
-            t!("存在过期备注"),
-            t!("槽位 {} 已被删除或改写。", list),
+            t!("Stale notes"),
+            t!("Slot {} was removed or rewritten.", list),
             Some(Request::PruneNotes),
         ));
     }
@@ -168,8 +175,8 @@ pub fn check(ov: &Overview) -> Vec<Issue> {
     if ov.used().count() as u32 >= crate::MAX_SLOTS - 2 {
         out.push(issue(
             Severity::Info,
-            t!("槽位即将用尽"),
-            t!("32 个槽位快满了。"),
+            t!("Running out of slots"),
+            t!("The 32 slots are almost full."),
             None,
         ));
     }
@@ -186,13 +193,13 @@ mod tests {
     fn finds_orphans_and_pbkdf2() {
         let ov = sample_overview();
         let issues = check(&ov);
-        assert!(issues.iter().any(|i| i.title.contains("孤立令牌 7")
+        assert!(issues.iter().any(|i| i.title.contains("Orphaned token 7")
             && matches!(i.fix, Some(Request::RemoveOrphanToken { token: 7 }))));
-        assert!(!issues.iter().any(|i| i.title.contains("孤立令牌 31")));
+        assert!(!issues.iter().any(|i| i.title.contains("Orphaned token 31")));
         assert!(
             !issues
                 .iter()
-                .any(|i| i.title.contains("槽位 5 使用 PBKDF2"))
+                .any(|i| i.title.contains("Slot 5 uses PBKDF2"))
         ); // slot 5 is argon2id
         assert!(issues.iter().all(|i| i.severity != Severity::Critical));
     }

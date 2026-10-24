@@ -15,13 +15,13 @@
       <property name="currentIndex"><number>0</number></property>
 
       <widget class="QWidget" name="slotsTab">
-       <attribute name="title"><string comment="tab">槽位</string></attribute>
+       <attribute name="title"><string comment="tab">Slots</string></attribute>
        <layout class="QVBoxLayout" name="slotsLayout">
         <item>
          <layout class="QHBoxLayout" name="deviceBar">
           <item>
            <widget class="QLabel" name="diskLabel">
-            <property name="text"><string>磁盘</string></property>
+            <property name="text"><string>Disk</string></property>
            </widget>
           </item>
           <item>
@@ -39,20 +39,20 @@
           </item>
           <item>
            <widget class="QPushButton" name="lockButton">
-            <property name="text"><string>解锁</string></property>
+            <property name="text"><string>Unlock</string></property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="verifyButton">
-            <property name="text"><string>验证</string></property>
-            <property name="toolTip"><string>验证密码、密钥文件或硬件令牌，不做任何修改</string></property>
+            <property name="text"><string>Verify</string></property>
+            <property name="toolTip"><string>Check a password, key file or hardware token without changing anything</string></property>
            </widget>
           </item>
          </layout>
         </item>
         <item>
          <widget class="QGroupBox" name="slotsGroup">
-          <property name="title"><string>槽位</string></property>
+          <property name="title"><string>Slot</string></property>
           <layout class="QVBoxLayout" name="slotsGroupLayout">
            <item>
             <widget class="QTableWidget" name="slotTable">
@@ -71,7 +71,7 @@
         </item>
         <item>
          <widget class="QGroupBox" name="detailGroup">
-          <property name="title"><string>槽位 0</string></property>
+          <property name="title"><string>Slot 0</string></property>
           <layout class="QVBoxLayout" name="detailGroupLayout">
            <item>
             <layout class="QFormLayout" name="detailForm"/>
@@ -86,11 +86,11 @@
       </widget>
 
       <widget class="QWidget" name="systemTab">
-       <attribute name="title"><string>系统信息</string></attribute>
+       <attribute name="title"><string comment="tab">System</string></attribute>
        <layout class="QHBoxLayout" name="systemLayout" stretch="1,1,1">
         <item>
          <widget class="QGroupBox" name="systemGroup">
-          <property name="title"><string>系统</string></property>
+          <property name="title"><string>System</string></property>
           <layout class="QVBoxLayout" name="systemGroupLayout">
            <item><widget class="QTreeWidget" name="systemTree"><property name="columnCount"><number>2</number></property></widget></item>
           </layout>
@@ -98,7 +98,7 @@
         </item>
         <item>
          <widget class="QGroupBox" name="diskGroup">
-          <property name="title"><string>磁盘</string></property>
+          <property name="title"><string>Disk</string></property>
           <layout class="QVBoxLayout" name="diskGroupLayout">
            <item><widget class="QTreeWidget" name="diskTree"><property name="columnCount"><number>4</number></property></widget></item>
           </layout>
@@ -106,10 +106,10 @@
         </item>
         <item>
          <widget class="QGroupBox" name="pcrGroup">
-          <property name="title"><string>PCR (sha256)</string></property>
+          <property name="title"><string notr="true">PCR (sha256)</string></property>
           <layout class="QVBoxLayout" name="pcrGroupLayout">
            <item><widget class="QTreeWidget" name="pcrTree"><property name="columnCount"><number>3</number></property></widget></item>
-           <item><widget class="QCheckBox" name="showAllPcrs"><property name="text"><string>显示所有的 PCR 度量</string></property></widget></item>
+           <item><widget class="QCheckBox" name="showAllPcrs"><property name="text"><string>Show all PCR measurements</string></property></widget></item>
           </layout>
          </widget>
         </item>
@@ -117,11 +117,11 @@
       </widget>
 
       <widget class="QWidget" name="checkTab">
-       <attribute name="title"><string>自我检查</string></attribute>
+       <attribute name="title"><string>Self-check</string></attribute>
        <layout class="QHBoxLayout" name="checkLayout" stretch="1,1">
         <item>
          <widget class="QGroupBox" name="issueGroup">
-          <property name="title"><string>问题与警告</string></property>
+          <property name="title"><string>Problems and warnings</string></property>
           <layout class="QVBoxLayout" name="issueGroupLayout">
            <item><widget class="QTreeWidget" name="issueTree"><property name="columnCount"><number>3</number></property></widget></item>
           </layout>
@@ -129,7 +129,7 @@
         </item>
         <item>
          <widget class="QGroupBox" name="bootGroup">
-          <property name="title"><string>硬件解锁可用性</string></property>
+          <property name="title"><string>Hardware unlock availability</string></property>
           <layout class="QVBoxLayout" name="bootGroupLayout">
            <item><widget class="QTreeWidget" name="bootTree"><property name="columnCount"><number>3</number></property></widget></item>
           </layout>
@@ -139,46 +139,46 @@
       </widget>
 
       <widget class="QWidget" name="backupTab">
-       <attribute name="title"><string>头部管理</string></attribute>
+       <attribute name="title"><string>Headers</string></attribute>
        <layout class="QVBoxLayout" name="backupLayout">
         <item>
          <layout class="QHBoxLayout" name="backupDirLayout">
-          <item><widget class="QLabel" name="backupDirLabel"><property name="text"><string>备份位置</string></property></widget></item>
+          <item><widget class="QLabel" name="backupDirLabel"><property name="text"><string>Backup location</string></property></widget></item>
           <item><widget class="QLineEdit" name="backupDirEdit"/></item>
-          <item><widget class="QPushButton" name="browseButton"><property name="text"><string>浏览…</string></property></widget></item>
-          <item><widget class="QPushButton" name="openDirButton"><property name="text"><string>打开文件夹</string></property></widget></item>
+          <item><widget class="QPushButton" name="browseButton"><property name="text"><string>Browse…</string></property></widget></item>
+          <item><widget class="QPushButton" name="openDirButton"><property name="text"><string>Open folder</string></property></widget></item>
          </layout>
         </item>
         <item><widget class="QTreeWidget" name="backupTree"><property name="columnCount"><number>4</number></property></widget></item>
         <item>
          <layout class="QHBoxLayout" name="backupButtons">
-          <item><widget class="QPushButton" name="selectAllButton"><property name="text"><string>全选</string></property></widget></item>
-          <item><widget class="QPushButton" name="invertButton"><property name="text"><string>反选</string></property></widget></item>
-          <item><widget class="QPushButton" name="clearButton"><property name="text"><string>清空</string></property></widget></item>
+          <item><widget class="QPushButton" name="selectAllButton"><property name="text"><string>Select all</string></property></widget></item>
+          <item><widget class="QPushButton" name="invertButton"><property name="text"><string>Invert</string></property></widget></item>
+          <item><widget class="QPushButton" name="clearButton"><property name="text"><string>Clear</string></property></widget></item>
           <item><spacer name="backupSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
-          <item><widget class="QPushButton" name="restoreButton"><property name="text"><string>恢复…</string></property></widget></item>
-          <item><widget class="QPushButton" name="pruneButton"><property name="text"><string>清理</string></property><property name="toolTip"><string>每个所选卷只保留最新的头部备份，删除其余旧备份</string></property></widget></item>
-          <item><widget class="QPushButton" name="backupButton"><property name="text"><string>备份所选</string></property><property name="default"><bool>true</bool></property></widget></item>
+          <item><widget class="QPushButton" name="restoreButton"><property name="text"><string>Restore…</string></property></widget></item>
+          <item><widget class="QPushButton" name="pruneButton"><property name="text"><string>Clean up</string></property><property name="toolTip"><string>Keep only the newest header backup of each selected volume and delete the older ones</string></property></widget></item>
+          <item><widget class="QPushButton" name="backupButton"><property name="text"><string>Back up selected</string></property><property name="default"><bool>true</bool></property></widget></item>
          </layout>
         </item>
        </layout>
       </widget>
 
       <widget class="QWidget" name="logTab">
-       <attribute name="title"><string>日志</string></attribute>
+       <attribute name="title"><string>Logs</string></attribute>
        <layout class="QVBoxLayout" name="logLayout">
         <item><widget class="QPlainTextEdit" name="logView"><property name="readOnly"><bool>true</bool></property></widget></item>
         <item>
          <layout class="QHBoxLayout" name="logButtons">
           <item><spacer name="logSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
-          <item><widget class="QPushButton" name="exportButton"><property name="text"><string>导出…</string></property></widget></item>
+          <item><widget class="QPushButton" name="exportButton"><property name="text"><string>Export…</string></property></widget></item>
          </layout>
         </item>
        </layout>
       </widget>
 
       <widget class="QWidget" name="aboutTab">
-       <attribute name="title"><string>关于</string></attribute>
+       <attribute name="title"><string>About</string></attribute>
        <layout class="QVBoxLayout" name="aboutLayout">
         <item><spacer name="aboutTop"><property name="orientation"><enum>Qt::Vertical</enum></property></spacer></item>
         <item><widget class="QLabel" name="appIcon"><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
@@ -191,19 +191,19 @@
           <item><spacer name="settingsLeft"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
           <item>
            <layout class="QFormLayout" name="settingsForm">
-            <item row="0" column="0"><widget class="QLabel" name="languageLabel"><property name="text"><string>语言</string></property><property name="buddy"><cstring>languageCombo</cstring></property></widget></item>
+            <item row="0" column="0"><widget class="QLabel" name="languageLabel"><property name="text"><string>Language</string></property><property name="buddy"><cstring>languageCombo</cstring></property></widget></item>
             <item row="0" column="1">
              <widget class="QComboBox" name="languageCombo">
-              <item><property name="text"><string>跟随系统</string></property></item>
+              <item><property name="text"><string>System default</string></property></item>
               <item><property name="text"><string notr="true">English</string></property></item>
               <item><property name="text"><string notr="true">简体中文</string></property></item>
              </widget>
             </item>
-            <item row="1" column="0"><widget class="QLabel" name="themeLabel"><property name="text"><string>主题</string></property><property name="buddy"><cstring>themeCombo</cstring></property></widget></item>
+            <item row="1" column="0"><widget class="QLabel" name="themeLabel"><property name="text"><string>Theme</string></property><property name="buddy"><cstring>themeCombo</cstring></property></widget></item>
             <item row="1" column="1">
              <widget class="QComboBox" name="themeCombo">
-              <item><property name="text"><string>跟随系统</string></property></item>
-              <item><property name="text"><string>Qt（原生）</string></property></item>
+              <item><property name="text"><string>System default</string></property></item>
+              <item><property name="text"><string>Qt (native)</string></property></item>
               <item><property name="text"><string notr="true">GTK</string></property></item>
              </widget>
             </item>

@@ -46,11 +46,11 @@ jobs:
             tag=${INPUT_TAG:-v$version}
           fi
           if [ "$tag" != "v$version" ]; then
-            echo "::error::$tag 与 Cargo.toml 中的版本 $version 不一致（请先修改 Cargo.toml 的 version 并推送）"
+            echo "::error::$tag does not match version $version in Cargo.toml (change version in Cargo.toml and push first)"
             exit 1
           fi
           if ! grep -A1 '^name = "luks-assistant-core"$' Cargo.lock | grep -q "^version = \"$version\"$"; then
-            echo "::error::Cargo.lock 仍是旧版本号：请运行 cargo build 后一起提交 Cargo.lock"
+            echo "::error::Cargo.lock still has the old version: run cargo build and commit Cargo.lock too"
             exit 1
           fi
           head=$(git rev-parse HEAD)
@@ -59,14 +59,14 @@ jobs:
             at=$(git rev-parse "$tag^{commit}")
             if gh release view "$tag" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
               if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF_TYPE" = branch ]; then
-                echo "$tag 已发布，跳过（版本号没有变化）"
+                echo "$tag is already released, skipping (the version did not change)"
                 release=false
               elif [ "$at" != "$head" ]; then
-                echo "::error::$tag 已发布在另一个提交上；请提高版本号"
+                echo "::error::$tag is already released on another commit; raise the version"
                 exit 1
               fi
             elif [ "$at" != "$head" ]; then
-              echo "移动未发布的标签 $tag: $at → $head"
+              echo "Moving the unreleased tag $tag: $at → $head"
               git tag -f "$tag" "$head"
               git push -f origin "refs/tags/$tag"
             fi

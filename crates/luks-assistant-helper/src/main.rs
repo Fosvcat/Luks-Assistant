@@ -139,7 +139,7 @@ impl Helper {
         let ov = self.overview(path)?;
         let tests = ops::token_tests(&ov, kind, pin);
         if tests.is_empty() {
-            return Err(Error::Invalid(tx!("没有 {} 令牌", kind.label())));
+            return Err(Error::Invalid(tx!("No {} token", kind.label())));
         }
         let mut last = Text::plain("");
         for t in tests {
@@ -154,7 +154,11 @@ impl Helper {
                 Err(e) => last = e.text(),
             }
         }
-        Err(Error::Invalid(tx!("{} 验证失败：{}", kind.label(), last)))
+        Err(Error::Invalid(tx!(
+            "{} verification failed: {}",
+            kind.label(),
+            last
+        )))
     }
 
     /// Open the volume; the result is reported like a verification.
@@ -166,16 +170,16 @@ impl Helper {
                 let out = self.ctx.runner.run(&ops::unlock_cmd(&ov, &c)?)?;
                 if !out.success() {
                     let why = match out.code {
-                        2 => tx!("密码或密钥文件不正确"),
+                        2 => tx!("Wrong password or key file"),
                         _ => ops::token_failure(&out),
                     };
-                    return Err(Error::Invalid(tx!("解锁失败：{}", why)));
+                    return Err(Error::Invalid(tx!("Unlocking failed: {}", why)));
                 }
             }
             VerifyMethod::Token { kind, pin } => {
                 let tries = ops::token_unlock_cmds(&ov, kind, pin.as_ref())?;
                 if tries.is_empty() {
-                    return Err(Error::Invalid(tx!("没有 {} 令牌", kind.label())));
+                    return Err(Error::Invalid(tx!("No {} token", kind.label())));
                 }
                 let mut last = Text::plain("");
                 let mut done = false;
@@ -190,11 +194,11 @@ impl Helper {
                     }
                 }
                 if !done {
-                    return Err(Error::Invalid(tx!("解锁失败：{}", last)));
+                    return Err(Error::Invalid(tx!("Unlocking failed: {}", last)));
                 }
             }
         }
-        Ok(tx!("已解锁 {} → {}", path.display(), name))
+        Ok(tx!("Unlocked {} → {}", path.display(), name))
     }
 
     fn submit(&mut self, path: &Path, form: &Form) -> Result<SubmitReply> {
@@ -213,7 +217,7 @@ impl Helper {
                             .ok()
                             .and_then(|o| o.slot(slot).map(|s| s.kind.text()))
                             .unwrap_or_else(|| Text::plain("?"));
-                        message(true, tx!("槽位 {}（{}）验证成功", slot, kind))
+                        message(true, tx!("Slot {} ({}) verified", slot, kind))
                     }
                     Err(e) => message(false, e.text()),
                 }
@@ -230,7 +234,7 @@ impl Helper {
                         message(
                             true,
                             tx!(
-                                "槽位 {}（{} 令牌 {}）验证成功",
+                                "Slot {} ({} token {}) verified",
                                 slots,
                                 kind.label(),
                                 v.token
@@ -261,7 +265,7 @@ impl Helper {
                 tpm2_device: self.ctx.tpm2_device.clone(),
             }),
             Method::SetLanguage { lang } => {
-                i18n::set_lang(Lang::from_code(&lang).unwrap_or(Lang::Zh));
+                i18n::set_lang(Lang::from_code(&lang).unwrap_or(Lang::EN));
                 Ok(serde_json::Value::Null)
             }
             Method::SystemView { extra } => json(view::system_view(&self.ctx, &extra)),
@@ -325,18 +329,17 @@ impl Helper {
                     }
                 }
                 if views.is_empty() {
-                    return Err(Error::Invalid(tx!("没有可清理的旧备份")));
+                    return Err(Error::Invalid(tx!("No old backups to clean up")));
                 }
                 json(views)
             }
             Method::Execute { plans, confirm } => {
                 for id in &plans {
-                    let p = self
-                        .plans
-                        .get(id)
-                        .ok_or_else(|| Error::Invalid(tx!("计划 {} 不存在或已执行", id)))?;
+                    let p = self.plans.get(id).ok_or_else(|| {
+                        Error::Invalid(tx!("Plan {} does not exist or has already run", id))
+                    })?;
                     if p.confirm_word.as_ref().is_some_and(|w| w != confirm.trim()) {
-                        return Err(Error::Blocked(tx!("确认文字不正确")));
+                        return Err(Error::Blocked(tx!("The confirmation text is wrong")));
                     }
                 }
                 let taken: Vec<Plan> = plans
@@ -410,7 +413,7 @@ fn main() {
         }
     }
     if !luks_assistant_sysinfo::is_root() {
-        eprintln!("{}", t!("Luks-Assistant-Helper 需要 root 权限"));
+        eprintln!("{}", t!("Luks-Assistant-Helper needs root privileges"));
         std::process::exit(1);
     }
     let out = Out {
@@ -436,7 +439,7 @@ fn main() {
             Err(e) => {
                 out.send(&Reply {
                     id: 0,
-                    body: ReplyBody::Err(t!("无效请求: {}", e)),
+                    body: ReplyBody::Err(t!("Invalid request: {}", e)),
                 });
                 continue;
             }

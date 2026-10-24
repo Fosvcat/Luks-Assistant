@@ -43,7 +43,7 @@ ConfirmDialog::ConfirmDialog(const QJsonArray &plans, QWidget *parent)
     m_icon = new QLabel;
     m_icon->setAlignment(Qt::AlignTop);
     top->addWidget(m_icon);
-    auto *intro = new QLabel(tr("将执行以下步骤。命令为等效命令，其中的密码已隐藏。"));
+    auto *intro = new QLabel(tr("The following steps will run. Commands are equivalents with passwords hidden."));
     intro->setWordWrap(true);
     top->addWidget(intro, 1);
     m_layout->addLayout(top);
@@ -61,8 +61,8 @@ ConfirmDialog::ConfirmDialog(const QJsonArray &plans, QWidget *parent)
     m_layout->addWidget(m_confirmRow);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Cancel);
-    buttons->button(QDialogButtonBox::Cancel)->setText(tr("取消"));
-    m_run = buttons->addButton(tr("执行"), QDialogButtonBox::AcceptRole);
+    buttons->button(QDialogButtonBox::Cancel)->setText(tr("Cancel"));
+    m_run = buttons->addButton(tr("Run"), QDialogButtonBox::AcceptRole);
     m_run->setIcon(style()->standardIcon(QStyle::SP_DialogApplyButton));
     connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -113,13 +113,13 @@ void ConfirmDialog::setPlans(const QJsonArray &plans)
     }
     m_browser->setHtml(html);
     setWindowTitle(plans.size() == 1 ? plans.first().toObject().value(QStringLiteral("title")).toString()
-                                     : tr("%1 项操作").arg(plans.size()));
+                                     : tr("%1 operations").arg(plans.size()));
     const int size = style()->pixelMetric(QStyle::PM_MessageBoxIconSize);
     m_icon->setPixmap(style()
                           ->standardIcon(worst == QLatin1String("Normal") ? QStyle::SP_MessageBoxQuestion
                                                                           : QStyle::SP_MessageBoxWarning)
                           .pixmap(size, size));
-    m_confirmLabel->setText(tr("输入 <b>%1</b> 以确认：").arg(esc(m_word)));
+    m_confirmLabel->setText(tr("Type <b>%1</b> to confirm:").arg(esc(m_word)));
     m_confirmRow->setVisible(!m_word.isEmpty());
     m_confirm->clear();
     updateRun();
@@ -170,12 +170,12 @@ void ProgressDialog::append(const QString &line)
 RecoveryKeyDialog::RecoveryKeyDialog(const QString &key, int slot, QWidget *parent)
     : QDialog(parent)
 {
-    setWindowTitle(tr("恢复密钥"));
+    setWindowTitle(tr("Recovery key"));
     setModal(true);
     auto *layout = new QVBoxLayout(this);
     auto *top = new QHBoxLayout;
     top->addWidget(iconLabel(QStyle::SP_MessageBoxWarning, this));
-    auto *text = new QLabel(tr("恢复密钥已写入槽位 %1。它只显示这一次，请抄写或打印后离线保存。").arg(slot));
+    auto *text = new QLabel(tr("The recovery key was written to slot %1. It is shown only this once; write it down or print it and keep it offline.").arg(slot));
     text->setWordWrap(true);
     top->addWidget(text, 1);
     layout->addLayout(top);
@@ -188,15 +188,15 @@ RecoveryKeyDialog::RecoveryKeyDialog(const QString &key, int slot, QWidget *pare
     edit->setMinimumWidth(edit->fontMetrics().horizontalAdvance(key) + 40);
     auto *row = new QHBoxLayout;
     row->addWidget(edit, 1);
-    auto *copy = new QPushButton(QIcon::fromTheme(QStringLiteral("edit-copy")), tr("复制"));
+    auto *copy = new QPushButton(QIcon::fromTheme(QStringLiteral("edit-copy")), tr("Copy"));
     connect(copy, &QPushButton::clicked, this, [key] { QApplication::clipboard()->setText(key); });
     row->addWidget(copy);
     layout->addLayout(row);
 
-    auto *saved = new QCheckBox(tr("我已保存这个恢复密钥"));
+    auto *saved = new QCheckBox(tr("I have saved this recovery key"));
     layout->addWidget(saved);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close);
-    buttons->button(QDialogButtonBox::Close)->setText(tr("关闭"));
+    buttons->button(QDialogButtonBox::Close)->setText(tr("Close"));
     buttons->button(QDialogButtonBox::Close)->setEnabled(false);
     connect(saved, &QCheckBox::toggled, buttons->button(QDialogButtonBox::Close), &QWidget::setEnabled);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::accept);
@@ -215,7 +215,7 @@ QString reportsText(const QJsonArray &reports)
                           r.value(QStringLiteral("device")).toString());
         const QString backup = r.value(QStringLiteral("backup_file")).toString();
         if (!backup.isEmpty())
-            lines << QObject::tr("  备份: %1").arg(backup);
+            lines << QObject::tr("  Backup: %1").arg(backup);
         for (const QJsonValue &sv : r.value(QStringLiteral("steps")).toArray()) {
             const QJsonObject s = sv.toObject();
             lines << QStringLiteral("  %1 %2").arg(s.value(QStringLiteral("ok")).toBool() ? QStringLiteral("✓")
@@ -229,7 +229,7 @@ QString reportsText(const QJsonArray &reports)
         }
         const QString error = r.value(QStringLiteral("error")).toString();
         if (!error.isEmpty())
-            lines << QObject::tr("  错误: %1").arg(error);
+            lines << QObject::tr("  Error: %1").arg(error);
     }
     return lines.join(QLatin1Char('\n'));
 }
@@ -255,7 +255,7 @@ void showReports(const QJsonArray &reports, QWidget *parent)
             error = r.value(QStringLiteral("error")).toString();
     }
     QMessageBox box(ok ? QMessageBox::Information : QMessageBox::Critical,
-                    ok ? QObject::tr("完成") : QObject::tr("失败"),
+                    ok ? QObject::tr("Done") : QObject::tr("failed"),
                     ok ? titles.join(QLatin1Char('\n')) : error, QMessageBox::Ok, parent);
     box.setDetailedText(reportsText(reports));
     box.exec();

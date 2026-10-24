@@ -106,7 +106,7 @@ fn read_pcrs_sysfs(bank: &str) -> Result<PcrValues, String> {
     let dir = Path::new(SYSFS_TPM).join(format!("pcr-{bank}"));
     if !dir.is_dir() {
         return Err(t!(
-            "{} 不存在（没有 TPM，或内核早于 5.12 不提供 PCR sysfs 接口）",
+            "{} does not exist (no TPM, or a kernel older than 5.12 without the PCR sysfs interface)",
             dir.display()
         ));
     }
@@ -117,7 +117,7 @@ fn read_pcrs_sysfs(bank: &str) -> Result<PcrValues, String> {
             std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
         out.insert(
             i,
-            decode_hex(text.trim()).ok_or_else(|| t!("{}: 无法解析", path.display()))?,
+            decode_hex(text.trim()).ok_or_else(|| t!("{}: cannot parse", path.display()))?,
         );
     }
     Ok(out)
@@ -130,9 +130,10 @@ fn read_pcrs_tpm2_tools(bank: &str, tcti: Option<&str>) -> Result<PcrValues, Str
         args.extend(["-T", t]);
     }
     args.push(&sel);
-    let out = cmd::run("tpm2_pcrread", &args).ok_or(t!("未安装 tpm2-tools (tpm2_pcrread)"))?;
+    let out =
+        cmd::run("tpm2_pcrread", &args).ok_or(t!("tpm2-tools (tpm2_pcrread) is not installed"))?;
     if !out.success {
-        return Err(t!("tpm2_pcrread 失败: {}", out.stderr.trim()));
+        return Err(t!("tpm2_pcrread failed: {}", out.stderr.trim()));
     }
     parse_tpm2_pcrread(&out.stdout, bank)
 }
@@ -162,7 +163,7 @@ pub fn parse_tpm2_pcrread(text: &str, bank: &str) -> Result<PcrValues, String> {
         }
     }
     if out.is_empty() {
-        Err(t!("tpm2_pcrread 输出中没有 {} bank", bank))
+        Err(t!("No {} bank in tpm2_pcrread output", bank))
     } else {
         Ok(out)
     }

@@ -109,11 +109,11 @@ impl BlockNode {
                 .map(|v| format!("LUKS{v}"))
                 .unwrap_or_else(|| "LUKS".into());
             match self.mapping() {
-                Some(m) => t!("{} 已解锁 → {}", v, basename(&m.path)),
-                None => t!("{} 未解锁", v),
+                Some(m) => t!("{} unlocked → {}", v, basename(&m.path)),
+                None => t!("{} locked", v),
             }
         } else if self.kind == "crypt" {
-            t!("解密映射").into()
+            t!("Mapping").into()
         } else {
             "—".into()
         }
@@ -374,7 +374,7 @@ mod tests {
         assert_eq!(tree.flatten().len(), 5);
         assert_eq!(
             tree.find("/dev/nvme0n1p2").unwrap().encryption(),
-            "LUKS2 已解锁 → cryptroot"
+            "LUKS2 unlocked → cryptroot"
         );
     }
 

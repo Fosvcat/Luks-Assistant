@@ -56,7 +56,7 @@ void HelperClient::start()
 {
     const QString helper = findHelper();
     if (helper.isEmpty()) {
-        emit failed(tr("找不到 Luks-Assistant-Helper"));
+        emit failed(tr("Luks-Assistant-Helper not found"));
         return;
     }
     if (m_proc) {
@@ -90,7 +90,7 @@ void HelperClient::start()
     connect(m_proc, &QProcess::finished, this, &HelperClient::onFinished);
     connect(m_proc, &QProcess::errorOccurred, this, [this](QProcess::ProcessError e) {
         if (e == QProcess::FailedToStart)
-            emit failed(tr("无法启动后端：%1").arg(m_proc->errorString()));
+            emit failed(tr("Cannot start the backend: %1").arg(m_proc->errorString()));
     });
 
     if (geteuid() == 0) {
@@ -113,7 +113,7 @@ void HelperClient::call(const QString &method, const QJsonValue &params, Done do
 {
     if (!m_proc || m_proc->state() == QProcess::NotRunning) {
         // Defer, so callers always get their answer asynchronously.
-        QMetaObject::invokeMethod(this, [done] { done({}, tr("后端未运行")); }, Qt::QueuedConnection);
+        QMetaObject::invokeMethod(this, [done] { done({}, tr("The backend is not running")); }, Qt::QueuedConnection);
         return;
     }
     const quint64 id = ++m_next;
@@ -156,11 +156,11 @@ QString HelperClient::exitMessage(int exitCode) const
 {
     switch (exitCode) {
     case 126:
-        return tr("已取消管理员认证");
+        return tr("Administrator authentication was cancelled");
     case 127:
-        return tr("认证失败或 pkexec 不可用");
+        return tr("Authentication failed or pkexec is not available");
     default:
-        return m_stderr.trimmed().isEmpty() ? tr("后端已退出") : tr("后端已退出：%1").arg(m_stderr.trimmed());
+        return m_stderr.trimmed().isEmpty() ? tr("The backend has exited") : tr("The backend has exited: %1").arg(m_stderr.trimmed());
     }
 }
 

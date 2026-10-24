@@ -1,0 +1,2758 @@
+# Luks Assistant: translatable strings (generated, do not edit).
+# Update with: UPDATE_PO=1 cargo test -p luks-assistant-sysinfo --test catalog
+msgid ""
+msgstr ""
+"Project-Id-Version: Luks Assistant\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: crates/luks-assistant-core/src/config.rs:41
+msgid "The backup directory must be an absolute path"
+msgstr ""
+
+#: crates/luks-assistant-core/src/device.rs:112
+msgid "{} unlocked → {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/device.rs:113
+msgid "{} locked"
+msgstr ""
+
+#: crates/luks-assistant-core/src/device.rs:116
+msgid "Mapping"
+msgstr ""
+
+#: crates/luks-assistant-core/src/error.rs:27
+msgid "Cannot start {}: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/error.rs:33
+msgid "{} failed (exit code {}): {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/error.rs:34
+msgid "Parse error: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/error.rs:35
+msgid "Blocked: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/error.rs:36
+msgid "Not supported: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/exec.rs:129
+msgid "{}=<hidden> "
+msgstr ""
+
+#: crates/luks-assistant-core/src/exec.rs:169
+msgid "(no output)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/exec.rs:202
+msgid "Key data too large"
+msgstr ""
+
+#: crates/luks-assistant-core/src/exec.rs:440
+msgid "{} timed out"
+msgstr ""
+
+#: crates/luks-assistant-core/src/exec.rs:445
+msgid "Input needed: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:257
+#: crates/luks-assistant-core/src/forms.rs:510
+msgid "Authenticate with"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:258
+#: crates/luks-assistant-core/src/forms.rs:261
+#: crates/luks-assistant-core/src/forms.rs:511
+#: crates/luks-assistant-core/src/notes.rs:46
+#: crates/luks-assistant-core/src/notes.rs:53
+#: crates/luks-assistant-core/src/ops.rs:480
+#: crates/luks-assistant-core/src/ops.rs:612
+#: crates/luks-assistant-core/src/slots.rs:42
+msgid "Password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:258
+#: crates/luks-assistant-core/src/forms.rs:264
+#: crates/luks-assistant-core/src/forms.rs:326
+#: crates/luks-assistant-core/src/forms.rs:502
+#: crates/luks-assistant-core/src/forms.rs:512
+#: crates/luks-assistant-core/src/notes.rs:47
+#: crates/luks-assistant-core/src/notes.rs:54
+#: crates/luks-assistant-core/src/slots.rs:43
+msgid "Key file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:271
+msgid "Note"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:271
+msgid "Up to 64 characters"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:274
+msgid "Store note"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:285
+msgid "pbkdf2 (GRUB compatible)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:298
+msgid "Password or recovery key of any slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:315
+#: crates/luks-assistant-core/src/forms.rs:857
+msgid "Add password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:317
+#: crates/luks-assistant-core/src/forms.rs:456
+#: crates/luks-assistant-core/src/ops.rs:747
+#: crates/luks-assistant-core/src/ops.rs:841
+msgid "New password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:318
+#: crates/luks-assistant-core/src/forms.rs:457
+msgid "Confirm new password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:319
+#: crates/luks-assistant-core/src/forms.rs:327
+#: crates/luks-assistant-core/src/forms.rs:341
+#: gui/src/mainwindow.cpp:632
+#: gui/src/mainwindow.ui
+msgid "Slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:319
+#: crates/luks-assistant-core/src/forms.rs:327
+#: crates/luks-assistant-core/src/forms.rs:341
+msgid "Empty: chosen automatically"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:324
+#: crates/luks-assistant-core/src/forms.rs:858
+msgid "Add key file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:332
+#: crates/luks-assistant-core/src/forms.rs:860
+msgid "Generate key file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:337
+msgid "Save to"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:340
+msgid "Size (bytes)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:351
+#: crates/luks-assistant-core/src/forms.rs:832
+#: crates/luks-assistant-core/src/ops.rs:871
+msgid "Regenerate recovery key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:353
+#: crates/luks-assistant-core/src/forms.rs:866
+#: crates/luks-assistant-core/src/ops.rs:873
+msgid "Generate recovery key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:361
+#: crates/luks-assistant-core/src/forms.rs:392
+#: crates/luks-assistant-core/src/forms.rs:435
+msgid "Needs systemd-cryptenroll"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:372
+#: crates/luks-assistant-core/src/forms.rs:407
+msgid "Require PIN"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:376
+msgid "Confirm PIN"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:382
+#: crates/luks-assistant-core/src/forms.rs:836
+msgid "Re-enroll TPM2"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:384
+#: crates/luks-assistant-core/src/forms.rs:869
+msgid "Enroll TPM2"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:400
+msgid "Security key PIN"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:401
+msgid "Leave empty if the key has no PIN"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:412
+msgid "Require touch"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:417
+msgid "Require user verification"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:425
+#: crates/luks-assistant-core/src/forms.rs:840
+msgid "Re-enroll FIDO2"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:427
+#: crates/luks-assistant-core/src/forms.rs:870
+msgid "Enroll FIDO2"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:439
+msgid "Smart card PIN"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:441
+msgid "Token URI"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:446
+#: crates/luks-assistant-core/src/forms.rs:844
+msgid "Re-enroll PKCS#11"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:448
+#: crates/luks-assistant-core/src/forms.rs:872
+msgid "Enroll PKCS#11"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:454
+#: crates/luks-assistant-core/src/ops.rs:831
+msgid "Change the password of slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:455
+msgid "Current password of this slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:462
+#: crates/luks-assistant-core/src/ops.rs:1303
+msgid "Convert slot {} to Argon2id"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:463
+#: crates/luks-assistant-core/src/ops.rs:1321
+msgid "Password of this slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:467
+msgid "Note of slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:480
+msgid "Priority of slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:483
+#: crates/luks-assistant-core/src/view.rs:391
+#: crates/luks-assistant-tui/src/ui.rs:324
+msgid "Priority"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:484
+#: crates/luks-assistant-core/src/header.rs:41
+#: crates/luks-assistant-core/src/header.rs:49
+msgid "Ignore"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:484
+#: crates/luks-assistant-core/src/header.rs:42
+#: crates/luks-assistant-core/src/header.rs:50
+msgid "Normal"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:484
+#: crates/luks-assistant-core/src/header.rs:43
+#: crates/luks-assistant-core/src/header.rs:51
+msgid "Prefer"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:492
+msgid "Delete slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:493
+msgid "Password or recovery key of another slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:499
+#: crates/luks-assistant-core/src/ops.rs:600
+msgid "Already unlocked ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:502
+msgid "Password / recovery key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:516
+msgid "Token PIN"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:523
+#: crates/luks-assistant-tui/src/app.rs:794
+#: crates/luks-assistant-tui/src/ui.rs:236
+#: gui/src/formdialog.cpp:181
+#: gui/src/mainwindow.cpp:664
+#: gui/src/mainwindow.cpp:886
+#: gui/src/mainwindow.ui
+msgid "Unlock"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:525
+#: crates/luks-assistant-tui/src/app.rs:636
+#: crates/luks-assistant-tui/src/app.rs:638
+#: crates/luks-assistant-tui/src/app.rs:644
+#: crates/luks-assistant-tui/src/app.rs:794
+#: crates/luks-assistant-tui/src/app.rs:816
+#: crates/luks-assistant-tui/src/ui.rs:244
+#: gui/src/formdialog.cpp:180
+#: gui/src/mainwindow.cpp:893
+#: gui/src/mainwindow.cpp:895
+#: gui/src/mainwindow.ui
+msgid "Verify"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:533
+#: crates/luks-assistant-core/src/ops.rs:1241
+msgid "The volume is locked; the TRIM flag cannot be written"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:539
+msgid "Current: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:539
+msgid "on"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:539
+msgid "off"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:544
+msgid "Disable TRIM pass-through"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:546
+msgid "Enable TRIM pass-through"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:556
+msgid "Restore this program's backup: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:560
+#: gui/src/mainwindow.cpp:1012
+msgid "no backup found"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:563
+#: crates/luks-assistant-core/src/ops.rs:1431
+msgid "Restore header"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:567
+msgid "Source"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:568
+#: gui/src/mainwindow.cpp:1013
+msgid "Choose a backup file to restore"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:578
+#: gui/src/mainwindow.cpp:1051
+msgid "Backup file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:583
+#: gui/src/mainwindow.cpp:324
+#: gui/src/mainwindow.cpp:1075
+#: gui/src/mainwindow.ui
+msgid "Backup location"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:587
+msgid "Directory"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:590
+msgid "Empty = {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:609
+#: crates/luks-assistant-core/src/forms.rs:795
+msgid "Choose the key file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:615
+#: crates/luks-assistant-core/src/forms.rs:802
+msgid "Enter the password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:635
+msgid "The two entries do not match"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:648
+msgid "The slot must be a number"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:688
+msgid "The size must be a number"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:762
+#: gui/src/mainwindow.cpp:1031
+msgid "This program has saved no backup of this volume."
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:764
+#: gui/src/mainwindow.cpp:1031
+msgid "Choose a backup file."
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:826
+msgid "Change password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:828
+msgid "Convert to Argon2id"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:849
+msgid "Edit note"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:850
+msgid "Set priority"
+msgstr ""
+
+#: crates/luks-assistant-core/src/forms.rs:851
+msgid "Delete slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:34
+msgid "Slot numbers must be between 0 and {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:38
+msgid "Slot {} is in use"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:43
+msgid "All 32 slots are in use"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:56
+msgid "The new password cannot be empty"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:60
+msgid "Passwords cannot be longer than {} bytes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:65
+msgid "Passwords must be valid UTF-8 text"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:69
+msgid "Passwords cannot contain line breaks or control characters"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:74
+msgid "The password is shorter than 8 characters"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:78
+msgid "The password has non-ASCII characters and may be impossible to type at boot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:82
+msgid "The password starts or ends with a space"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:91
+#: crates/luks-assistant-core/src/guard.rs:151
+#: crates/luks-assistant-core/src/guard.rs:164
+#: crates/luks-assistant-core/src/ops.rs:823
+#: crates/luks-assistant-core/src/ops.rs:975
+#: crates/luks-assistant-core/src/ops.rs:1287
+msgid "Slot {} is empty"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:94
+msgid "This slot is being used for re-encryption"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:97
+msgid "This is the last slot; it cannot be deleted"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:107
+msgid "This is the last password/key file/recovery key slot; it cannot be deleted"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:113
+msgid "The credential used is the slot being deleted; use the credential of another slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:118
+msgid "This slot is managed by another tool ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:128
+msgid "Token {} is bound to several slots; only slot {} is removed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:134
+msgid "This device holds the root file system"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:142
+msgid "Only one password/recovery key slot will be left"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:153
+msgid "Slot {} is “{}”; only {} slots can be replaced"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:158
+msgid "Invalid slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:178
+msgid "This is the last password slot that is not ignored; the password would no longer unlock at boot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:181
+msgid "The slot will no longer be tried at boot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/guard.rs:190
+msgid "There is no password/recovery key slot at the moment"
+msgstr ""
+
+#: crates/luks-assistant-core/src/header.rs:72
+msgid "pbkdf2-{} {} iterations"
+msgstr ""
+
+#: crates/luks-assistant-core/src/header.rs:205
+msgid "Version/UUID missing from luksDump output"
+msgstr ""
+
+#: crates/luks-assistant-core/src/header.rs:253
+msgid "JSON metadata: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/header.rs:400
+msgid "Exporting JSON metadata needs cryptsetup ≥ 2.4"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:20
+msgid "Critical"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:21
+msgid "Warning"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:22
+msgid "Info"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:53
+msgid "Read-only device"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:60
+msgid "No password/recovery key slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:61
+msgid "Only hardware tokens can unlock it; add a password or a recovery key."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:67
+msgid "Only one password/recovery key slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:68
+msgid "Slot {} is the only fallback for unlocking."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:77
+msgid "Orphaned token {} ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:78
+msgid "Not bound to any slot (usually left behind by luksKillSlot)."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:86
+msgid "Token {} is bound to several slots {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:90
+msgid "systemd-cryptenroll --wipe-slot would also wipe the other slots."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:100
+msgid "Slot {} is bound to several tokens {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:104
+msgid "Usually created by another tool."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:115
+msgid "The TPM2 policy of slot {} does not match the current PCRs"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:118
+msgid "{}."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:123
+msgid "Cannot tell the TPM2 state of slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:134
+msgid "Slot {} uses PBKDF2"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:135
+msgid "It can be converted to Argon2id from the slot menu."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:144
+msgid "Slot {} is managed by another tool ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:145
+msgid "Luks Assistant does not change its tokens."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:159
+msgid "(local)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:169
+msgid "Stale notes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:170
+msgid "Slot {} was removed or rewritten."
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:178
+msgid "Running out of slots"
+msgstr ""
+
+#: crates/luks-assistant-core/src/health.rs:179
+msgid "The 32 slots are almost full."
+msgstr ""
+
+#: crates/luks-assistant-core/src/notes.rs:68
+#: crates/luks-assistant-core/src/notes.rs:75
+msgid "In the header"
+msgstr ""
+
+#: crates/luks-assistant-core/src/notes.rs:69
+#: crates/luks-assistant-core/src/notes.rs:76
+msgid "On this machine (/etc/)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/notes.rs:212
+msgid "Notes are limited to {} characters"
+msgstr ""
+
+#: crates/luks-assistant-core/src/notes.rs:218
+msgid "Notes cannot contain control characters or line breaks"
+msgstr ""
+
+#: crates/luks-assistant-core/src/notes.rs:250
+msgid "Not enough space in the header JSON area (about {} / {} bytes)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:46
+msgid "systemd < 252 cannot authenticate with a key file; use a password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:54
+msgid "Enter an existing password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:57
+msgid "Key file not found: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:344
+msgid "Needs systemd-cryptenroll (systemd ≥ 248)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:373
+msgid "Create the backup directory {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:377
+#: crates/luks-assistant-core/src/ops.rs:675
+#: crates/luks-assistant-core/src/ops.rs:682
+msgid "Back up the LUKS header"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:390
+msgid "Hand the backup over to user {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:426
+msgid "Record the slot type in the header ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:430
+#: crates/luks-assistant-core/src/ops.rs:991
+msgid "Save the note “{}” ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:446
+msgid "Check that slot {} exists"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:447
+msgid "Check that slot {} was removed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:448
+msgid "Check that the new slot was written"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:484
+#: crates/luks-assistant-helper/src/main.rs:173
+#: crates/luks-assistant-tui/src/app.rs:554
+msgid "Wrong password or key file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:487
+msgid "cryptsetup did not report which slot unlocked"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:628
+msgid "The volume is not unlocked"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:632
+msgid "This volume holds the running system and cannot be locked"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:642
+msgid "The required device (TPM or security key) was not found"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:666
+msgid "No usable TPM 2.0 device found"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:679
+#: crates/luks-assistant-core/src/ops.rs:767
+msgid "{} already exists"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:693
+msgid "The backup plus any old password decrypts the data; keep it safe"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:700
+#: crates/luks-assistant-helper/src/main.rs:332
+#: crates/luks-assistant-tui/src/app.rs:726
+msgid "No old backups to clean up"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:702
+msgid "Clean up old header backups"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:710
+msgid "Only the newest backup {} is kept; the other {} will be deleted"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:716
+msgid "Delete {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:737
+msgid "Add a password in slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:740
+msgid "PBKDF2 resists brute force less well than Argon2id"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:746
+#: crates/luks-assistant-core/src/ops.rs:794
+#: crates/luks-assistant-core/src/ops.rs:1271
+msgid "existing password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:748
+msgid "Write the new password to slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:763
+msgid "Add a key file in slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:771
+msgid "Key files should be between 16 bytes and 8 MiB"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:775
+msgid "A new key file {} will be created (mode 0400). Back it up to a safe place"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:784
+msgid "Create a {}-byte random key file {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:796
+msgid "Write the key file to slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:826
+msgid "Slot {} is “{}”; only password/key file slots can be changed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:840
+msgid "old password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:843
+msgid "Replace slot {} with the new password"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:847
+msgid "Update the note for the new key material"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:876
+msgid "The recovery key is shown only once"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:884
+msgid "Generate and write a recovery key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:891
+#: crates/luks-assistant-core/src/ops.rs:943
+#: crates/luks-assistant-core/src/ops.rs:1066
+#: crates/luks-assistant-core/src/ops.rs:1133
+#: crates/luks-assistant-core/src/ops.rs:1180
+msgid "Remove the note of slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:902
+msgid "Delete slot {} ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:914
+msgid "Wipe slot {} and its token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:919
+msgid "Wipe slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:929
+msgid "Remove leftover token {} ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:954
+msgid "Set the priority of slot {} to “{}”"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:959
+msgid "Change the priority"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:977
+msgid "Edit the note of slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:985
+msgid "The header is not encrypted; anyone can read the notes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:989
+msgid "Remove the note"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1022
+msgid "PCR numbers must be between 0 and 23"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1026
+msgid "Re-enroll TPM2 (replacing slot {}, PCR {})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1030
+msgid "Enroll TPM2 (PCR {})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1043
+msgid "TPM2 + PIN needs systemd ≥ 251"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1046
+msgid "The PIN cannot be empty"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1061
+msgid "Enroll the TPM2 token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1071
+msgid "Record the current PCR values as the baseline"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1097
+msgid "Re-enroll the FIDO2 security key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1099
+msgid "Enroll a FIDO2 security key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1103
+msgid "Touch the security key when asked"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1126
+msgid "Enroll the FIDO2 token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1159
+msgid "Enroll a PKCS#11 smart card"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1173
+msgid "Enroll the PKCS#11 token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1193
+msgid "Token {} does not exist"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1196
+msgid "Token {} is still bound to slots {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1203
+msgid "This is the Luks Assistant notes token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1206
+msgid "Remove orphaned token {} ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1209
+msgid "Remove the token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1220
+msgid "No stale notes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1222
+msgid "Clean up stale notes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1228
+#: crates/luks-assistant-tui/src/app.rs:365
+msgid "Slot {} ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1230
+msgid ", "
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1232
+msgid "Remove the notes of {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1246
+msgid "TRIM pass-through is already on"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1248
+msgid "TRIM pass-through is already off"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1255
+msgid "Enable TRIM pass-through (stored in the header)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1257
+msgid "Disable TRIM pass-through (stored in the header)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1261
+msgid "TRIM reveals used space and the file system type"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1263
+msgid "The mkinitcpio encrypt hook ignores this flag; the :allow-discards boot option is still needed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1273
+msgid "Refresh the mapping and store the persistent flag"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1277
+msgid "Check the header flag"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1290
+msgid "Slot {} is “{}”; token slots need no conversion"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1298
+msgid "Slot {} already uses {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1305
+msgid "GRUB_ENABLE_CRYPTODISK=y found: GRUB before 2.12 cannot use Argon2, so booting fails if GRUB unlocks with this slot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1322
+msgid "Convert slot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1325
+msgid "Update the note fingerprint"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1376
+msgid "{} is not a regular file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1381
+msgid "The key file is empty"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1385
+msgid "The key file exceeds cryptsetup's default limit of 8 MiB"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1390
+msgid "{} is readable by other users"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1397
+msgid "{} does not exist"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1406
+msgid "{} is not a LUKS header backup"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1413
+msgid "The backup UUID ({}) does not match the device ({})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1421
+msgid "Restore the LUKS header from {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1426
+msgid "Keys added after the backup stop working; keys removed since come back"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1427
+msgid "The current header is backed up first"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1483
+msgid "No newly written slot found"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1502
+msgid "Another Luks Assistant instance is running an operation"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1535
+msgid "Reading the header failed: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1555
+msgid "{}: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1643
+msgid "Created {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1650
+msgid "Slot {} {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1653
+msgid "present"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1655
+msgid "removed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1660
+msgid "Slot {} is not in the expected state"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1677
+#: crates/luks-assistant-core/src/ops.rs:1731
+msgid "Slot {} does not exist"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1755
+msgid "{} (slot {})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1785
+msgid "The TRIM flag in the header is not as expected"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1795
+msgid "Slot {} has no TPM2 token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1803
+msgid "PCR {} recorded; {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1830
+msgid "Write {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/ops.rs:1833
+msgid "No change"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:61
+msgid "SRTM / firmware code"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:62
+msgid "Core UEFI firmware code of the mainboard"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:63
+msgid "Updating BIOS/UEFI or CPU microcode"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:67
+msgid "Firmware configuration"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:68
+msgid "Mainboard firmware configuration and policies"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:69
+msgid "Changing firmware settings or hardware"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:73
+msgid "Option ROM code"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:74
+msgid "Firmware of graphics, network and other expansion cards"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:75
+#: crates/luks-assistant-core/src/pcr.rs:81
+msgid "Replacing or updating expansion card firmware"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:79
+msgid "Option ROM configuration"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:80
+msgid "Configuration data of expansion card firmware"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:85
+msgid "Boot loader code"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:86
+msgid "Boot manager / the booted EFI programs themselves"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:87
+msgid "Updating the boot loader, UKI or kernel EFI files"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:91
+msgid "Boot configuration"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:92
+msgid "Boot entries and the GPT partition table"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:93
+msgid "Changing the UEFI boot order or the partition table"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:97
+msgid "Power events"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:98
+msgid "Platform power state"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:99
+msgid "Sleep, wake-up and similar events"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:103
+msgid "Secure Boot policy"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:104
+msgid "Secure Boot state and certificate databases"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:105
+msgid "Turning Secure Boot on or off, updating db/dbx/KEK"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:109
+msgid "GRUB commands"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:110
+msgid "Commands and arguments GRUB runs"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:111
+msgid "Editing grub.cfg, changing the theme"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:115
+msgid "Files GRUB reads"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:116
+msgid "Kernel, initramfs and other files GRUB reads"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:117
+msgid "Updating the kernel or initramfs"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:122
+msgid "Programs and libraries loaded at run time"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:123
+msgid "Keeps changing at run time"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:127
+msgid "UKI contents"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:128
+msgid "Sections of the unified kernel image"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:129
+msgid "Updating the UKI"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:133
+msgid "UKI arguments / credentials"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:134
+msgid "Kernel command line and system credentials passed to the UKI"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:135
+msgid "Changing the kernel command line"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:139
+msgid "System extensions"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:140
+msgid "systemd-sysext images"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:141
+msgid "Changing extension images"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:146
+msgid "shim's Machine Owner Keys"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:147
+msgid "Enrolling/deleting MOKs"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:151
+msgid "machine-id / system identity"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:152
+msgid "machine-id and other identity data"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:153
+msgid "Changing /etc/machine-id; systemd may extend it after unlocking"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:157
+msgid "Debug"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:158
+msgid "Debugging"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:159
+msgid "root can extend it at will"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:164
+msgid "Dynamic measurement (Intel TXT / AMD SKINIT)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:165
+#: crates/luks-assistant-core/src/pcr.rs:167
+#: crates/luks-assistant-core/src/pcr.rs:168
+#: crates/luks-assistant-core/src/pcr.rs:169
+#: crates/luks-assistant-core/src/pcr.rs:170
+#: crates/luks-assistant-core/src/pcr.rs:171
+msgid "Usually unused"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:167
+#: crates/luks-assistant-core/src/pcr.rs:168
+#: crates/luks-assistant-core/src/pcr.rs:169
+#: crates/luks-assistant-core/src/pcr.rs:170
+#: crates/luks-assistant-core/src/pcr.rs:171
+msgid "Dynamic measurement"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:174
+msgid "Application specific"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:175
+msgid "Written by user space/applications (systemd, fwupd, …)"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:176
+msgid "Can be reset to all zeros"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:186
+msgid "No PCRs selected: any system with access to this TPM can unlock"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:192
+msgid "PCR 0: breaks after BIOS/microcode updates"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:193
+msgid "PCR 2/3: break when expansion card firmware changes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:194
+msgid "PCR 4: breaks after boot loader/UKI updates"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:195
+msgid "PCR 8/9: break after GRUB config, kernel or initramfs updates"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:196
+msgid "PCR 10 (IMA) keeps changing at run time; unusable"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:197
+msgid "PCR 11: breaks after UKI updates"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:198
+msgid "PCR 12: breaks when the kernel command line changes"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:199
+msgid "PCR 15: systemd may extend it after unlocking"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:200
+msgid "PCR 16/23 can be changed from user space; no security"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:201
+msgid "PCR 17-22 are only used by DRTM"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:209
+msgid "Secure Boot is off; PCR 7 protects little"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:212
+msgid "Including PCR 7 is recommended"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:222
+msgid "Invalid PCR number: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:224
+msgid "PCR number out of range: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:296
+#: crates/luks-assistant-core/src/view.rs:331
+#: crates/luks-assistant-tui/src/ui.rs:48
+#: crates/luks-assistant-tui/src/ui.rs:218
+msgid "none"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:307
+msgid " + signed policy (PCR {})"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:350
+msgid "No current value for PCR {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:386
+msgid "PCRs match"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:388
+msgid "PCR {} changed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:390
+#: crates/luks-assistant-tui/src/ui.rs:294
+msgid "PCRs changed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:391
+msgid "Cannot tell: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:467
+msgid "uses a pcrlock policy"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:470
+msgid "uses a signed PCR policy"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:473
+msgid "The token has no tpm2-policy-hash"
+msgstr ""
+
+#: crates/luks-assistant-core/src/pcr.rs:476
+msgid "Cannot read the {} PCRs"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:41
+#: crates/luks-assistant-core/src/slots.rs:158
+#: crates/luks-assistant-tui/src/ui.rs:319
+#: gui/src/mainwindow.cpp:639
+#: gui/src/mainwindow.cpp:716
+msgid "Empty"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:44
+msgid "Password/key file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:45
+#: gui/src/dialogs.cpp:173
+msgid "Recovery key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:49
+msgid "Token:{}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:50
+msgid "Re-encryption"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:51
+msgid "LUKS1 key"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:122
+msgid "touch"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:123
+msgid "user verification"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:129
+msgid "no extra requirements"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:131
+msgid "requires {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:316
+msgid "LUKS1 is not supported, only LUKS2"
+msgstr ""
+
+#: crates/luks-assistant-core/src/slots.rs:320
+msgid "The header has mandatory requirements {}; read-only"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:154
+#: crates/luks-assistant-tui/src/ui.rs:417
+msgid "not installed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:165
+msgid "no TPM"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:168
+msgid "{} · kernel {} · systemd {} · cryptsetup {} · {} · Secure Boot {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:177
+#: crates/luks-assistant-tui/src/ui.rs:420
+msgid "Distribution"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:178
+#: crates/luks-assistant-tui/src/ui.rs:421
+msgid "Family"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:179
+#: crates/luks-assistant-tui/src/ui.rs:422
+msgid "Kernel"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:180
+#: crates/luks-assistant-tui/src/ui.rs:423
+msgid "Host name"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:184
+#: crates/luks-assistant-tui/src/ui.rs:427
+msgid "Firmware"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:187
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:91
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:92
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:93
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:95
+#: crates/luks-assistant-tui/src/ui.rs:430
+msgid "Secure Boot"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:192
+#: crates/luks-assistant-tui/src/ui.rs:436
+msgid "Version"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:196
+#: crates/luks-assistant-tui/src/ui.rs:440
+msgid "Device"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:204
+#: crates/luks-assistant-tui/src/ui.rs:447
+msgid "Driver"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:208
+#: crates/luks-assistant-tui/src/ui.rs:449
+msgid "Description"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:213
+#: crates/luks-assistant-core/src/view.rs:425
+#: crates/luks-assistant-tui/src/ui.rs:357
+#: gui/src/mainwindow.cpp:384
+msgid "Status"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:213
+#: gui/src/mainwindow.cpp:524
+msgid "Not detected"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:216
+#: crates/luks-assistant-tui/src/ui.rs:457
+msgid "Override"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:252
+#: crates/luks-assistant-tui/src/app.rs:380
+msgid "{}  image file"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:329
+#: crates/luks-assistant-tui/src/ui.rs:1211
+msgid "Selected PCRs {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:339
+msgid "PCR {} {}: {}; changes: {}"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:372
+msgid "⚠ PCRs changed"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:388
+#: crates/luks-assistant-tui/src/ui.rs:321
+#: crates/luks-assistant-tui/src/ui.rs:495
+#: gui/src/mainwindow.cpp:381
+msgid "Type"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:394
+#: crates/luks-assistant-tui/src/ui.rs:327
+msgid "Slot encryption"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:395
+#: crates/luks-assistant-tui/src/ui.rs:328
+msgid "{}  {} bits"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:401
+#: crates/luks-assistant-tui/src/ui.rs:333
+msgid "Token"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:411
+#: crates/luks-assistant-tui/src/ui.rs:337
+msgid "Header note"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:412
+#: crates/luks-assistant-tui/src/ui.rs:338
+msgid "Local note"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:428
+#: crates/luks-assistant-tui/src/ui.rs:367
+msgid "Policy hash"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:483
+msgid "LUKS{} · {} · {}/32 used"
+msgstr ""
+
+#: crates/luks-assistant-core/src/view.rs:489
+#: crates/luks-assistant-tui/src/ui.rs:389
+msgid "{} · sector {} · JSON {}/{} bytes"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:142
+#: crates/luks-assistant-helper/src/main.rs:182
+#: crates/luks-assistant-tui/src/app.rs:567
+#: crates/luks-assistant-tui/src/app.rs:644
+msgid "No {} token"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:158
+msgid "{} verification failed: {}"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:176
+#: crates/luks-assistant-helper/src/main.rs:197
+#: crates/luks-assistant-tui/src/app.rs:557
+msgid "Unlocking failed: {}"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:201
+#: crates/luks-assistant-tui/src/app.rs:583
+msgid "Unlocked {} → {}"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:220
+msgid "Slot {} ({}) verified"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:237
+msgid "Slot {} ({} token {}) verified"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:339
+msgid "Plan {} does not exist or has already run"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:342
+msgid "The confirmation text is wrong"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:416
+msgid "Luks-Assistant-Helper needs root privileges"
+msgstr ""
+
+#: crates/luks-assistant-helper/src/main.rs:442
+msgid "Invalid request: {}"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:72
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:82
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:84
+msgid "TPM 2.0 device"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:75
+msgid "{} available"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:82
+msgid "not TPM 2.0"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:84
+msgid "No TPM detected"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:91
+#: crates/luks-assistant-sysinfo/src/firmware.rs:29
+msgid "Legacy BIOS"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:92
+#: crates/luks-assistant-sysinfo/src/firmware.rs:30
+msgid "enabled"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:93
+#: crates/luks-assistant-sysinfo/src/firmware.rs:32
+msgid "disabled"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:97
+msgid "Cannot read the SecureBoot variable"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:118
+msgid "usually does not support systemd-cryptenroll tokens; the password is still needed at boot"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:126
+msgid "supports systemd-tpm2 / systemd-fido2 tokens"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:131
+msgid "initramfs generator"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:133
+msgid "not recognized"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:173
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:179
+msgid "cryptsetup token plugins"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:175
+msgid "libcryptsetup-token-systemd-*.so not found"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:181
+msgid "Installed: {}"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:231
+msgid "No HOOKS= setting found"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:240
+msgid "systemd + sd-encrypt. HOOKS=({})"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:247
+msgid "sd-encrypt is present but the systemd hook is missing. HOOKS=({})"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:257
+msgid "The encrypt hook does not support tokens; switch to systemd + sd-encrypt. HOOKS=({})"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:265
+msgid "No encryption hook. HOOKS=({})"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:303
+msgid "tpm2-tss module added{}"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:305
+msgid "and the fido2 module"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:314
+msgid "fido2 module added (tpm2-tss not added)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:324
+msgid "tpm2-tss / fido2 modules not added explicitly (hostonly may include them)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:326
+msgid "tpm2-tss module not found"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:367
+msgid "Entry {} sets no tpm2-device= / fido2-device= (tokens are usually tried anyway)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:375
+msgid "Entry {} is configured: {}"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:382
+msgid "No entry for this device"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:391
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:399
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:420
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:422
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:425
+msgid "Kernel command line"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:393
+msgid "{}: encrypt hook syntax, no token support"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:401
+msgid "No rd.luks.* options"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/bootcheck.rs:427
+msgid "{} (does not contain this device's UUID)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/firmware.rs:31
+msgid "disabled (Setup Mode)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/firmware.rs:33
+msgid "unknown"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/os.rs:20
+msgid "Arch family"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/os.rs:21
+msgid "Fedora/RHEL family"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/os.rs:22
+msgid "Debian/Ubuntu family"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/os.rs:23
+msgid "openSUSE family"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/os.rs:24
+msgid "Other"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:138
+msgid "JSON header dump (cryptsetup ≥ 2.4)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:141
+msgid "FIDO2 PIN/touch/verification options (≥ 249)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:146
+msgid "Authenticate with a key file, --unlock-key-file (≥ 252)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tools.rs:149
+msgid "TPM2 signed PCR policies (≥ 252)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:109
+msgid "{} does not exist (no TPM, or a kernel older than 5.12 without the PCR sysfs interface)"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:120
+msgid "{}: cannot parse"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:134
+msgid "tpm2-tools (tpm2_pcrread) is not installed"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:136
+msgid "tpm2_pcrread failed: {}"
+msgstr ""
+
+#: crates/luks-assistant-sysinfo/src/tpm.rs:166
+msgid "No {} bank in tpm2_pcrread output"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:33
+msgid "1 Slots"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:34
+msgid "2 System"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:35
+msgid "3 Self-check"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:36
+msgid "4 Headers"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:37
+msgid "5 Logs"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:38
+msgid "6 About"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:244
+msgid "No LUKS volumes found"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:263
+msgid "Reading failed: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:330
+msgid "Refreshed"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:363
+msgid "Slot {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:448
+#: gui/src/mainwindow.cpp:838
+msgid "Not possible"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:460
+#: gui/src/mainwindow.cpp:1098
+#: gui/src/mainwindow.cpp:1103
+msgid "Export logs"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:464
+#: gui/src/mainwindow.cpp:385
+msgid "File"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:480
+msgid "Logs exported: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:508
+#: crates/luks-assistant-tui/src/app.rs:528
+#: crates/luks-assistant-tui/src/app.rs:600
+#: crates/luks-assistant-tui/src/app.rs:707
+#: crates/luks-assistant-tui/src/app.rs:750
+msgid "Root needed: sudo Luks-Assistant-TUI"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:519
+msgid "Backup location: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:569
+msgid "Unlocking…"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:600
+#: crates/luks-assistant-tui/src/app.rs:616
+#: crates/luks-assistant-tui/src/ui.rs:234
+#: gui/src/mainwindow.cpp:664
+#: gui/src/mainwindow.cpp:698
+msgid "Lock"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:608
+msgid "Locked {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:636
+msgid "✓ Slot {} ({}) verified"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:646
+msgid "Verifying {}…"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:684
+#: crates/luks-assistant-tui/src/app.rs:750
+#: crates/luks-assistant-tui/src/app.rs:771
+#: gui/src/mainwindow.cpp:821
+#: gui/src/mainwindow.cpp:992
+msgid "Back up"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:685
+#: crates/luks-assistant-tui/src/ui.rs:710
+#: gui/src/mainwindow.cpp:824
+#: gui/src/mainwindow.ui
+msgid "Restore…"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:686
+#: gui/src/mainwindow.cpp:822
+msgid "Clean up old backups"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:707
+#: crates/luks-assistant-tui/src/app.rs:730
+#: crates/luks-assistant-tui/src/ui.rs:711
+#: gui/src/mainwindow.cpp:978
+#: gui/src/mainwindow.ui
+msgid "Clean up"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:767
+msgid "No volume selected"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:818
+msgid "✓ Slot {} ({} token {}) verified"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:835
+msgid "✗ Unlock failed: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:839
+msgid ""
+"✗ {} verification failed\n"
+"{}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:854
+msgid "{} operations"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:867
+msgid "  Backup: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:884
+msgid "  Error: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:903
+msgid "succeeded"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:905
+#: gui/src/dialogs.cpp:258
+msgid "failed"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:994
+msgid "Add"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:1107
+msgid "Cancelled"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:1110
+msgid "Running…"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:1367
+msgid ""
+"\n"
+"=== Luks Assistant: follow the prompts (PIN / touch the security key) ===\n"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/app.rs:1372
+msgid ""
+"\n"
+"=== Press Enter to return ==="
+msgstr ""
+
+#: crates/luks-assistant-tui/src/lib.rs:17
+msgid ""
+"Usage: Luks-Assistant-TUI [options] [device or image file]\n"
+"\n"
+"  Without arguments, lists every LUKS device lsblk finds.\n"
+"\n"
+"Options:\n"
+"  --dump [device]   print the slot model as JSON and exit (debugging)\n"
+"  --boot-check      print the boot unlock check and exit\n"
+"  -h, --help        show this help\n"
+"  -V, --version     show the version\n"
+"\n"
+"Environment (development):\n"
+"  LUKS_ASSISTANT_LANG          en or zh_CN (default: from the locale)\n"
+"  LUKS_ASSISTANT_TPM2_DEVICE   TPM device or TCTI, e.g. swtpm:host=127.0.0.1,port=2321\n"
+"  LUKS_ASSISTANT_ETC_DIR       notes directory (default /etc/luks-assistant)\n"
+"  LUKS_ASSISTANT_STATE_DIR     backups/snapshots/logs directory (default /var/lib/luks-assistant)\n"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/lib.rs:53
+msgid ""
+"Unknown option: {}\n"
+"\n"
+"{}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/lib.rs:62
+#: gui/src/mainwindow.cpp:470
+msgid "Ready"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/lib.rs:77
+msgid "No LUKS devices found"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/lib.rs:112
+msgid "read-only (changes need sudo)"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:180
+#: gui/src/mainwindow.cpp:379
+msgid "Refresh"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:193
+msgid "←↑↓→ select  Enter actions  a add  d delete  n note  e edit  v verify  u unlock/lock  D disk  ? help  q quit"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:196
+msgid "p show all PCR measurements  Tab/1-6 switch  F5 refresh  q quit"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:197
+msgid "↑↓ select  Tab/1-6 switch  F5 refresh  q quit"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:199
+msgid "↑↓ select  Space check  Enter menu  a all  i invert  x clear  r restore  p clean up  b back up checked  c backup location"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:201
+msgid "↑↓ scroll  x export  Tab/1-6 switch  q quit"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:202
+msgid "Tab/1-6 pages  F5 refresh  q quit"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:221
+msgid "Disk "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:227
+#: gui/src/mainwindow.cpp:663
+msgid "Status: unlocked"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:229
+#: gui/src/mainwindow.cpp:663
+msgid "Status: locked"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:255
+msgid " Slots "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:360
+msgid "  press e to re-enroll"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:387
+#: gui/src/mainwindow.cpp:385
+msgid "Volume"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:402
+msgid " Slot {} "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:454
+#: crates/luks-assistant-tui/src/ui.rs:469
+msgid "  Not detected"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:460
+#: gui/src/mainwindow.cpp:520
+msgid "FIDO2 security keys"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:461
+#: gui/src/mainwindow.cpp:520
+msgid "PKCS#11 smart cards"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:473
+#: gui/src/mainwindow.cpp:528
+msgid "Features"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:483
+msgid " System "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:492
+#: gui/src/mainwindow.cpp:381
+msgid "Name"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:493
+#: gui/src/mainwindow.cpp:381
+msgid "Size"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:494
+#: gui/src/mainwindow.cpp:381
+msgid "Encryption"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:497
+#: gui/src/mainwindow.cpp:381
+msgid "Mount point"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:536
+msgid " Disks · LUKS {}/{} "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:544
+#: gui/src/mainwindow.ui
+msgid "Show all PCR measurements"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:594
+msgid "* used by a TPM2 slot"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:619
+msgid " Problems and warnings "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:623
+msgid "✓ No problems"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:682
+msgid " Hardware unlock availability "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:695
+msgid " Backup location: "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:700
+msgid "  (c to change)"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:707
+#: gui/src/mainwindow.ui
+msgid "Select all"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:708
+#: gui/src/mainwindow.ui
+msgid "Invert"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:709
+#: gui/src/mainwindow.ui
+msgid "Clear"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:714
+msgid "Back up selected ({})"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:728
+msgid " LUKS volumes "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:762
+msgid "Last backup {} · {} · {} in total"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:770
+#: gui/src/mainwindow.cpp:785
+msgid "Never backed up"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:788
+#: gui/src/mainwindow.cpp:451
+msgid "No LUKS volumes"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:805
+#: gui/src/mainwindow.cpp:389
+msgid "No logs yet"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:812
+msgid " Logs"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:901
+msgid " Disks "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:968
+msgid "Type {} and press Enter to confirm"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:976
+msgid "Enter run · Esc cancel"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:982
+msgid " Confirm "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1017
+msgid "Recovery key · slot {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1026
+msgid "Shown only once; store it offline"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1028
+msgid "press y to close"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1051
+msgid ""
+"Slots\n"
+"  ←↑↓→ hjkl / click   select; double click, right click or Enter opens the menu\n"
+"  a add   e edit/re-enroll   d delete   n note\n"
+"  v verify   u unlock/lock   D choose disk\n"
+"System\n"
+"  p show all PCR measurements\n"
+"Headers\n"
+"  Space check   a all   i invert   x clear\n"
+"  r restore   p clean up (keep the newest backup)   b back up checked\n"
+"  Enter/right click back up, restore or clean up one volume   c backup location\n"
+"Logs\n"
+"  x export as txt\n"
+"Global\n"
+"  Tab / 1-6 switch page   F5 refresh   q quit"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1070
+msgid " Help "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1164
+msgid " Tab/↑↓ move  Space/←→ choose  Enter OK  Esc cancel "
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1201
+msgid "PCR {} {}: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1203
+msgid "  Changes: {}"
+msgstr ""
+
+#: crates/luks-assistant-tui/src/ui.rs:1206
+msgid "  Current: {}"
+msgstr ""
+
+#: gui/src/dialogs.cpp:46
+msgid "The following steps will run. Commands are equivalents with passwords hidden."
+msgstr ""
+
+#: gui/src/dialogs.cpp:64
+#: gui/src/formdialog.cpp:184
+msgid "Cancel"
+msgstr ""
+
+#: gui/src/dialogs.cpp:65
+msgid "Run"
+msgstr ""
+
+#: gui/src/dialogs.cpp:116
+msgid "%1 operations"
+msgstr ""
+
+#: gui/src/dialogs.cpp:122
+msgid "Type <b>%1</b> to confirm:"
+msgstr ""
+
+#: gui/src/dialogs.cpp:178
+msgid "The recovery key was written to slot %1. It is shown only this once; write it down or print it and keep it offline."
+msgstr ""
+
+#: gui/src/dialogs.cpp:191
+#: gui/src/mainwindow.cpp:252
+#: gui/src/mainwindow.cpp:255
+#: gui/src/mainwindow.cpp:263
+#: gui/src/mainwindow.cpp:266
+msgid "Copy"
+msgstr ""
+
+#: gui/src/dialogs.cpp:196
+msgid "I have saved this recovery key"
+msgstr ""
+
+#: gui/src/dialogs.cpp:199
+msgid "Close"
+msgstr ""
+
+#: gui/src/dialogs.cpp:218
+msgid "  Backup: %1"
+msgstr ""
+
+#: gui/src/dialogs.cpp:232
+msgid "  Error: %1"
+msgstr ""
+
+#: gui/src/dialogs.cpp:258
+msgid "Done"
+msgstr ""
+
+#: gui/src/formdialog.cpp:102
+#: gui/src/mainwindow.cpp:1019
+#: gui/src/mainwindow.ui
+msgid "Browse…"
+msgstr ""
+
+#: gui/src/formdialog.cpp:182
+msgid "Save"
+msgstr ""
+
+#: gui/src/formdialog.cpp:183
+msgid "Next"
+msgstr ""
+
+#: gui/src/helperclient.cpp:59
+msgid "Luks-Assistant-Helper not found"
+msgstr ""
+
+#: gui/src/helperclient.cpp:93
+msgid "Cannot start the backend: %1"
+msgstr ""
+
+#: gui/src/helperclient.cpp:116
+msgid "The backend is not running"
+msgstr ""
+
+#: gui/src/helperclient.cpp:159
+msgid "Administrator authentication was cancelled"
+msgstr ""
+
+#: gui/src/helperclient.cpp:161
+msgid "Authentication failed or pkexec is not available"
+msgstr ""
+
+#: gui/src/helperclient.cpp:163
+msgid "The backend has exited"
+msgstr ""
+
+#: gui/src/helperclient.cpp:163
+msgid "The backend has exited: %1"
+msgstr ""
+
+#: gui/src/main.cpp:24
+msgid ""
+"Usage: Luks-Assistant-GUI [--gui | --tui] [device or image file...]\n"
+"\n"
+"  Opens the graphical interface in a desktop session, the terminal\n"
+"  interface from a terminal or without a display.\n"
+"\n"
+"  --gui        force the graphical interface (administrator rights via pkexec)\n"
+"  --tui        force the terminal interface (Luks-Assistant-TUI)\n"
+msgstr ""
+
+#: gui/src/main.cpp:65
+msgid "Cannot start Luks-Assistant-TUI: %s\n"
+msgstr ""
+
+#: gui/src/main.cpp:104
+msgid "No display (WAYLAND_DISPLAY / DISPLAY not set); use Luks-Assistant-TUI\n"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:253
+#: gui/src/mainwindow.cpp:264
+#: gui/src/mainwindow.cpp:267
+#: gui/src/mainwindow.cpp:649
+msgid "%1: %2"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:261
+msgid "Copy PCR value"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:344
+msgid "Backend not connected; click “Refresh” to retry"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:345
+msgid "Cannot start the backend"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:380
+#: gui/src/mainwindow.cpp:384
+msgid "Item"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:380
+msgid "Value"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:382
+msgid "Current value"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:382
+msgid "Purpose"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:383
+msgid "Level"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:383
+msgid "Problem"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:383
+msgid "Explanation"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:384
+msgid "Details"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:385
+msgid "Last backup"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:385
+msgid "Count"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:404
+msgid "Requesting administrator rights…"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:431
+msgid "Reading…"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:437
+msgid "Reading failed"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:459
+msgid "Reading failed: %1"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:518
+#: gui/src/mainwindow.ui
+msgid "System"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:578
+msgid ""
+"%1\n"
+"Changes: %2"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:701
+msgid "Locked"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:711
+msgid "Slot %1"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:721
+msgid "%1:"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:725
+msgid "Volume:"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:751
+msgid "No problems found"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:898
+#: gui/src/mainwindow.cpp:1076
+msgid "Backup location saved"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:917
+msgid "Running… (touch the security key if asked)"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:926
+msgid "Execution failed"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:1012
+msgid "Restore this program's backup: %1"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:1087
+msgid "The folder does not exist: %1"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:1091
+msgid "Cannot open %1"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:1098
+msgid "Text files (*.txt)"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:1108
+msgid "Exported to %1"
+msgstr ""
+
+#: gui/src/mainwindow.cpp:1127
+msgid "Takes full effect after restarting Luks Assistant"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgctxt "tab"
+msgid "Slots"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+#: gui/src/mainwindow.ui
+msgid "Disk"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Check a password, key file or hardware token without changing anything"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Slot 0"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgctxt "tab"
+msgid "System"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Self-check"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Problems and warnings"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Hardware unlock availability"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Headers"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Open folder"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Keep only the newest header backup of each selected volume and delete the older ones"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Back up selected"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Logs"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Export…"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "About"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Language"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+#: gui/src/mainwindow.ui
+msgid "System default"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Theme"
+msgstr ""
+
+#: gui/src/mainwindow.ui
+msgid "Qt (native)"
+msgstr ""

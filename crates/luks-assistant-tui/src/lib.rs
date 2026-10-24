@@ -15,20 +15,21 @@ use std::path::PathBuf;
 
 fn usage() -> &'static str {
     t!("\
-用法: Luks-Assistant-TUI [选项] [设备或镜像文件]
+Usage: Luks-Assistant-TUI [options] [device or image file]
 
-  不带参数时列出 lsblk 找到的所有 LUKS 设备。
+  Without arguments, lists every LUKS device lsblk finds.
 
-选项:
-  --dump [设备]   以 JSON 输出槽位模型后退出（调试用）
-  --boot-check    输出开机解锁检查结果后退出
-  -h, --help      显示帮助
-  -V, --version   显示版本
+Options:
+  --dump [device]   print the slot model as JSON and exit (debugging)
+  --boot-check      print the boot unlock check and exit
+  -h, --help        show this help
+  -V, --version     show the version
 
-环境变量（开发用）:
-  LUKS_ASSISTANT_TPM2_DEVICE   TPM 设备或 TCTI，例如 swtpm:host=127.0.0.1,port=2321
-  LUKS_ASSISTANT_ETC_DIR       备注目录（默认 /etc/luks-assistant）
-  LUKS_ASSISTANT_STATE_DIR     备份/快照/日志目录（默认 /var/lib/luks-assistant）
+Environment (development):
+  LUKS_ASSISTANT_LANG          en or zh_CN (default: from the locale)
+  LUKS_ASSISTANT_TPM2_DEVICE   TPM device or TCTI, e.g. swtpm:host=127.0.0.1,port=2321
+  LUKS_ASSISTANT_ETC_DIR       notes directory (default /etc/luks-assistant)
+  LUKS_ASSISTANT_STATE_DIR     backups/snapshots/logs directory (default /var/lib/luks-assistant)
 ")
 }
 
@@ -49,7 +50,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
     let dump = take_flag(&mut args, "--dump");
     let boot_check = take_flag(&mut args, "--boot-check");
     if let Some(bad) = args.iter().find(|a| a.starts_with('-')) {
-        eprintln!("{}", t!("未知选项: {}\n\n{}", bad, usage()));
+        eprintln!("{}", t!("Unknown option: {}\n\n{}", bad, usage()));
         std::process::exit(2);
     }
 
@@ -58,7 +59,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
         .iter()
         .map(|a| LuksDevice::from_path(&PathBuf::from(a)))
         .collect();
-    let mut status = String::from(t!("就绪"));
+    let mut status = String::from(t!("Ready"));
     let mut devices = extra.clone();
     match device::discover(&ctx) {
         Ok(found) => {
@@ -73,7 +74,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
 
     if dump {
         let Some(dev) = devices.first().cloned() else {
-            eprintln!("{}", t!("没有找到 LUKS 设备"));
+            eprintln!("{}", t!("No LUKS devices found"));
             std::process::exit(1);
         };
         match Overview::load(&ctx, dev) {
@@ -108,7 +109,7 @@ pub fn main_with_args(mut args: Vec<String>) -> ! {
 
     let sys = luks_assistant_sysinfo::SystemInfo::probe();
     if !sys.is_root {
-        status = t!("只读（写操作需要 sudo）").into();
+        status = t!("read-only (changes need sudo)").into();
     }
     let mut app = app::App::new(ctx, sys, extra, status);
     let mut terminal = term::enter();

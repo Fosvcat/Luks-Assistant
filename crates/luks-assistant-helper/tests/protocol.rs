@@ -130,7 +130,7 @@ fn plan_execute_and_guards_over_the_wire() {
 
     // the last passphrase slot cannot be removed
     let last = h.call("plan", json!({"path": path, "request": {"RemoveSlot": {"slot": 0, "auth": {"Passphrase": "first"}}}}));
-    assert!(last["err"].as_str().unwrap().contains("已阻止"), "{last}");
+    assert!(last["err"].as_str().unwrap().contains("Blocked"), "{last}");
 
     // the GUI path: views, then a generated form filled in and submitted
     let sys = h.call("system_view", json!({"extra": [path]}));
@@ -141,13 +141,13 @@ fn plan_execute_and_guards_over_the_wire() {
     assert_eq!(slots.len(), 32);
     assert_eq!(slots[0]["kind"], "secret");
     let add = slots[5]["actions"][0].clone();
-    assert_eq!(add["label"], "添加密码");
+    assert_eq!(add["label"], "Add password");
     let mut form = h.call("build_form", json!({"path": path, "kind": add["form"]}))["ok"].clone();
     for f in form["fields"].as_array_mut().unwrap() {
         let v = match f["key"].as_str().unwrap() {
             "auth_pw" => Some(json!({"Secret": "first"})),
             "new" | "new2" => Some(json!({"Secret": "third-pass"})),
-            "note" => Some(json!({"Text": "表单"})),
+            "note" => Some(json!({"Text": "form"})),
             _ => None,
         };
         if let Some(v) = v {
@@ -162,7 +162,7 @@ fn plan_execute_and_guards_over_the_wire() {
         true
     );
     let dev = h.call("device_view", json!({"path": path}));
-    assert_eq!(dev["ok"]["device"]["slots"][1]["subtitle"], "表单");
+    assert_eq!(dev["ok"]["device"]["slots"][1]["subtitle"], "form");
 
     let mut verify = h.call("build_form", json!({"path": path, "kind": "Verify"}))["ok"].clone();
     for f in verify["fields"].as_array_mut().unwrap() {
@@ -174,14 +174,14 @@ fn plan_execute_and_guards_over_the_wire() {
     assert_eq!(msg["ok"]["kind"], "message");
     assert_eq!(msg["ok"]["ok"], true);
     assert!(
-        msg["ok"]["text"].as_str().unwrap().contains("槽位 1"),
+        msg["ok"]["text"].as_str().unwrap().contains("Slot 1"),
         "{msg}"
     );
     assert!(
         h.call("pcr_notes", json!({"pcrs": [7]}))["ok"][0]
             .as_str()
             .unwrap()
-            .contains("PCR 7")
+            .contains("PCRs 7")
     );
     let rows = h.call("backup_rows", json!({"paths": [path]}));
     assert!(rows["ok"][0]["count"].as_u64().unwrap() >= 1);

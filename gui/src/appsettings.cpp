@@ -1,6 +1,7 @@
 #include "appsettings.h"
 
 #include <QApplication>
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
@@ -18,56 +19,113 @@ QSettings settings()
     return QSettings(QStringLiteral("Luks-Assistant"), QStringLiteral("Luks-Assistant"));
 }
 
-// English for the Chinese source strings, from i18n/en.tsv (shared with the
-// Rust crates): one "中文<TAB>English" pair per line, \n and \t escaped.
-class Catalog : public QTranslator
+/// One string of a PO file: from `"…"`, with C escapes.
+QString poString(const QByteArray &line)
+{
+    const QByteArray t = line.trimmed();
+    if (t.size() < 2 || t.front() != '"' || t.back() != '"')
+        return {};
+    QByteArray out;
+    for (qsizetype i = 1; i < t.size() - 1; ++i) {
+        char c = t.at(i);
+        if (c == '\\' && i + 1 < t.size() - 1) {
+            c = t.at(++i);
+            c = c == 'n' ? '\n' : c == 't' ? '\t' : c;
+        }
+        out += c;
+    }
+    return QString::fromUtf8(out);
+}
+
+// A gettext catalog from po/<code>.po (shared with the Rust crates). The
+// English source text is the msgid; a .ui "comment" is the msgctxt.
+class PoTranslator : public QTranslator
 {
 public:
-    Catalog()
+    explicit PoTranslator(const QString &code)
     {
-        QFile file(QStringLiteral(":/i18n/en.tsv"));
+        QFile file(QStringLiteral(":/po/%1.po").arg(code));
         if (!file.open(QIODevice::ReadOnly))
             return;
+        // an entry: [#, flags] [msgctxt "…"] msgid "…" msgstr "…", strings
+        // continued on following "…" lines
+        QString ctxt, id, str;
+        bool fuzzy = false, plural = false, haveStr = false;
+        QString *target = nullptr;
+        auto flush = [&] {
+            if (haveStr && !id.isEmpty() && !str.isEmpty() && !fuzzy && !plural)
+                m_map.insert(ctxt.isEmpty() ? id : ctxt + QChar(4) + id, str);
+            ctxt.clear();
+            id.clear();
+            str.clear();
+            fuzzy = plural = haveStr = false;
+            target = nullptr;
+        };
         for (const QByteArray &raw : file.readAll().split('\n')) {
-            const QString line = QString::fromUtf8(raw);
-            const int tab = line.indexOf(QLatin1Char('\t'));
-            if (line.startsWith(QLatin1Char('#')) || tab < 0)
+            const QByteArray line = raw.trimmed();
+            if (line.isEmpty())
                 continue;
-            m_map.insert(unescape(line.left(tab)), unescape(line.mid(tab + 1)));
+            if ((line.startsWith("#,") || line.startsWith("msgctxt ") || line.startsWith("msgid ")) && haveStr)
+                flush();
+            if (line.startsWith("#,")) {
+                fuzzy = line.contains("fuzzy");
+            } else if (line.startsWith('#')) {
+                continue;
+            } else if (line.startsWith("msgctxt ")) {
+                ctxt = poString(line.mid(8));
+                target = &ctxt;
+            } else if (line.startsWith("msgid ")) {
+                id = poString(line.mid(6));
+                target = &id;
+            } else if (line.startsWith("msgid_plural ")) {
+                plural = true;
+                target = nullptr;
+            } else if (line.startsWith("msgstr ")) {
+                str = poString(line.mid(7));
+                haveStr = true;
+                target = &str;
+            } else if (line.startsWith("msgstr[")) {
+                haveStr = true;
+                target = nullptr;
+            } else if (line.startsWith('"') && target) {
+                *target += poString(line);
+            }
         }
+        flush();
     }
 
-    // A disambiguation (the .ui "comment") selects the entry "source@comment".
     QString translate(const char *, const char *source, const char *disambiguation, int) const override
     {
-        const QString key = QString::fromUtf8(source);
-        if (disambiguation && *disambiguation) {
-            const QString specific = m_map.value(key + QLatin1Char('@') + QString::fromUtf8(disambiguation));
-            if (!specific.isEmpty())
-                return specific;
-        }
+        QString key = QString::fromUtf8(source);
+        if (disambiguation && *disambiguation)
+            key = QString::fromUtf8(disambiguation) + QChar(4) + key;
         return m_map.value(key);
     }
 
     bool isEmpty() const override { return m_map.isEmpty(); }
 
 private:
-    static QString unescape(const QString &s)
-    {
-        QString out;
-        for (int i = 0; i < s.size(); ++i) {
-            if (s.at(i) == QLatin1Char('\\') && i + 1 < s.size()) {
-                const QChar c = s.at(++i);
-                out += c == QLatin1Char('n') ? QLatin1Char('\n') : c == QLatin1Char('t') ? QLatin1Char('\t') : c;
-            } else {
-                out += s.at(i);
-            }
-        }
-        return out;
-    }
-
     QHash<QString, QString> m_map;
 };
+
+/// The catalog (po/<code>.po) closest to `uiLanguages`, or "en".
+QString pickCatalog(const QStringList &uiLanguages)
+{
+    const QStringList codes = QDir(QStringLiteral(":/po")).entryList({QStringLiteral("*.po")}, QDir::Files);
+    for (QString want : uiLanguages) {
+        want.replace(QLatin1Char('-'), QLatin1Char('_'));
+        const QString language = want.section(QLatin1Char('_'), 0, 0);
+        if (language.compare(QLatin1String("en"), Qt::CaseInsensitive) == 0)
+            return QStringLiteral("en");
+        for (const QString &file : codes)
+            if (file.chopped(3).compare(want, Qt::CaseInsensitive) == 0)
+                return file.chopped(3);
+        for (const QString &file : codes)
+            if (file.section(QLatin1Char('_'), 0, 0).section(QLatin1Char('.'), 0, 0).compare(language, Qt::CaseInsensitive) == 0)
+                return file.chopped(3);
+    }
+    return QStringLiteral("en");
+}
 
 bool hasPlatformTheme(const char *file)
 {
@@ -88,6 +146,7 @@ QString firstStyle(std::initializer_list<const char *> names)
 
 QTranslator *s_qt = nullptr;
 QTranslator *s_catalog = nullptr;
+const QString s_chinese = QStringLiteral("zh_CN");
 // The style the desktop gave us at startup, to return to "follow the system".
 QString s_systemStyle;
 
@@ -98,13 +157,17 @@ namespace AppSettings {
 Language language()
 {
     const QString v = settings().value(QStringLiteral("language")).toString();
-    return v == QLatin1String("en") ? Language::English : v == QLatin1String("zh") ? Language::Chinese : Language::System;
+    if (v == QLatin1String("en"))
+        return Language::English;
+    if (v == s_chinese || v == QLatin1String("zh"))
+        return Language::Chinese;
+    return Language::System;
 }
 
 void setLanguage(Language language)
 {
     settings().setValue(QStringLiteral("language"), language == Language::English   ? QStringLiteral("en")
-                                                    : language == Language::Chinese ? QStringLiteral("zh")
+                                                    : language == Language::Chinese ? s_chinese
                                                                                     : QStringLiteral("system"));
 }
 
@@ -137,11 +200,11 @@ QString effectiveLanguage()
     case Language::English:
         return QStringLiteral("en");
     case Language::Chinese:
-        return QStringLiteral("zh");
+        return s_chinese;
     case Language::System:
         break;
     }
-    return QLocale::system().language() == QLocale::Chinese ? QStringLiteral("zh") : QStringLiteral("en");
+    return pickCatalog(QLocale::system().uiLanguages());
 }
 
 void applyLanguage()
@@ -153,17 +216,32 @@ void applyLanguage()
             *t = nullptr;
         }
     }
-    // The source strings are Chinese: English comes from the catalog, while
-    // Qt's own buttons (OK, Cancel, …) need its Chinese translation.
-    if (effectiveLanguage() == QLatin1String("en")) {
-        s_catalog = new Catalog;
-        QApplication::installTranslator(s_catalog);
-    } else {
-        s_qt = new QTranslator;
-        if (s_qt->load(QLocale(QLocale::Chinese, QLocale::China), QStringLiteral("qtbase"), QStringLiteral("_"),
-                       QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
-            QApplication::installTranslator(s_qt);
-    }
+    // English is the source language: other languages need our catalog and
+    // Qt's own translation (OK, Cancel, …).
+    const QString code = effectiveLanguage();
+    if (code == QLatin1String("en"))
+        return;
+    s_catalog = new PoTranslator(code);
+    QApplication::installTranslator(s_catalog);
+    s_qt = new QTranslator;
+    if (s_qt->load(QLocale(code), QStringLiteral("qtbase"), QStringLiteral("_"),
+                   QLibraryInfo::path(QLibraryInfo::TranslationsPath)))
+        QApplication::installTranslator(s_qt);
+}
+
+QByteArray cliTr(const char *english)
+{
+    // as the TUI decides: LUKS_ASSISTANT_LANG, else the locale
+    QStringList want;
+    const QByteArray forced = qgetenv("LUKS_ASSISTANT_LANG");
+    if (!forced.isEmpty())
+        want << QString::fromLocal8Bit(forced);
+    want << QLocale::system().uiLanguages();
+    const QString code = pickCatalog(want);
+    if (code == QLatin1String("en"))
+        return english;
+    const QString t = PoTranslator(code).translate(nullptr, english, nullptr, -1);
+    return t.isEmpty() ? QByteArray(english) : t.toLocal8Bit();
 }
 
 void prepareTheme()

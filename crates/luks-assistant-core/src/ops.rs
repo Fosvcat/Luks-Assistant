@@ -43,16 +43,18 @@ impl Credential {
                 Ok(cmd.arg(format!("--unlock-key-file={}", p.to_string_lossy())))
             }
             Credential::Keyfile(_) => Err(Error::Unsupported(tx!(
-                "systemd < 252 不支持用密钥文件验证，请用密码"
+                "systemd < 252 cannot authenticate with a key file; use a password"
             ))),
         }
     }
 
     fn check(&self) -> Result<()> {
         match self {
-            Credential::Passphrase(s) if s.is_empty() => Err(Error::Invalid(tx!("请输入现有密码"))),
+            Credential::Passphrase(s) if s.is_empty() => {
+                Err(Error::Invalid(tx!("Enter an existing password")))
+            }
             Credential::Keyfile(p) if !p.is_file() => {
-                Err(Error::Invalid(tx!("密钥文件不存在: {}", p.display())))
+                Err(Error::Invalid(tx!("Key file not found: {}", p.display())))
             }
             _ => Ok(()),
         }
@@ -339,7 +341,7 @@ impl<'a> Builder<'a> {
     fn cryptenroll(&self) -> Result<Cmd> {
         if !self.ctx.caps.cryptenroll {
             return Err(Error::Unsupported(tx!(
-                "需要 systemd-cryptenroll (systemd ≥ 248)"
+                "Needs systemd-cryptenroll (systemd ≥ 248)"
             )));
         }
         Ok(Cmd::new("systemd-cryptenroll").arg(&self.dev))
@@ -368,11 +370,11 @@ impl<'a> Builder<'a> {
         let dir = self.ctx.paths.backups_dir(self.ov.uuid());
         let file = unique_backup_path(&dir, tag);
         self.plan.steps.push(Step::internal(
-            tx!("创建备份目录 {}", dir.display()),
+            tx!("Create the backup directory {}", dir.display()),
             Action::EnsurePrivateDir(dir.clone()),
         ));
         self.plan.steps.push(Step::run(
-            tx!("备份 LUKS 头部"),
+            tx!("Back up the LUKS header"),
             self.cryptsetup("luksHeaderBackup")
                 .arg("--header-backup-file")
                 .arg(file.to_string_lossy()),
@@ -385,7 +387,7 @@ impl<'a> Builder<'a> {
     fn give_to_user(&mut self, paths: Vec<PathBuf>) {
         if let Some(u) = &self.ctx.owner {
             self.plan.steps.push(Step::internal(
-                tx!("把备份交给用户 {}", u.name),
+                tx!("Hand the backup over to user {}", u.name),
                 Action::GiveToUser(paths),
             ));
         }
@@ -421,11 +423,11 @@ impl<'a> Builder<'a> {
         }
         let desc = if text.is_empty() {
             tx!(
-                "在头部记录槽位类型（{}）",
+                "Record the slot type in the header ({})",
                 kind.map(KeyKind::text).unwrap_or_else(|| Text::plain(""))
             )
         } else {
-            tx!("保存备注“{}”（{}）", text, location.text())
+            tx!("Save the note “{}” ({})", text, location.text())
         };
         self.step(Step::internal(
             desc,
@@ -441,9 +443,9 @@ impl<'a> Builder<'a> {
 
     fn expect(&mut self, slot: SlotRef, present: bool) {
         let desc = match (slot, present) {
-            (SlotRef::Fixed(n), true) => tx!("验证槽位 {} 已存在", n),
-            (SlotRef::Fixed(n), false) => tx!("验证槽位 {} 已删除", n),
-            (SlotRef::New, _) => tx!("验证新槽位已写入"),
+            (SlotRef::Fixed(n), true) => tx!("Check that slot {} exists", n),
+            (SlotRef::Fixed(n), false) => tx!("Check that slot {} was removed", n),
+            (SlotRef::New, _) => tx!("Check that the new slot was written"),
         };
         self.step(Step::internal(desc, Action::ExpectSlot { slot, present }));
     }
@@ -475,13 +477,14 @@ pub fn verify_credential(ctx: &Ctx, device: &Path, cred: &Credential) -> Result<
             "-v",
         ])
         .arg(device.to_string_lossy());
-    let cmd = cred.cryptsetup(cmd, tx!("密码"));
+    let cmd = cred.cryptsetup(cmd, tx!("Password"));
     let out = ctx.runner.run(&cmd)?;
     let text = format!("{}\n{}", out.stdout_lossy(), out.stderr);
     if !out.success() {
-        return Err(Error::Invalid(tx!("密码或密钥文件不正确")));
+        return Err(Error::Invalid(tx!("Wrong password or key file")));
     }
-    parse_unlocked_slot(&text).ok_or_else(|| Error::Parse(tx!("cryptsetup 没有报告解锁的槽位")))
+    parse_unlocked_slot(&text)
+        .ok_or_else(|| Error::Parse(tx!("cryptsetup did not report which slot unlocked")))
 }
 
 fn parse_unlocked_slot(text: &str) -> Option<u32> {
@@ -594,7 +597,7 @@ pub fn mapping_name(ov: &Overview) -> String {
 
 fn check_unlockable(ov: &Overview) -> Result<()> {
     if let Some(m) = &ov.device.mapping {
-        return Err(Error::Invalid(tx!("已经解锁（{}）", m)));
+        return Err(Error::Invalid(tx!("Already unlocked ({})", m)));
     }
     Ok(())
 }
@@ -606,7 +609,7 @@ pub fn unlock_cmd(ov: &Overview, cred: &Credential) -> Result<Cmd> {
         .arg("open")
         .arg(ov.device.path.to_string_lossy())
         .arg(mapping_name(ov));
-    Ok(cred.cryptsetup(cmd, tx!("密码")))
+    Ok(cred.cryptsetup(cmd, tx!("Password")))
 }
 
 /// Token unlocks for [`token_unlocks`], after the same checks as [`unlock_cmd`].
@@ -622,10 +625,12 @@ pub fn token_unlock_cmds(
 /// `cryptsetup close`. The volume of the running system cannot be locked.
 pub fn lock_cmd(ov: &Overview) -> Result<Cmd> {
     let Some(m) = &ov.device.mapping else {
-        return Err(Error::Invalid(tx!("卷没有解锁")));
+        return Err(Error::Invalid(tx!("The volume is not unlocked")));
     };
     if ov.device.holds_root() {
-        return Err(Error::Blocked(tx!("这是当前系统所在的卷，不能锁定")));
+        return Err(Error::Blocked(tx!(
+            "This volume holds the running system and cannot be locked"
+        )));
     }
     Ok(Cmd::new("cryptsetup").arg("close").arg(m))
 }
@@ -634,7 +639,7 @@ pub fn lock_cmd(ov: &Overview) -> Result<Cmd> {
 pub fn token_failure(out: &CmdOutput) -> Text {
     let text = format!("{}\n{}", String::from_utf8_lossy(&out.stdout), out.stderr);
     if text.contains("requires additional missing resource") {
-        return tx!("找不到所需设备（TPM 或安全密钥）");
+        return tx!("The required device (TPM or security key) was not found");
     }
     let lines: Vec<&str> = text
         .lines()
@@ -658,7 +663,7 @@ fn check_tpm(ctx: &Ctx) -> Result<()> {
     if tpm.is_tpm2() {
         Ok(())
     } else {
-        Err(Error::Blocked(tx!("没有检测到可用的 TPM 2.0 设备")))
+        Err(Error::Blocked(tx!("No usable TPM 2.0 device found")))
     }
 }
 
@@ -667,14 +672,14 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
     use Request::*;
     match req {
         BackupHeader { dest } => {
-            let mut b = Builder::new(ctx, ov, tx!("备份 LUKS 头部"));
+            let mut b = Builder::new(ctx, ov, tx!("Back up the LUKS header"));
             match dest {
                 Some(d) => {
                     if d.exists() {
-                        return Err(Error::Invalid(tx!("{} 已存在", d.display())));
+                        return Err(Error::Invalid(tx!("{} already exists", d.display())));
                     }
                     b.step(Step::run(
-                        tx!("备份 LUKS 头部"),
+                        tx!("Back up the LUKS header"),
                         b.cryptsetup("luksHeaderBackup")
                             .arg("--header-backup-file")
                             .arg(d.to_string_lossy()),
@@ -684,15 +689,17 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 }
                 None => b.backup("manual"),
             }
-            b.warn([tx!("备份文件加上任一旧密码即可解密数据，请妥善保管")]);
+            b.warn([tx!(
+                "The backup plus any old password decrypts the data; keep it safe"
+            )]);
             return Ok(b.finish());
         }
         PruneBackups => {
             let files = crate::backup::list(&ctx.paths, &ov.header.uuid);
             if files.len() < 2 {
-                return Err(Error::Invalid(tx!("没有可清理的旧备份")));
+                return Err(Error::Invalid(tx!("No old backups to clean up")));
             }
-            let mut b = Builder::new(ctx, ov, tx!("清理旧的头部备份"));
+            let mut b = Builder::new(ctx, ov, tx!("Clean up old header backups"));
             b.plan.danger = Danger::High;
             let keep = files[0]
                 .path
@@ -700,13 +707,13 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 .unwrap_or_default()
                 .to_string_lossy();
             b.warn([tx!(
-                "只保留最新的备份 {}，其余 {} 个将被删除",
+                "Only the newest backup {} is kept; the other {} will be deleted",
                 keep,
                 files.len() - 1
             )]);
             for f in &files[1..] {
                 b.step(Step::internal(
-                    tx!("删除 {}", f.path.display()),
+                    tx!("Delete {}", f.path.display()),
                     Action::RemoveFile(f.path.clone()),
                 ));
             }
@@ -727,18 +734,18 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         } => {
             auth.check()?;
             let n = guard::free_slot(ov, *slot)?;
-            let mut b = Builder::new(ctx, ov, tx!("在槽位 {} 添加密码", n));
+            let mut b = Builder::new(ctx, ov, tx!("Add a password in slot {}", n));
             b.warn(guard::check_new_passphrase(new)?);
             if *kdf == KdfChoice::Pbkdf2 {
-                b.warn([tx!("PBKDF2 抗暴力破解能力弱于 Argon2id")]);
+                b.warn([tx!("PBKDF2 resists brute force less well than Argon2id")]);
             }
             b.backup("add-passphrase");
             let cmd = b.add_key(n);
             let cmd = b.kdf_args(cmd, *kdf);
             let cmd = auth
-                .cryptsetup(cmd, tx!("现有密码"))
-                .secret_arg(tx!("新密码"), new.clone());
-            b.step(Step::run(tx!("写入新密码到槽位 {}", n), cmd));
+                .cryptsetup(cmd, tx!("existing password"))
+                .secret_arg(tx!("New password"), new.clone());
+            b.step(Step::run(tx!("Write the new password to slot {}", n), cmd));
             b.expect(SlotRef::Fixed(n), true);
             b.note(SlotRef::Fixed(n), note.as_ref(), Some(KeyKind::Passphrase))?;
             Ok(b.finish())
@@ -753,17 +760,19 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         } => {
             auth.check()?;
             let n = guard::free_slot(ov, *slot)?;
-            let mut b = Builder::new(ctx, ov, tx!("在槽位 {} 添加密钥文件", n));
+            let mut b = Builder::new(ctx, ov, tx!("Add a key file in slot {}", n));
             match generate {
                 Some(bytes) => {
                     if path.exists() {
-                        return Err(Error::Invalid(tx!("{} 已存在", path.display())));
+                        return Err(Error::Invalid(tx!("{} already exists", path.display())));
                     }
                     if !(16..=8 * 1024 * 1024).contains(bytes) {
-                        return Err(Error::Invalid(tx!("密钥文件大小应在 16 字节到 8 MiB 之间")));
+                        return Err(Error::Invalid(tx!(
+                            "Key files should be between 16 bytes and 8 MiB"
+                        )));
                     }
                     b.warn([tx!(
-                        "将生成新密钥文件 {}（权限 0400）。请把它备份到安全的位置",
+                        "A new key file {} will be created (mode 0400). Back it up to a safe place",
                         path.display()
                     )]);
                 }
@@ -772,7 +781,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             b.backup("add-keyfile");
             if let Some(bytes) = generate {
                 b.step(Step::internal(
-                    tx!("生成 {} 字节随机密钥文件 {}", bytes, path.display()),
+                    tx!("Create a {}-byte random key file {}", bytes, path.display()),
                     Action::GenerateKeyfile {
                         path: path.clone(),
                         bytes: *bytes,
@@ -782,9 +791,9 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             let cmd = b.add_key(n);
             let cmd = b.kdf_args(cmd, *kdf);
             let cmd = auth
-                .cryptsetup(cmd, tx!("现有密码"))
+                .cryptsetup(cmd, tx!("existing password"))
                 .arg(path.to_string_lossy());
-            b.step(Step::run(tx!("把密钥文件写入槽位 {}", n), cmd));
+            b.step(Step::run(tx!("Write the key file to slot {}", n), cmd));
             b.expect(SlotRef::Fixed(n), true);
             let default_note = NoteInput {
                 text: default_keyfile_note(path),
@@ -811,15 +820,15 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             let s = ov
                 .slot(*slot)
                 .filter(|s| !s.is_empty())
-                .ok_or_else(|| Error::Invalid(tx!("槽位 {} 是空的", slot)))?;
+                .ok_or_else(|| Error::Invalid(tx!("Slot {} is empty", slot)))?;
             if !s.kind.is_plain() {
                 return Err(Error::Blocked(tx!(
-                    "槽位 {} 是“{}”，只能修改密码/密钥文件槽位",
+                    "Slot {} is “{}”; only password/key file slots can be changed",
                     slot,
                     s.kind.text()
                 )));
             }
-            let mut b = Builder::new(ctx, ov, tx!("修改槽位 {} 的密码", slot));
+            let mut b = Builder::new(ctx, ov, tx!("Change the password of slot {}", slot));
             b.warn(guard::check_new_passphrase(new)?);
             b.backup("change-passphrase");
             let cmd = b
@@ -828,11 +837,14 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 .arg(slot.to_string());
             let cmd = b.kdf_args(cmd, *kdf);
             let cmd = old
-                .cryptsetup(cmd, tx!("旧密码"))
-                .secret_arg(tx!("新密码"), new.clone());
-            b.step(Step::run_new(tx!("用新密码替换槽位 {}", slot), cmd));
+                .cryptsetup(cmd, tx!("old password"))
+                .secret_arg(tx!("New password"), new.clone());
+            b.step(Step::run_new(
+                tx!("Replace slot {} with the new password", slot),
+                cmd,
+            ));
             b.step(Step::internal(
-                tx!("更新备注以对应新的密钥材料"),
+                tx!("Update the note for the new key material"),
                 Action::RebindNote {
                     from: *slot,
                     to: SlotRef::New,
@@ -856,12 +868,12 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 ctx,
                 ov,
                 if replace.is_some() {
-                    tx!("重新生成恢复密钥")
+                    tx!("Regenerate recovery key")
                 } else {
-                    tx!("生成恢复密钥")
+                    tx!("Generate recovery key")
                 },
             );
-            b.warn([tx!("恢复密钥只显示一次")]);
+            b.warn([tx!("The recovery key is shown only once")]);
             b.backup("recovery-key");
             let mut cmd = auth.cryptenroll(ctx, b.cryptenroll()?.arg("--recovery-key"))?;
             if let Some(r) = replace {
@@ -869,14 +881,14 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 b.plan.danger = Danger::High;
             }
             b.step(Step::run_new(
-                tx!("生成并写入恢复密钥"),
+                tx!("Generate and write a recovery key"),
                 cmd.secret_stdout(),
             ));
             b.expect(SlotRef::New, true);
             if let Some(r) = replace {
                 b.expect(SlotRef::Fixed(*r), false);
                 b.step(Step::internal(
-                    tx!("删除槽位 {} 的备注", r),
+                    tx!("Remove the note of slot {}", r),
                     Action::DropNote { slot: *r },
                 ));
             }
@@ -887,7 +899,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             let auth_slot = verify_credential(ctx, &ov.device.path, auth)?;
             let warnings = guard::check_removal(ov, *slot, Some(auth_slot))?;
             let s = ov.slot(*slot).expect("checked");
-            let mut b = Builder::new(ctx, ov, tx!("删除槽位 {}（{}）", slot, s.kind.text()));
+            let mut b = Builder::new(ctx, ov, tx!("Delete slot {} ({})", slot, s.kind.text()));
             b.warn(warnings);
             b.plan.danger = Danger::Critical;
             b.plan.confirm_word = Some(slot.to_string());
@@ -899,12 +911,12 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 .any(|t| t.kind.starts_with("systemd-"));
             if systemd_token && !shared && ctx.caps.cryptenroll {
                 b.step(Step::run(
-                    tx!("擦除槽位 {} 及其令牌", slot),
+                    tx!("Wipe slot {} and its token", slot),
                     b.cryptenroll()?.arg(format!("--wipe-slot={slot}")),
                 ));
             } else {
                 b.step(Step::run(
-                    tx!("擦除槽位 {}", slot),
+                    tx!("Wipe slot {}", slot),
                     b.cryptsetup("luksKillSlot").arg(slot.to_string()).arg("-q"),
                 ));
                 // cryptsetup leaves tokens behind with an empty keyslot list.
@@ -914,7 +926,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                     .filter(|t| t.keyslots == [*slot])
                 {
                     b.step(Step::run(
-                        tx!("删除遗留令牌 {}（{}）", t.id, t.kind),
+                        tx!("Remove leftover token {} ({})", t.id, t.kind),
                         Cmd::new("cryptsetup")
                             .args(["token", "remove", "--token-id"])
                             .arg(t.id.to_string())
@@ -928,7 +940,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 || ov.notes.local.get(*slot).is_some()
             {
                 b.step(Step::internal(
-                    tx!("删除槽位 {} 的备注", slot),
+                    tx!("Remove the note of slot {}", slot),
                     Action::DropNote { slot: *slot },
                 ));
             }
@@ -939,12 +951,12 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             let mut b = Builder::new(
                 ctx,
                 ov,
-                tx!("把槽位 {} 的优先级设为“{}”", slot, priority.text()),
+                tx!("Set the priority of slot {} to “{}”", slot, priority.text()),
             );
             b.warn(w);
             b.backup("priority");
             b.step(Step::run(
-                tx!("修改优先级"),
+                tx!("Change the priority"),
                 b.cryptsetup("config")
                     .arg("--key-slot")
                     .arg(slot.to_string())
@@ -960,21 +972,23 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         } => {
             notes::validate_text(text)?;
             if ov.slot(*slot).is_none_or(|s| s.is_empty()) {
-                return Err(Error::Invalid(tx!("槽位 {} 是空的", slot)));
+                return Err(Error::Invalid(tx!("Slot {} is empty", slot)));
             }
-            let mut b = Builder::new(ctx, ov, tx!("编辑槽位 {} 的备注", slot));
+            let mut b = Builder::new(ctx, ov, tx!("Edit the note of slot {}", slot));
             let touches_header =
                 *location == Location::Header || ov.notes.header.get(*slot).is_some();
             if touches_header {
                 b.backup("note");
             }
             if *location == Location::Header && !text.is_empty() {
-                b.warn([tx!("头部未加密，备注对任何人可见")]);
+                b.warn([tx!(
+                    "The header is not encrypted; anyone can read the notes"
+                )]);
             }
             let desc = if text.is_empty() {
-                tx!("删除备注")
+                tx!("Remove the note")
             } else {
-                tx!("保存备注“{}”（{}）", text, location.text())
+                tx!("Save the note “{}” ({})", text, location.text())
             };
             b.step(Step::internal(
                 desc,
@@ -1005,15 +1019,15 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             pcrs.sort();
             pcrs.dedup();
             if pcrs.iter().any(|&p| p > 23) {
-                return Err(Error::Invalid(tx!("PCR 编号必须在 0-23 之间")));
+                return Err(Error::Invalid(tx!("PCR numbers must be between 0 and 23")));
             }
             let title = match replace {
                 Some(r) => tx!(
-                    "重新录入 TPM2（替换槽位 {}，PCR {}）",
+                    "Re-enroll TPM2 (replacing slot {}, PCR {})",
                     r,
                     pcr::format_list(&pcrs)
                 ),
-                None => tx!("录入 TPM2（PCR {}）", pcr::format_list(&pcrs)),
+                None => tx!("Enroll TPM2 (PCR {})", pcr::format_list(&pcrs)),
             };
             let mut b = Builder::new(ctx, ov, title);
             let sb = luks_assistant_sysinfo::firmware::Firmware::detect().secure_boot;
@@ -1026,10 +1040,10 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 .arg(format!("--tpm2-pcrs={}", pcr::format_list(&pcrs)));
             if let Some(p) = pin {
                 if !ctx.caps.tpm2_pin {
-                    return Err(Error::Unsupported(tx!("TPM2 + PIN 需要 systemd ≥ 251")));
+                    return Err(Error::Unsupported(tx!("TPM2 + PIN needs systemd ≥ 251")));
                 }
                 if p.is_empty() {
-                    return Err(Error::Invalid(tx!("PIN 不能为空")));
+                    return Err(Error::Invalid(tx!("The PIN cannot be empty")));
                 }
                 b.warn(
                     guard::check_new_passphrase(p)?
@@ -1044,17 +1058,17 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 cmd = cmd.arg(format!("--wipe-slot={r}"));
                 b.plan.danger = Danger::High;
             }
-            b.step(Step::run_new(tx!("录入 TPM2 令牌"), cmd));
+            b.step(Step::run_new(tx!("Enroll the TPM2 token"), cmd));
             b.expect(SlotRef::New, true);
             if let Some(r) = replace {
                 b.expect(SlotRef::Fixed(*r), false);
                 b.step(Step::internal(
-                    tx!("删除槽位 {} 的备注", r),
+                    tx!("Remove the note of slot {}", r),
                     Action::DropNote { slot: *r },
                 ));
             }
             b.step(Step::internal(
-                tx!("记录当前 PCR 值作为基准"),
+                tx!("Record the current PCR values as the baseline"),
                 Action::SavePcrSnapshot { slot: SlotRef::New },
             ));
             let carried = carry_note(ov, *replace, note.as_ref());
@@ -1080,13 +1094,13 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 ctx,
                 ov,
                 if replace.is_some() {
-                    tx!("重新录入 FIDO2 安全密钥")
+                    tx!("Re-enroll the FIDO2 security key")
                 } else {
-                    tx!("录入 FIDO2 安全密钥")
+                    tx!("Enroll a FIDO2 security key")
                 },
             );
             b.warn(guard::token_only_warning(ov));
-            b.warn([tx!("执行时请触摸安全密钥")]);
+            b.warn([tx!("Touch the security key when asked")]);
             b.backup("fido2");
             let mut cmd = auth
                 .cryptenroll(ctx, b.cryptenroll()?)?
@@ -1108,12 +1122,15 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             if let Some(p) = pin {
                 cmd = cmd.answer("pin", p.clone());
             }
-            b.step(Step::run_new(tx!("录入 FIDO2 令牌"), cmd.interactive()));
+            b.step(Step::run_new(
+                tx!("Enroll the FIDO2 token"),
+                cmd.interactive(),
+            ));
             b.expect(SlotRef::New, true);
             if let Some(r) = replace {
                 b.expect(SlotRef::Fixed(*r), false);
                 b.step(Step::internal(
-                    tx!("删除槽位 {} 的备注", r),
+                    tx!("Remove the note of slot {}", r),
                     Action::DropNote { slot: *r },
                 ));
             }
@@ -1139,7 +1156,7 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             } else {
                 uri.trim().to_owned()
             };
-            let mut b = Builder::new(ctx, ov, tx!("录入 PKCS#11 智能卡"));
+            let mut b = Builder::new(ctx, ov, tx!("Enroll a PKCS#11 smart card"));
             b.warn(guard::token_only_warning(ov));
             b.backup("pkcs11");
             let mut cmd = auth
@@ -1152,12 +1169,15 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             if let Some(p) = pin {
                 cmd = cmd.answer("pin", p.clone());
             }
-            b.step(Step::run_new(tx!("录入 PKCS#11 令牌"), cmd.interactive()));
+            b.step(Step::run_new(
+                tx!("Enroll the PKCS#11 token"),
+                cmd.interactive(),
+            ));
             b.expect(SlotRef::New, true);
             if let Some(r) = replace {
                 b.expect(SlotRef::Fixed(*r), false);
                 b.step(Step::internal(
-                    tx!("删除槽位 {} 的备注", r),
+                    tx!("Remove the note of slot {}", r),
                     Action::DropNote { slot: *r },
                 ));
             }
@@ -1170,21 +1190,23 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
                 .header
                 .tokens
                 .get(token)
-                .ok_or_else(|| Error::Invalid(tx!("令牌 {} 不存在", token)))?;
+                .ok_or_else(|| Error::Invalid(tx!("Token {} does not exist", token)))?;
             if !t.keyslots.is_empty() {
                 return Err(Error::Blocked(tx!(
-                    "令牌 {} 仍关联槽位 {}",
+                    "Token {} is still bound to slots {}",
                     token,
                     format!("{:?}", t.keyslots)
                 )));
             }
             if notes::is_notes_token(&t.kind) {
-                return Err(Error::Blocked(tx!("这是 Luks Assistant 的备注令牌")));
+                return Err(Error::Blocked(tx!(
+                    "This is the Luks Assistant notes token"
+                )));
             }
-            let mut b = Builder::new(ctx, ov, tx!("删除孤立令牌 {}（{}）", token, t.kind));
+            let mut b = Builder::new(ctx, ov, tx!("Remove orphaned token {} ({})", token, t.kind));
             b.backup(&format!("remove-token{token}"));
             b.step(Step::run(
-                tx!("删除令牌"),
+                tx!("Remove the token"),
                 Cmd::new("cryptsetup")
                     .args(["token", "remove", "--token-id"])
                     .arg(token.to_string())
@@ -1195,19 +1217,19 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         PruneNotes => {
             let stale = ov.notes.stale(&ov.header);
             if stale.is_empty() {
-                return Err(Error::Invalid(tx!("没有过期的备注")));
+                return Err(Error::Invalid(tx!("No stale notes")));
             }
-            let mut b = Builder::new(ctx, ov, tx!("清理过期备注"));
+            let mut b = Builder::new(ctx, ov, tx!("Clean up stale notes"));
             if stale.iter().any(|(l, _)| *l == Location::Header) {
                 b.backup("prune-notes");
             }
             let list = stale
                 .iter()
-                .map(|(l, s)| tx!("槽位 {}（{}）", s, l.text()))
+                .map(|(l, s)| tx!("Slot {} ({})", s, l.text()))
                 .collect::<Vec<_>>();
-            let list = Text::join(list, tx!("、"));
+            let list = Text::join(list, tx!(", "));
             b.step(Step::internal(
-                tx!("删除 {} 的备注", list),
+                tx!("Remove the notes of {}", list),
                 Action::PruneStaleNotes,
             ));
             Ok(b.finish())
@@ -1215,31 +1237,30 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
         SetDiscards { enable, auth } => {
             auth.check()?;
             let Some(mapping) = ov.device.mapping.clone() else {
-                return Err(Error::Blocked(tx!("卷未解锁，无法写入 TRIM 标志")));
+                return Err(Error::Blocked(tx!(
+                    "The volume is locked; the TRIM flag cannot be written"
+                )));
             };
             if ov.header.allows_discards() == *enable {
-                return Err(Error::Invalid(tx!(
-                    "TRIM 穿透已经是{}状态",
-                    if *enable {
-                        tx!("开启")
-                    } else {
-                        tx!("关闭")
-                    }
-                )));
+                return Err(Error::Invalid(if *enable {
+                    tx!("TRIM pass-through is already on")
+                } else {
+                    tx!("TRIM pass-through is already off")
+                }));
             }
             let mut b = Builder::new(
                 ctx,
                 ov,
                 if *enable {
-                    tx!("开启 TRIM 穿透（写入头部）")
+                    tx!("Enable TRIM pass-through (stored in the header)")
                 } else {
-                    tx!("关闭 TRIM 穿透（写入头部）")
+                    tx!("Disable TRIM pass-through (stored in the header)")
                 },
             );
             if *enable {
-                b.warn([tx!("TRIM 会暴露已用空间和文件系统类型")]);
+                b.warn([tx!("TRIM reveals used space and the file system type")]);
                 b.warn([tx!(
-                    "mkinitcpio encrypt 钩子不读取此标志，仍需启动参数 :allow-discards"
+                    "The mkinitcpio encrypt hook ignores this flag; the :allow-discards boot option is still needed"
                 )]);
             }
             b.backup("discards");
@@ -1247,10 +1268,13 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             if *enable {
                 cmd = cmd.arg("--allow-discards");
             }
-            let cmd = auth.cryptsetup(cmd.arg("--persistent"), tx!("现有密码"));
-            b.step(Step::run(tx!("刷新映射并写入持久标志"), cmd));
+            let cmd = auth.cryptsetup(cmd.arg("--persistent"), tx!("existing password"));
+            b.step(Step::run(
+                tx!("Refresh the mapping and store the persistent flag"),
+                cmd,
+            ));
             b.step(Step::internal(
-                tx!("验证头部标志"),
+                tx!("Check the header flag"),
                 Action::ExpectDiscards(*enable),
             ));
             Ok(b.finish())
@@ -1260,21 +1284,25 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             let s = ov
                 .slot(*slot)
                 .filter(|s| !s.is_empty())
-                .ok_or_else(|| Error::Invalid(tx!("槽位 {} 是空的", slot)))?;
+                .ok_or_else(|| Error::Invalid(tx!("Slot {} is empty", slot)))?;
             if !s.kind.is_plain() {
                 return Err(Error::Blocked(tx!(
-                    "槽位 {} 是“{}”，令牌槽位不需要转换",
+                    "Slot {} is “{}”; token slots need no conversion",
                     slot,
                     s.kind.text()
                 )));
             }
             let kdf = &s.keyslot.as_ref().expect("used slot").kdf;
             if kdf.kind != "pbkdf2" {
-                return Err(Error::Invalid(tx!("槽位 {} 已经是 {}", slot, kdf.kind)));
+                return Err(Error::Invalid(tx!(
+                    "Slot {} already uses {}",
+                    slot,
+                    kdf.kind
+                )));
             }
-            let mut b = Builder::new(ctx, ov, tx!("把槽位 {} 转换为 Argon2id", slot));
+            let mut b = Builder::new(ctx, ov, tx!("Convert slot {} to Argon2id", slot));
             if luks_assistant_sysinfo::bootcheck::grub_cryptodisk() {
-                b.warn([tx!("检测到 GRUB_ENABLE_CRYPTODISK=y：GRUB 2.12 之前不支持 Argon2，若 GRUB 用此槽位解锁将无法启动")]);
+                b.warn([tx!("GRUB_ENABLE_CRYPTODISK=y found: GRUB before 2.12 cannot use Argon2, so booting fails if GRUB unlocks with this slot")]);
                 b.plan.danger = Danger::High;
             }
             b.backup(&format!("convert-slot{slot}"));
@@ -1290,11 +1318,11 @@ pub fn plan(ctx: &Ctx, ov: &Overview, req: &Request) -> Result<Plan> {
             {
                 cmd = cmd.args(["--pbkdf-force-iterations", "4", "--pbkdf-memory", "32"]);
             }
-            let cmd = auth.cryptsetup(cmd, tx!("该槽位的密码"));
-            b.step(Step::run(tx!("转换槽位 {}", slot), cmd));
+            let cmd = auth.cryptsetup(cmd, tx!("Password of this slot"));
+            b.step(Step::run(tx!("Convert slot {}", slot), cmd));
             b.expect(SlotRef::Fixed(*slot), true);
             b.step(Step::internal(
-                tx!("更新备注指纹"),
+                tx!("Update the note fingerprint"),
                 Action::RebindNote {
                     from: *slot,
                     to: SlotRef::Fixed(*slot),
@@ -1344,26 +1372,29 @@ fn check_keyfile(path: &Path) -> Result<Vec<Text>> {
     let meta = std::fs::metadata(path)
         .map_err(|e| Error::Invalid(format!("{}: {e}", path.display()).into()))?;
     if !meta.is_file() {
-        return Err(Error::Invalid(tx!("{} 不是普通文件", path.display())));
+        return Err(Error::Invalid(tx!(
+            "{} is not a regular file",
+            path.display()
+        )));
     }
     if meta.len() == 0 {
-        return Err(Error::Invalid(tx!("密钥文件是空的")));
+        return Err(Error::Invalid(tx!("The key file is empty")));
     }
     if meta.len() > 8 * 1024 * 1024 {
         return Err(Error::Invalid(tx!(
-            "密钥文件超过 cryptsetup 默认上限 8 MiB"
+            "The key file exceeds cryptsetup's default limit of 8 MiB"
         )));
     }
     let mut w = Vec::new();
     if meta.permissions().mode() & 0o077 != 0 {
-        w.push(tx!("{} 对其他用户可读", path.display()));
+        w.push(tx!("{} is readable by other users", path.display()));
     }
     Ok(w)
 }
 
 fn plan_restore(ctx: &Ctx, ov: &Overview, file: &Path) -> Result<Plan> {
     if !file.is_file() {
-        return Err(Error::Invalid(tx!("{} 不存在", file.display())));
+        return Err(Error::Invalid(tx!("{} does not exist", file.display())));
     }
     let out = ctx.runner.run(
         &Cmd::new("cryptsetup")
@@ -1371,26 +1402,33 @@ fn plan_restore(ctx: &Ctx, ov: &Overview, file: &Path) -> Result<Plan> {
             .arg(file.to_string_lossy()),
     )?;
     if !out.success() {
-        return Err(Error::Invalid(tx!("{} 不是 LUKS 头部备份", file.display())));
+        return Err(Error::Invalid(tx!(
+            "{} is not a LUKS header backup",
+            file.display()
+        )));
     }
     let uuid = out.stdout_lossy().trim().to_owned();
     if uuid != ov.header.uuid {
         return Err(Error::Blocked(tx!(
-            "备份 UUID ({}) 与设备 ({}) 不一致",
+            "The backup UUID ({}) does not match the device ({})",
             uuid,
             ov.header.uuid
         )));
     }
-    let mut b = Builder::new(ctx, ov, tx!("从 {} 恢复 LUKS 头部", file.display()));
+    let mut b = Builder::new(
+        ctx,
+        ov,
+        tx!("Restore the LUKS header from {}", file.display()),
+    );
     b.plan.danger = Danger::Critical;
     b.plan.confirm_word = Some("RESTORE".into());
     b.warn([
-        tx!("备份之后新增的密钥将失效，之后删除的密钥会恢复"),
-        tx!("会先备份当前头部"),
+        tx!("Keys added after the backup stop working; keys removed since come back"),
+        tx!("The current header is backed up first"),
     ]);
     b.backup("before-restore");
     b.step(Step::run(
-        tx!("恢复头部"),
+        tx!("Restore header"),
         b.cryptsetup("luksHeaderRestore")
             .arg("-q")
             .arg("--header-backup-file")
@@ -1442,7 +1480,7 @@ impl State {
             SlotRef::Fixed(n) => Ok(n),
             SlotRef::New => self
                 .new_slot
-                .ok_or_else(|| Error::Invalid(tx!("没有检测到新写入的槽位"))),
+                .ok_or_else(|| Error::Invalid(tx!("No newly written slot found"))),
         }
     }
 }
@@ -1461,7 +1499,7 @@ impl Lock {
         // SAFETY: valid descriptor owned by `f`.
         if unsafe { libc::flock(f.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
             return Err(Error::Blocked(tx!(
-                "另一个 Luks Assistant 实例正在执行操作"
+                "Another Luks Assistant instance is running an operation"
             )));
         }
         Ok(Lock(f))
@@ -1494,7 +1532,7 @@ pub fn execute(ctx: &Ctx, plan: &Plan, hooks: &mut dyn Hooks) -> Report {
     let before: Vec<u32> = match header::read(ctx, &plan.device) {
         Ok(h) => h.keyslots.keys().copied().collect(),
         Err(e) => {
-            report.error = Some(tx!("读取头部失败: {}", e.text()));
+            report.error = Some(tx!("Reading the header failed: {}", e.text()));
             return report;
         }
     };
@@ -1602,23 +1640,26 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
                 .open(path)?;
             f.write_all(&key)?;
             f.sync_all()?;
-            Ok(tx!("已生成 {}", path.display()))
+            Ok(tx!("Created {}", path.display()))
         }
         Action::ExpectSlot { slot, present } => {
             let n = state.resolve(*slot)?;
             let h = header::read(ctx, &plan.device)?;
             if h.keyslots.contains_key(&n) == *present {
                 Ok(tx!(
-                    "槽位 {} {}",
+                    "Slot {} {}",
                     n,
                     if *present {
-                        tx!("存在")
+                        tx!("present")
                     } else {
-                        tx!("已删除")
+                        tx!("removed")
                     }
                 ))
             } else {
-                Err(Error::Invalid(tx!("槽位 {} 状态与预期不符", n)))
+                Err(Error::Invalid(tx!(
+                    "Slot {} is not in the expected state",
+                    n
+                )))
             }
         }
         Action::SetNote {
@@ -1633,7 +1674,7 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
                 let ks = h
                     .keyslots
                     .get(&n)
-                    .ok_or_else(|| Error::Invalid(tx!("槽位 {} 不存在", n)))?;
+                    .ok_or_else(|| Error::Invalid(tx!("Slot {} does not exist", n)))?;
                 let fp = notes::fingerprint(ks);
                 let current = header_set
                     .get(n)
@@ -1687,7 +1728,7 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
                 let ks = h
                     .keyslots
                     .get(&to)
-                    .ok_or_else(|| Error::Invalid(tx!("槽位 {} 不存在", to)))?;
+                    .ok_or_else(|| Error::Invalid(tx!("Slot {} does not exist", to)))?;
                 let fp = notes::fingerprint(ks);
                 let now = util::now_unix();
                 if let Some(mut n) = local_set.remove(from) {
@@ -1711,7 +1752,7 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
                 }
                 Ok(())
             })
-            .map(|s| tx!("{}（槽位 {}）", s, to))
+            .map(|s| tx!("{} (slot {})", s, to))
         }
         Action::DropNote { slot } => {
             let n = *slot;
@@ -1740,7 +1781,9 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
             if h.allows_discards() == *enable {
                 Ok(Text::plain(format!("allow-discards = {enable}")))
             } else {
-                Err(Error::Invalid(tx!("头部 TRIM 标志与预期不符")))
+                Err(Error::Invalid(tx!(
+                    "The TRIM flag in the header is not as expected"
+                )))
             }
         }
         Action::SavePcrSnapshot { slot } => {
@@ -1749,7 +1792,7 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
             let tok = h
                 .tokens_for(n)
                 .find_map(Tpm2Token::from_token)
-                .ok_or_else(|| Error::Invalid(tx!("槽位 {} 没有 TPM2 令牌", n)))?;
+                .ok_or_else(|| Error::Invalid(tx!("Slot {} has no TPM2 token", n)))?;
             let values = luks_assistant_sysinfo::tpm::read_pcrs(&tok.bank, &ctx.tpm2_device)
                 .map_err(|e| Error::Invalid(e.into()))?;
             let mut snaps = Snapshots::load(&ctx.paths, &h.uuid);
@@ -1757,7 +1800,7 @@ fn run_action(ctx: &Ctx, plan: &Plan, action: &Action, state: &mut State) -> Res
             snaps.save(&ctx.paths, &h.uuid)?;
             let status = pcr::evaluate(&tok, Some(&values), &snaps);
             Ok(tx!(
-                "PCR {} 已记录；{}",
+                "PCR {} recorded; {}",
                 pcr::format_list(&tok.pcrs),
                 status.text()
             ))
@@ -1779,15 +1822,15 @@ where
         notes::check_header_space(&h, &notes.header, &header_set)?;
         for cmd in header_note_cmds(ctx, &h, notes.header_token, &header_set, &plan.device) {
             ctx.runner.run(&cmd)?.check("cryptsetup token")?;
-            done.push(Text::plain(cmd.display_in(crate::i18n::Lang::En)));
+            done.push(Text::plain(cmd.display_in(crate::i18n::Lang::EN)));
         }
     }
     if local_set != notes.local {
         notes::write_local(&ctx.paths, &h.uuid, &local_set)?;
-        done.push(tx!("写入 {}", ctx.paths.local_notes(&h.uuid).display()));
+        done.push(tx!("Write {}", ctx.paths.local_notes(&h.uuid).display()));
     }
     Ok(if done.is_empty() {
-        tx!("无变化")
+        tx!("No change")
     } else {
         Text::join(done, Text::plain("\n"))
     })
@@ -1841,7 +1884,7 @@ pub fn log_text(plan: &Plan, report: &Report) -> String {
     );
     for (step, r) in plan.steps.iter().zip(&report.steps) {
         let mark = if r.ok { "✓" } else { "✗" };
-        match step.command_in(crate::i18n::Lang::En) {
+        match step.command_in(crate::i18n::Lang::EN) {
             Some(c) => text.push_str(&format!("    {mark} {c}\n")),
             None => text.push_str(&format!("    {mark} {}\n", step.desc().en())),
         }
@@ -1883,7 +1926,7 @@ mod tests {
                 "Token 0 requires additional missing resource.\nCommand failed with code -1 (wrong or missing parameters).\n"
             ))
             .to_string(),
-            "找不到所需设备（TPM 或安全密钥）"
+            "The required device (TPM or security key) was not found"
         );
         assert_eq!(
             token_failure(&out(
@@ -1951,7 +1994,7 @@ mod tests {
                 slot: None,
                 kdf: KdfChoice::Default,
                 note: Some(NoteInput {
-                    text: "备用".into(),
+                    text: "spare".into(),
                     location: Location::Header,
                 }),
             },
@@ -1961,7 +2004,7 @@ mod tests {
         assert!(cmds[0].starts_with("cryptsetup luksHeaderBackup /dev/test --header-backup-file "));
         assert_eq!(
             cmds[1],
-            "cryptsetup luksAddKey /dev/test --key-slot 4 --key-file <(现有密码) <(新密码)"
+            "cryptsetup luksAddKey /dev/test --key-slot 4 --key-file <(existing password) <(New password)"
         );
         assert!(p.warnings.is_empty());
         assert_eq!(p.danger, Danger::Normal);
@@ -1986,7 +2029,7 @@ mod tests {
         let cmds = p.commands();
         assert_eq!(
             cmds[1],
-            "PASSWORD=<已隐藏> systemd-cryptenroll /dev/test --tpm2-device=swtpm:host=127.0.0.1,port=1 --tpm2-pcrs=7 --wipe-slot=2"
+            "PASSWORD=<hidden> systemd-cryptenroll /dev/test --tpm2-device=swtpm:host=127.0.0.1,port=1 --tpm2-pcrs=7 --wipe-slot=2"
         );
         assert_eq!(p.danger, Danger::High);
         // replacing a non-TPM slot is refused
@@ -2021,7 +2064,7 @@ mod tests {
         let p = plan(&ctx, &ov, &req).unwrap();
         assert_eq!(
             p.commands()[1],
-            "cryptsetup luksChangeKey /dev/test --key-slot 5 --pbkdf pbkdf2 --key-file <(旧密码) <(新密码)"
+            "cryptsetup luksChangeKey /dev/test --key-slot 5 --pbkdf pbkdf2 --key-file <(old password) <(New password)"
         );
     }
 

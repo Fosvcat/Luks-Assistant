@@ -1,4 +1,4 @@
-//! Per-slot notes ("备注").
+//! Per-slot notes.
 //!
 //! The LUKS2 header cannot tell a typed passphrase from a key file — both
 //! are plain `luks2` key slots — so Luks Assistant lets the user label slots and
@@ -43,15 +43,15 @@ pub enum KeyKind {
 impl KeyKind {
     pub fn text(self) -> Text {
         match self {
-            KeyKind::Passphrase => tx!("密码"),
-            KeyKind::Keyfile => tx!("密钥文件"),
+            KeyKind::Passphrase => tx!("Password"),
+            KeyKind::Keyfile => tx!("Key file"),
         }
     }
 
     pub fn label(self) -> &'static str {
         match self {
-            KeyKind::Passphrase => t!("密码"),
-            KeyKind::Keyfile => t!("密钥文件"),
+            KeyKind::Passphrase => t!("Password"),
+            KeyKind::Keyfile => t!("Key file"),
         }
     }
 }
@@ -65,15 +65,15 @@ pub enum Location {
 impl Location {
     pub fn text(self) -> Text {
         match self {
-            Location::Header => tx!("存入头部"),
-            Location::Local => tx!("存在本机 /etc/"),
+            Location::Header => tx!("In the header"),
+            Location::Local => tx!("On this machine (/etc/)"),
         }
     }
 
     pub fn label(self) -> &'static str {
         match self {
-            Location::Header => t!("存入头部"),
-            Location::Local => t!("存在本机 /etc/"),
+            Location::Header => t!("In the header"),
+            Location::Local => t!("On this machine (/etc/)"),
         }
     }
 }
@@ -208,10 +208,15 @@ impl Notes {
 
 pub fn validate_text(text: &str) -> Result<()> {
     if text.chars().count() > MAX_NOTE_CHARS {
-        return Err(Error::Invalid(tx!("备注最多 {} 个字符", MAX_NOTE_CHARS)));
+        return Err(Error::Invalid(tx!(
+            "Notes are limited to {} characters",
+            MAX_NOTE_CHARS
+        )));
     }
     if text.chars().any(char::is_control) {
-        return Err(Error::Invalid(tx!("备注不能包含控制字符或换行")));
+        return Err(Error::Invalid(tx!(
+            "Notes cannot contain control characters or line breaks"
+        )));
     }
     Ok(())
 }
@@ -242,7 +247,7 @@ pub fn check_header_space(header: &Header, current: &NoteSet, new: &NoteSet) -> 
     let limit = header.config.json_size as usize;
     if limit > 0 && projected + JSON_HEADROOM > limit {
         return Err(Error::Blocked(tx!(
-            "头部 JSON 区空间不足（约 {} / {} 字节）",
+            "Not enough space in the header JSON area (about {} / {} bytes)",
             projected,
             limit
         )));
@@ -278,7 +283,7 @@ mod tests {
         let mut notes = Notes::load(&h, &paths);
         assert_eq!(notes.header_token, Some(31));
         let n = notes.for_slot(&h, 0).unwrap();
-        assert_eq!(n.note.text, "主密码");
+        assert_eq!(n.note.text, "main password");
         assert_eq!(n.note.kind, Some(KeyKind::Passphrase));
         assert_eq!(n.location, Location::Header);
         assert!(notes.stale(&h).is_empty());
@@ -287,7 +292,7 @@ mod tests {
         notes.header.set(
             5,
             Note {
-                text: "旧".into(),
+                text: "old".into(),
                 kind: None,
                 fp: "nope".into(),
                 updated: 0,
@@ -315,7 +320,7 @@ mod tests {
         set.set(
             3,
             Note {
-                text: "U盘".into(),
+                text: "USB stick".into(),
                 kind: Some(KeyKind::Keyfile),
                 fp: "abc".into(),
                 updated: 7,
